@@ -1,0 +1,15 @@
+# 本地维护规范与私有配置（防止污染安装包与下游项目）
+AGENTS.md
+
+# 系统与编辑器缓存
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# 运行日志与临时依赖
+node_modules/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
