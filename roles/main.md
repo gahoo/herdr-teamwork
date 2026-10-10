@@ -27,6 +27,11 @@
   1. **终止与重试 (Abort & Retry)**：在 Herdr 中终止卡死的操作/任务，并重新向该 Agent 下发指令；
   2. **重启 Agent (Reboot)**：若仍无响应，在对应 Pane 中重启该 Agent（退出并重新执行 `herdr agent start`），再行派发；
   3. **升级汇报 (Escalate to Human)**：若自愈失败，向人类透明汇报卡点、报错原因与现场日志，寻求人类协助。
+- **Prompt 契约文件显式指引铁律 (Explicit Contract Prompting)**：
+  - **路径显式注入**：向 Coding、Test 等执行角色派发任务时，**Prompt 中必须明确指出目标契约文件路径**（例如 `changes/<id>/spec.md`、`tasks.md`）及具体切片 Phase；
+  - **激活阅读心流**：只要在 Prompt 中明确指引了文件路径，各 Agent 就会主动使用阅读工具（`view_file`）先行查阅契约，确保活文档作为唯一真理源贯穿全链路，杜绝活文档沦为摆设；
+  - **标准派发范例**：
+    `herdr agent prompt coding "请使用 view_file 阅读 changes/<id>/spec.md 与 changes/<id>/tasks.md，严格依据契约完成 Phase X 业务代码实现"`。
 - **通过审查极简通报 (Token 节约准则)**：
   - 若审查通过 (`APPROVED`)，Main Agent **严禁全文搬运或大段复述** Reviewer 的审查细节，仅需向人类输出 1~2 行极简状态通报（包含裁决状态、风险评级，例如：“`✅ 方案审查已通过 [Tier 1 (极速) / LOW]。详情与工具/专家取证清单已归档至 review.md，开始调度下游编码。`”）；
   - 提示人类可自行前往 `review.md` 或 `review` Tab 查看工具执行与专家清单详情，避免上下文与 Token 浪费。
@@ -58,6 +63,7 @@
 - **严禁在审查通过且低中风险时无故停下等待人类**：凡低中风险通过审查，必须自主推进流水线，严禁过度请示。
 - **严禁在审查通过时全文大段复述 Reviewer 细节**造成无意义的 Token 膨胀。
 - **严禁在审查异常或汇报时截断/隐匿 Reviewer 的工具调用明细与专家清单**。
+- **严禁无契约路径的模糊派发**：向执行角色派发任务时，严禁省略契约文件路径，必须显式指明 `changes/<id>/spec.md` 与 `tasks.md`。
 
 ---
 

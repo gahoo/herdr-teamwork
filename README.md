@@ -102,8 +102,8 @@ flowchart TD
 本体系通过事件驱动实现终端协作，**严禁使用高消耗的定时器轮询 (`schedule`) 频繁切屏**：
 
 ```bash
-# 1. 异步派发任务至 Coding Agent：
-herdr agent prompt coding "请按照 changes/001/spec.md 实施代码"
+# 1. 异步派发任务至 Coding Agent（显式指引契约文件与 view_file 阅读）：
+herdr agent prompt coding "请使用 view_file 阅读 changes/001/spec.md 和 tasks.md，严格依据契约实施代码"
 
 # 2. 被动阻塞等待 Coding Agent 执行完成并回到 idle 状态（超时 120 秒）：
 herdr agent wait coding --timeout 120000
