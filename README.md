@@ -44,7 +44,7 @@ npx skills add <owner>/herdr-teamwork -g
 │       ├── spec.md              # 技术契约与接口定义（Living Truth）
 │       ├── plan.md              # 任务切片与时序依赖拓扑
 │       ├── tasks.md             # 本项执行看板与 Phase 卡片
-│       └── review.md            # 审查裁决归档（报纸头条原则）
+│       └── review.md            # 审查裁决归档（报纸头条原则 + 审查团队与工具取证双清单）
 └── .agents/                     # Agent 运行时基建（按需忽略或持久化）
     ├── session.json             # Herdr 会话状态快照与跨天秒级复活
     └── skills/herdr-teamwork/   # 本技能与角色契约库
@@ -66,6 +66,12 @@ flowchart TD
     RevPhase2 --> OpsDeploy[6. 受控发布: Ops Agent 构建验证、SemVer 自增与受控 Commit]
 ```
 
+> **⚡ 流转效率、调度中枢与自愈法则**：
+> - **自动调度中枢**：Main Agent 依序自动调度各专属 Agent 流水线，审查通过且无重大风险时全自动无缝流转；
+> - **通过审查极简通报 (Token 节约)**：审查通过时，Main Agent 仅向人类通报 1~2 行状态与风险等级，提示前往 `review.md` 查看详情，严禁大段全文搬运；
+> - **低中风险自动流转**：低中风险且通过审查时，Main Agent 自主调度下游实施，严禁无故暂停；仅在“需求方案确认”、“审查驳回/重大决策分歧”、“最终浏览器验收与发布授权”三大法定节点暂停等待人类；
+> - **故障处置铁律与自愈 SOP**：下游 Agent 卡死超时时，**严禁 Main Agent 越权代庖写代码/测用例/搞构建**；必须执行三步自愈（终止重试 ➔ 重启 Agent ➔ 升级汇报）。
+
 ---
 
 ## 🎭 角色矩阵与职责契约 (Role Contracts)
@@ -74,17 +80,17 @@ flowchart TD
 
 | 角色 | 契约文件 | 核心职责 | 绝对红线 (Hard Boundaries) |
 | :--- | :--- | :--- | :--- |
-| **Main Agent** | [`roles/main.md`](roles/main.md) | **Tech PM / 总负责人**：需求对齐、任务纵向切片解构、看板维护、驱动流水线。 | **严禁亲自编写业务代码与测试**；严禁自我审查。 |
+| **Main Agent** | [`roles/main.md`](roles/main.md) | **Tech PM / 总负责人**：需求对齐、任务纵向切片解构、看板维护、**自动调度流水线**。 | **严禁亲自编写业务代码与测试**；严禁自我审查；通过时严禁大段复述；**严禁越权代庖替卡死 Agent 执行工作**。 |
 | **Coding Agent** | [`roles/coding.md`](roles/coding.md) | **业务代码实现者**：遵循 `spec.md` 进行最小行级代码变更，确保类型安全。 | **严禁修改任何测试文件 (`tests/`)**；严禁过度设计。 |
 | **Test Agent** | [`roles/test.md`](roles/test.md) | **质量与测试工程师**：设计高严谨度用例，负责 Red Test 锁定与全量回归。 | **严禁修改任何业务代码 (`src/`)**；严禁为了变绿弱化断言。 |
 | **Ops Agent** | [`roles/ops.md`](roles/ops.md) | **环境与发布守护者**：后台守护服务、构建打包、数据库快照与受控 Git 提交。 | **严禁修改业务代码与测试**；严禁擅自提前 commit。 |
 | **Debug Agent** | [`roles/debugger.md`](roles/debugger.md) | **法医式排错专家**：穿透表象溯源根因，输出最小化《Fix Spec 修复规格》。 | **拥有严格只读权限，绝不直接动手改代码**。 |
 
 ### 🔬 分形审查矩阵 (The Reviewer Ensemble)
-在独立的 `review` 工作区中，实行 **“1 主审统筹 + 5 领域专家”** 架构：
-- **Lead Reviewer** ([`roles/reviewer-lead.md`](roles/reviewer-lead.md))：常驻主审，执行 3 级风险分流（Tier 1 极速 / Tier 2 标准 / Tier 3 全面审计），独占维护 `changes/<id>/review.md`。
+在独立的 `review` 工作区中，实行 **“1 主审统筹 + 5 领域专家”** 架构，严格贯彻【👥 审查团队披露】与【🛠️ 工具执行与取证清单】：
+- **Lead Reviewer** ([`roles/reviewer-lead.md`](roles/reviewer-lead.md))：常驻主审，执行 3 级风险分流（Tier 1 极速 / Tier 2 标准 / Tier 3 全面审计），独占维护 `changes/<id>/review.md` 头部双清单（披露专家构成/Tier 理由与工具指标）。
 - **Quality Reviewer** ([`roles/reviewer-quality.md`](roles/reviewer-quality.md))：独占消化静态工具原始海量日志，输出 ≤15 行健康简报。
-- **Arch Reviewer** ([`roles/reviewer-arch.md`](roles/reviewer-arch.md))：审查深模块设计、状态提升与调用拓扑爆炸半径。
+- **Arch Reviewer** ([`roles/reviewer-arch.md`](roles/reviewer-arch.md))：审查深模块设计、状态提升与调用拓扑爆炸半径 (`gitnexus impact`)。
 - **Perf Reviewer** ([`roles/reviewer-perf.md`](roles/reviewer-perf.md))：审查重渲染、内存泄漏、慢查询与缓存陷阱。
 - **Security Reviewer** ([`roles/reviewer-security.md`](roles/reviewer-security.md))：审查鉴权漏洞、注入隐患与供应链安全。
 - **UX & A11y Reviewer** ([`roles/reviewer-ux.md`](roles/reviewer-ux.md))：审查键盘快捷键流、焦点捕获与无障碍合规。

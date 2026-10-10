@@ -27,7 +27,7 @@ description: Multi-agent spec implementation orchestrated via Herdr terminal pan
 
 | 文档类型 | 唯一维护人 (Owner) | 维护策略 | 历史记录处理与格式范式 |
 | :--- | :--- | :--- | :--- |
-| **`review.md`** | **Lead Reviewer 独占统筹** | **单文件收敛**：严禁各专家私建碎片文件。 | **报纸头条原则 (Newspaper Style)**：<br>- 顶部永远展示最新终审状态与待办摘要；<br>- 历史轮次向下追加，已解决的历史轮次使用 `<details><summary>` 折叠。 |
+| **`review.md`** | **Lead Reviewer 独占统筹** | **单文件收敛**：严禁各专家私建碎片文件。 | **报纸头条原则 (Newspaper Style) 与披露双清单**：<br>- **顶部法定专区**：<br>  1. 裁决看板 (状态 APPROVED/BLOCKED/CHANGES_REQUESTED、轮次与风险评级 Tier 1/2/3)；<br>  2. 【👥 审查团队构成与专家分流 (Review Team & Experts)】：显式列出本次唤起的专家清单及 pane/职责；若零专家唤起必须注明 Tier 路由依据；<br>  3. 【🛠️ 工具执行与取证清单 (Tool Invocations)】：记录本次实际调用工具名、关键入参、调用目的与返回指标（如 callers、affected processes 等）；<br>  4. 待办摘要与审查意见；<br>- **历史记录处理**：历史轮次向下追加，已解决的历史轮次使用 `<details><summary>` 折叠。 |
 | **`prd.md`** | Main Agent (Tech PM) | **就地演进 (In-place)**：需求调整直接在原文修改。 | 文末附 2~3 行简明 `## 变更备忘录 (Changelog)` 记录妥协原因。 |
 | **`spec.md`** | Main / Arch Reviewer | **活契约原则 (Living Truth)**：反映当前生效接口。 | 永远呈现最新规范，历史交由 Git 追溯，正文不留冗余弃用字段。 |
 | **`tasks.md`** | Main Agent (Tech PM) | **任务状态更新与 Phase 追加**。 | 勾选 `[x]` 与 `[-]`，追加新阶段任务卡片。 |
@@ -38,7 +38,7 @@ description: Multi-agent spec implementation orchestrated via Herdr terminal pan
 
 | 角色 | 契约文件 | 核心职责 | 绝对红线 (Hard Boundaries) |
 | :--- | :--- | :--- | :--- |
-| **Main Agent** | [`roles/main.md`](roles/main.md) | **Tech PM / 项目总负责人**：需求对齐、任务纵向切片解构、KANBAN 维护、调度流水线。 | **严禁亲自编写业务代码、测试用例或执行构建发布**；严禁自我审查。 |
+| **Main Agent** | [`roles/main.md`](roles/main.md) | **Tech PM / 项目总负责人**：需求对齐、任务纵向切片解构、KANBAN 维护、自动调度流水线。 | **严禁亲自编写业务代码、测试用例或执行构建发布**；严禁自我审查；**严禁越权替卡死 Agent 代庖**。 |
 | **Coding Agent** | [`roles/coding.md`](roles/coding.md) | **业务代码实现者**：根据 `spec.md` 进行最小行级代码编写，执行 `tsc --noEmit`。 | **严禁修改任何测试文件 (`tests/`)**；严禁过度设计。 |
 | **Test Agent** | [`roles/test.md`](roles/test.md) | **质量与测试工程师**：深入 `spec.md` 独立设计测试方案，编写失败用例 (Red) 与全量回归。 | **严禁修改任何业务代码 (`src/`)**；严禁为了变绿而弱化断言。 |
 | **Ops Agent** (独立 Tab) | [`roles/ops.md`](roles/ops.md) | **环境守护与发布者**：`npm run build`、后台守护进程、端口探针与受控 Git 发布。 | **严禁修改业务代码与测试**；严禁擅自提前 commit。 |
@@ -86,6 +86,17 @@ description: Multi-agent spec implementation orchestrated via Herdr terminal pan
 | **Tier 2：标准通道**<br>(Standard Track) | 改动 20~150 行；影响 2~4 个文件；局部组件/Hook/单一接口。 | **靶向唤起 1~2 位专家**。Quality 跑 `fallow`，并**定向仅切 1 位专属专家**（改热键切 UX，改查询切 Perf）。 | **1 ~ 2 位** |
 | **Tier 3：全面审计**<br>(Full Ensemble) | 涉及防作弊/鉴权；SQLite 核心表/判分引擎；重大重构/全站依赖。 | **多专家并行会审**。并发切出 Quality、Arch、Security 深度审查。 | **3 ~ 5 位** |
 
+### 4.2 审查工具与专家团队透明度硬性约束 (Disclosure Protocol)
+
+1. **🛠️ 工具执行与取证清单 (Tool Invocation Disclosure)**：
+   - Reviewer（包含 Lead 及所有垂直专家）在生成 `review.md` 与阶段汇报时，**必须在醒目位置设立【🛠️ 工具执行与取证清单】**；
+   - 显式列出本次审查实际调用的工具明细（如 `gitnexus_impact`、`gitnexus_context`、`gitnexus_detect_changes`、`view_file`、`grep` / `rg`、`fallow` 等），包含**关键入参**、**调用目的**与**返回指标**（如 callers 计数、affected processes 列表、risk level 等）；
+   - **取证实证铁律**：严禁隐匿工具调用，严禁在未真正调用工具的情况下做口头推测或伪造分析。
+2. **👥 专家 Reviewer 调用透明度 (Expert Roster Disclosure)**：
+   - Lead Reviewer 必须在 `review.md` 头部设立【👥 审查团队构成与专家分流 (Review Team & Experts)】；
+   - 显式汇报本次审查究竟唤起了哪些垂直领域专家（如 Quality / Arch / Security / UX / Perf）及其 pane/职责；
+   - 若本次未唤起任何垂直专家（由 Lead Reviewer 独立完成），**必须显式给出 Tier 路由依据与理由**（如“当前为 Tier 1 极速通道 / Tier 2 纯表现层，依据规则由 Lead 独立闭环，不额外唤起垂直专家”），严禁让用户猜测。
+
 ---
 
 ## 5. 标准多 Agent 协同流水线 (6 步闭环)
@@ -99,6 +110,34 @@ flowchart TD
     CodeGreen --> RevPhase2[5. 代码终审: Quality 执行 fallow --fail-on-regression + Lead 终审]
     RevPhase2 --> OpsDeploy[6. 受控发布: Ops 构建、部署并刷新 fallow 基线与图谱]
 ```
+
+### 5.1 流水线流转与人机交接准则 (Pipeline Progression & Handover Rules)
+
+1. **Main Agent 自动调度中枢职责 (Autonomous Pipeline Orchestration)**：
+   - Main Agent 作为全局 Tech PM 与调度中枢，核心职责是根据需求与流水线时序，**自动、连贯地依次调度各专属 Agent**（`Reviewer ➔ Test ➔ Coding ➔ Reviewer ➔ Ops`），驱动流水线全自动流转；
+   - 只要审查通过且无重大风险（LOW / MEDIUM），**严禁停步等待人类**，必须自动无缝调度下一棒。
+2. **通过审查极简通报 (Token 节约准则)**：
+   - 若审查通过 (`APPROVED`)，Main Agent **严禁全文搬运或大段复述** Reviewer 的审查细节，仅需输出 1~2 行极简状态通报（包含裁决状态、风险评级）；
+   - 提示人类可自行前往 `review.md` 或 `review` Tab 查看工具执行与专家清单详情，避免上下文与 Token 浪费。
+3. **低中风险自动流转 (免非必要人工阻断)**：
+   - 凡审查通过且不涉及重大风险（非 `HIGH`/`CRITICAL`）或关键路线决策，Main Agent 必须直接自主执行下一步，立即调度 Coding Agent 开展业务编码，严禁停下等待人类决策；
+   - **三大法定暂停节点 (Mandatory Human Touchpoints)**：
+     1. **初始需求与方案对齐**：需求理解、实施计划与方案设计确认；
+     2. **审查驳回或重大分歧**：审查状态为 `BLOCKED` / `CHANGES_REQUESTED` 或涉及高危风险与关键架构路线决策；
+     3. **最终浏览器验收与发布授权**：人类在真实环境中体验验收与 Git commit 授权。
+
+### 5.2 故障处置铁律：严禁越权代庖与自愈 SOP (Fault Handling & Self-Healing SOP)
+
+1. **绝对红线：严禁越权代庖与大包大揽 (No Overreach on Agent Stalls)**：
+   - 当某个专属 Agent（如 Ops、Coding、Test、Reviewer）发生网络抖动、API 重试、卡死超时或迟迟不响应时，**Main Agent 绝对严禁越权替该 Agent 亲自执行工作**！
+   - 严禁 Main Agent 亲自修改业务代码；
+   - 严禁 Main Agent 亲自编写或修复测试用例；
+   - 严禁 Main Agent 亲自执行 `npm run build`、依赖安装或杀死服务进程重新拉起！
+   - 严守契约隔离与角色职责边界，违规代庖将被视为严重破坏架构隔离。
+2. **标准故障自愈三步法 (Self-Healing SOP)**：
+   - **Step 1：终止与重试 (Abort & Retry)**：在 Herdr 中终止卡死的操作/任务，并重新向该 Agent 下发指令；
+   - **Step 2：重启 Agent (Reboot)**：若重试仍无响应，在对应 Pane 中重启该 Agent（退出并重新执行 `herdr agent start`），再行派发；
+   - **Step 3：升级汇报 (Escalate to Human)**：若上述自愈步骤均失败，向人类透明汇报卡点、报错原因与现场日志，寻求人类协助。
 
 ---
 
