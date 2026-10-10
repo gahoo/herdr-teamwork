@@ -31,6 +31,7 @@ description: Multi-agent spec implementation orchestrated via Herdr terminal pan
 | **Coding Agent** | [`roles/coding.md`](roles/coding.md) | 业务代码实施与局部逻辑实现 | **严禁修改任何测试文件 (`*.test.*`)**；严禁私自扩展未经 `spec.md` 约定的需求。 |
 | **Test Agent** | [`roles/test.md`](roles/test.md) | 编写并运行自动化测试 (Vitest) | **严禁修改任何非测试业务代码**；测试失败时如实报告，绝不为了测试变绿而篡改业务实现。 |
 | **Ops Agent** (独立 Tab) | [`roles/ops.md`](roles/ops.md) | 环境准备、依赖安装、项目编译构建（npm run build）、常驻后台服务守护、数据库快照灾备与受控 Git 发布流水线执行 | **严禁修改任何业务代码与测试用例**；严禁越权审计（安全/体积审计归 Reviewer）；严禁擅自提前 commit；严禁向 Main 倒灌原始终端日志。 |
+| **Debug Agent** (按需唤起) | [`roles/debugger.md`](roles/debugger.md) | 深度逆向推导、根因定位与修复方案规格 (Fix Spec) 设计 | **只读权限，严禁直接修改业务代码与测试用例**；严禁进行表象打补丁 (Symptom Patching)；严禁倒灌海量原始调试 dump。 |
 | **Review Agent** | [`roles/reviewer.md`](roles/reviewer.md) | 契约审计与质量把关（含代码审查、CVE 依赖安全与包体积准入审计） | **只读权限，严禁修改任何文件**；直接向责任 Agent 直连反馈具体问题，不经 Main 中转。 |
 
 ### 2.1 职责正交与上下文保护原则 (Context Hygiene)
@@ -180,6 +181,36 @@ herdr agent prompt ops "请阅读并严格遵照执行位于 $SKILL_DIR/roles/op
    - Reviewer 通过直连命令指导 Coding/Test 进行精细修正；
 3. **主会话免受污染**：审查细节与拉锯讨论留在 `review` 分叉 Tab，Main Agent 保持极简上下文与全局视野。
 
+### 5.4 法医式排错协同流转规范 (Forensic Debugging Protocol)
+
+当系统遭遇非浅层的复杂 Bug、逻辑暗坑、偶发竞态或测试用例挂掉时，**严禁 Coding Agent 带着证实偏差盲目试错或打表面补丁**，严格启动法医式五步闭环：
+
+```
+       Bug 现象 / 异常堆栈 / 测试红灯
+                      │
+                      ▼
+  【第 1 步：立案】  Test Agent 编写最小可复现失败用例 (Red Test)
+                      │
+                      ▼
+  【第 2 步：剖析】  按需唤起 Debug Agent (逆向推导，隔离根因)
+                └── 产出：《根因诊断与修复规格 (Fix Spec)》 (严格只读，不改代码)
+                      │
+                      ▼
+  【第 3 步：把关】  Main Agent 架构审定 (评估影响面，批准方案)
+                      │
+                      ▼
+  【第 4 步：修复】  Coding Agent 外科手术式精准实施 (最小化行级改动)
+                      │
+                      ▼
+  【第 5 步：验收】  Test Agent 运行测试变绿 (Green Test) ➔ Ops 验证打包
+```
+
+1. **第 1 步（立案）**：Test Agent 编写一个且仅一个最小化的失败测试，将 Bug 现象客观固定下来；
+2. **第 2 步（剖析）**：Main Agent 按需唤起 Debug Agent（或 Fork 派生），Debugger 沿调用栈逆向推导状态扭曲起点，产出《根因诊断与修复建议报告》（严禁直接修改业务代码）；
+3. **第 3 步（把关）**：Main Agent 审阅方案，确认修改方案影响面最小且不破坏现有架构风格；
+4. **第 4 步（修复）**：Main Agent 将 Fix Spec 明确指派给 Coding Agent，Coding Agent 严格按照规格进行最小行级修复；
+5. **第 5 步（验收）**：Test Agent 重新执行测试验证红灯变绿（Green Test），确认修复成功后销毁临时 Debugger。
+
 ---
 
 ## 6. 常用 Herdr 调度命令速查
@@ -221,5 +252,88 @@ herdr agent prompt ops "请阅读并严格遵照执行位于 $SKILL_DIR/roles/op
   herdr agent prompt coding "/rewind"
   ```
   > **定位更新**：由于依赖安装、项目编译与常驻服务已全权由独立 `ops` Tab 物理吸收，Coding Agent 不再需要兼任环境杂事；`/rewind` 回归其纯粹的核心用途——专用于业务代码探索时的**“对话记忆修剪与上下文保鲜”**。
+- **按需唤起 Debug Agent 进行法医式排查 (On-Demand Debugger)**：
+  ```bash
+  # 1. 在主 Tab 中临时切分一个 debug pane
+  DEBUG_PANE=$(herdr pane split --pane "w7:p2" --direction down --cwd "$PWD" --no-focus | jq -r '.result.pane.pane_id')
+  # 2. 启动高推理模型 Debugger
+  herdr agent start debug --kind agy --pane "$DEBUG_PANE" -- --model gemini-3.8-flash-high
+  # 3. 注入角色契约与排错任务（只出方案，不直接改代码）
+  herdr agent prompt debug "请阅读 roles/debugger.md 契约。请分析相关测试失败原因，深入排查根本原因并向 Main Agent 输出《根因诊断与修复建议报告》。" --wait
+  # 4. 方案验收完成后，销毁临时 pane 保持屏幕整洁
+  herdr pane close --pane "$DEBUG_PANE"
+  ```
+
+---
+
+## 7. 会话状态持久化与零冷启动续接 (Session Persistence & Resume)
+
+为了避免终端重启、系统关机或断电后 Agent 上下文丢失导致的“冷启动阵痛”，本技能支持将会话状态归档至 `.agents/session.json`（已加入 `.gitignore`）。
+
+### 7.1 会话归档文件格式 (`.agents/session.json`)
+```json
+{
+  "updated_at": "2026-10-09T17:23:00+08:00",
+  "workspace_id": "w7",
+  "project": "examBuilder",
+  "agents": {
+    "main": {
+      "name": "main",
+      "role": "需求对齐与调度",
+      "tab_id": "w7:t1",
+      "pane_id": "w7:p1",
+      "model": "gemini-3.8-flash-high",
+      "conversation_id": "c683900f-ced0-4186-952d-cbc930f255d4"
+    },
+    "coding": {
+      "name": "coding",
+      "role": "业务代码实施",
+      "tab_id": "w7:t1",
+      "pane_id": "w7:p2",
+      "model": "gemini-3.8-flash-medium",
+      "conversation_id": "caa7fca3-b51a-4ef7-a59c-69b5fde72c18"
+    },
+    "test": {
+      "name": "test",
+      "role": "自动化测试",
+      "tab_id": "w7:t1",
+      "pane_id": "w7:p3",
+      "model": "gemini-3.8-flash-high",
+      "conversation_id": "83852d7c-e35a-4658-aa56-80c8aa5095af"
+    },
+    "ops": {
+      "name": "ops",
+      "role": "环境与运维发布",
+      "tab_id": "w7:t2",
+      "pane_id": "w7:p4",
+      "model": "gemini-3.8-flash-low",
+      "conversation_id": "14004428-c9ed-4384-aec4-934544d0e946"
+    }
+  }
+}
+```
+
+### 7.2 一键快照保存命令
+在日常开发结束或阶段性里程碑时，执行以下命令从 Herdr 动态抓取当前各 Agent 的 Conversation ID 并持久化：
+```bash
+herdr agent list | jq '{updated_at: (now | todate), workspace_id: "w7", project: "examBuilder", agents: [.result.agents[] | {key: (.name // "main"), value: {name: (.name // "main"), pane_id, tab_id, conversation_id: .agent_session.value, model: (.terminal_title | capture("--model (?<m>[^ ]+)") | .m // "gemini-3.8-flash-high")}}] | from_entries}' > .agents/session.json
+```
+
+### 7.3 跨天/重启后零冷启动一键续接 (Resume)
+当重新打开终端或开机后，在对应 Pane 重新启动 Agent 时传入 `--conversation` 参数，即可**100% 完整继承前序记忆与推理脉络原地复活**：
+```bash
+# 1. 恢复 Coding Agent（带着全部代码记忆苏醒）
+CODING_ID=$(jq -r '.agents.coding.conversation_id' .agents/session.json)
+herdr agent start coding --kind agy --pane "w7:p2" -- --conversation "$CODING_ID" --model gemini-3.8-flash-medium
+
+# 2. 恢复 Test Agent
+TEST_ID=$(jq -r '.agents.test.conversation_id' .agents/session.json)
+herdr agent start test --kind agy --pane "w7:p3" -- --conversation "$TEST_ID" --model gemini-3.8-flash-high
+
+# 3. 恢复 Ops Agent
+OPS_ID=$(jq -r '.agents.ops.conversation_id' .agents/session.json)
+herdr agent start ops --kind agy --pane "w7:p4" -- --conversation "$OPS_ID" --model gemini-3.8-flash-low
+```
+
 
 
