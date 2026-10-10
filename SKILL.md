@@ -147,7 +147,7 @@ flowchart TD
 
 ```bash
 # 1. 派发任务至 Coding Agent（异步，明确指引契约文件路径）：
-herdr agent prompt coding "请使用 view_file 阅读 changes/002/spec.md 和 changes/002/tasks.md，严格依据契约实施 Phase 1 业务代码"
+herdr agent prompt coding "请阅读 changes/002/spec.md 和 changes/002/tasks.md，严格依据契约实施 Phase 1 业务代码"
 
 # 2. 被动阻塞等待 Coding Agent 完成并回归 idle（超时 120 秒）：
 herdr agent wait coding --timeout 120000
@@ -161,19 +161,19 @@ herdr agent read coding --lines 50
 
 ### 6.1 Prompt 契约文件显式指引铁律 (Explicit Contract Path in Prompt)
 
-- **核心机制**：各执行 Agent（如 Coding、Test）只要在 Prompt 中看到明确的文件路径，就会主动调用 `view_file` 自主阅读契约。此机制彻底保障 `changes/` 目录活文档成为贯穿开发与测试全链路的唯一真理源，防止文档沦为摆设。
+- **核心机制**：各执行 Agent（如 Coding、Test）只要在 Prompt 中看到明确的文件路径，就会主动查阅并通读契约。此机制彻底保障 `changes/` 目录活文档成为贯穿开发与测试全链路的唯一真理源，防止文档沦为摆设。
 - **Main Agent 派发红线**：向执行角色派发任务时，**严禁仅使用模糊的一两句自然语言指令**，必须在 Prompt 中显式指出目标契约文件路径与当前切片：
   ```bash
   # 派发至 Coding Agent：
-  herdr agent prompt coding "请使用 view_file 阅读 changes/<id>/spec.md 与 changes/<id>/tasks.md，严格依据契约实施 Phase X 业务代码"
+  herdr agent prompt coding "请阅读 changes/<id>/spec.md 与 changes/<id>/tasks.md，严格依据契约实施 Phase X 业务代码"
 
   # 派发至 Test Agent：
-  herdr agent prompt test "请使用 view_file 阅读 changes/<id>/spec.md，依据验收标准与数据模型设计编写失败测试 (Red Test)"
+  herdr agent prompt test "请阅读 changes/<id>/spec.md，依据验收标准与数据模型设计编写失败测试 (Red Test)"
 
   # 派发至 Reviewer：
   herdr agent prompt reviewer "请依据 changes/<id>/spec.md 执行 Phase 1 方案前置审查，并更新 changes/<id>/review.md"
   ```
-- **执行角色首动规约**：Coding Agent 与 Test Agent 收到任务后，**必须将使用 `view_file` 通读指引的契约文件作为首要执行步骤**，严禁在未阅读契约前盲目编写代码或测试。
+- **执行角色首动规约**：Coding Agent 与 Test Agent 收到任务后，**必须将通读指引的契约文件作为首要执行步骤**，严禁在未阅读契约前盲目编写代码或测试。
 
 ---
 

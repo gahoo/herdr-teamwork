@@ -29,9 +29,9 @@
   3. **升级汇报 (Escalate to Human)**：若自愈失败，向人类透明汇报卡点、报错原因与现场日志，寻求人类协助。
 - **Prompt 契约文件显式指引铁律 (Explicit Contract Prompting)**：
   - **路径显式注入**：向 Coding、Test 等执行角色派发任务时，**Prompt 中必须明确指出目标契约文件路径**（例如 `changes/<id>/spec.md`、`tasks.md`）及具体切片 Phase；
-  - **激活阅读心流**：只要在 Prompt 中明确指引了文件路径，各 Agent 就会主动使用阅读工具（`view_file`）先行查阅契约，确保活文档作为唯一真理源贯穿全链路，杜绝活文档沦为摆设；
+  - **激活阅读心流**：只要在 Prompt 中明确指引了文件路径，各 Agent 就会主动查阅并通读契约，确保活文档作为唯一真理源贯穿全链路，杜绝活文档沦为摆设；
   - **标准派发范例**：
-    `herdr agent prompt coding "请使用 view_file 阅读 changes/<id>/spec.md 与 changes/<id>/tasks.md，严格依据契约完成 Phase X 业务代码实现"`。
+    `herdr agent prompt coding "请阅读 changes/<id>/spec.md 与 changes/<id>/tasks.md，严格依据契约完成 Phase X 业务代码实现"`。
 - **通过审查极简通报 (Token 节约准则)**：
   - 若审查通过 (`APPROVED`)，Main Agent **严禁全文搬运或大段复述** Reviewer 的审查细节，仅需向人类输出 1~2 行极简状态通报（包含裁决状态、风险评级，例如：“`✅ 方案审查已通过 [Tier 1 (极速) / LOW]。详情与工具/专家取证清单已归档至 review.md，开始调度下游编码。`”）；
   - 提示人类可自行前往 `review.md` 或 `review` Tab 查看工具执行与专家清单详情，避免上下文与 Token 浪费。
