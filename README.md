@@ -2,7 +2,7 @@
 
 > **Multi-Agent Spec Implementation Framework Orchestrated via Herdr**
 > 
-> 基于 **Herdr** 终端工作区管理工具构建的多 Agent 物理隔离与协同流水线工程规范。遵循 **OpenSpec 演进标准** 与 **事件驱动免轮询机制 (`herdr agent wait`)**，实现业务规格持久化、职责绝对正交与闭环审查。
+> 基于 **Herdr** 终端工作区管理工具构建的多 Agent 物理隔离与协同流水线工程规范。遵循 **OpenSpec 演进标准** 与 **事件驱动免轮询机制 (`herdr agent wait`)**，实现业务规格持久化、职责绝对正交与分形审查网络。
 
 [![Skill](https://img.shields.io/badge/Agent_Skill-herdr--teamwork-blue?style=flat-square)](https://skills.sh)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
@@ -59,10 +59,10 @@ npx skills add <owner>/herdr-teamwork -g
 ```mermaid
 flowchart TD
     User([👤 用户诉求]) --> Main[1. 立项与拆解: Main Agent 编写 prd / spec / tasks]
-    Main --> RevPhase1[2. 方案前置审查: Reviewer 审查 spec.md 并签署 review.md]
+    Main --> RevPhase1[2. 方案前置审查: Lead Reviewer 审查 spec.md 并签署 review.md]
     RevPhase1 --> TestRed[3. 锁定测试: Test Agent 编写失败用例 Red Test]
     TestRed --> CodeGreen[4. 业务实施: Coding Agent 最小化实现 + 类型自检]
-    CodeGreen --> RevPhase2[5. 代码终审: Reviewer 代码终审签字]
+    CodeGreen --> RevPhase2[5. 代码终审: Quality 跑静态健康 + Lead 终审签字]
     RevPhase2 --> OpsDeploy[6. 受控发布: Ops Agent 构建验证、SemVer 自增与受控 Commit]
 ```
 
@@ -74,12 +74,20 @@ flowchart TD
 
 | 角色 | 契约文件 | 核心职责 | 绝对红线 (Hard Boundaries) |
 | :--- | :--- | :--- | :--- |
-| **Main Agent** | `SKILL.md` | **Tech PM / 总负责人**：需求对齐、任务纵向切片解构、看板维护、驱动流水线。 | **严禁亲自编写业务代码与测试**；严禁自我审查。 |
+| **Main Agent** | [`roles/main.md`](roles/main.md) | **Tech PM / 总负责人**：需求对齐、任务纵向切片解构、看板维护、驱动流水线。 | **严禁亲自编写业务代码与测试**；严禁自我审查。 |
 | **Coding Agent** | [`roles/coding.md`](roles/coding.md) | **业务代码实现者**：遵循 `spec.md` 进行最小行级代码变更，确保类型安全。 | **严禁修改任何测试文件 (`tests/`)**；严禁过度设计。 |
 | **Test Agent** | [`roles/test.md`](roles/test.md) | **质量与测试工程师**：设计高严谨度用例，负责 Red Test 锁定与全量回归。 | **严禁修改任何业务代码 (`src/`)**；严禁为了变绿弱化断言。 |
 | **Ops Agent** | [`roles/ops.md`](roles/ops.md) | **环境与发布守护者**：后台守护服务、构建打包、数据库快照与受控 Git 提交。 | **严禁修改业务代码与测试**；严禁擅自提前 commit。 |
 | **Debug Agent** | [`roles/debugger.md`](roles/debugger.md) | **法医式排错专家**：穿透表象溯源根因，输出最小化《Fix Spec 修复规格》。 | **拥有严格只读权限，绝不直接动手改代码**。 |
-| **Review Agent** | [`roles/reviewer.md`](roles/reviewer.md) | **双盲契约审计员**：负责 Red Test 前置审查与代码终审门禁，直连反馈责任方。 | **只读权限，严禁修改任何文件**；不当二道贩子。 |
+
+### 🔬 分形审查矩阵 (The Reviewer Ensemble)
+在独立的 `review` 工作区中，实行 **“1 主审统筹 + 5 领域专家”** 架构：
+- **Lead Reviewer** ([`roles/reviewer-lead.md`](roles/reviewer-lead.md))：常驻主审，执行 3 级风险分流（Tier 1 极速 / Tier 2 标准 / Tier 3 全面审计），独占维护 `changes/<id>/review.md`。
+- **Quality Reviewer** ([`roles/reviewer-quality.md`](roles/reviewer-quality.md))：独占消化静态工具原始海量日志，输出 ≤15 行健康简报。
+- **Arch Reviewer** ([`roles/reviewer-arch.md`](roles/reviewer-arch.md))：审查深模块设计、状态提升与调用拓扑爆炸半径。
+- **Perf Reviewer** ([`roles/reviewer-perf.md`](roles/reviewer-perf.md))：审查重渲染、内存泄漏、慢查询与缓存陷阱。
+- **Security Reviewer** ([`roles/reviewer-security.md`](roles/reviewer-security.md))：审查鉴权漏洞、注入隐患与供应链安全。
+- **UX & A11y Reviewer** ([`roles/reviewer-ux.md`](roles/reviewer-ux.md))：审查键盘快捷键流、焦点捕获与无障碍合规。
 
 ---
 

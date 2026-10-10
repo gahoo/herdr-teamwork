@@ -20,8 +20,10 @@
   - 在用户明确验收满意并下达指令后，受控执行自动化发布：
     1. 根据变更类型自增 `package.json` 版本号（遵循 SemVer）；
     2. 执行提交前终验（`npm run build`），确保产物 100% 编译通过；
-    3. 暂存区审计，严格拦截敏感或垃圾文件；
-    4. 生成规范的 Conventional Commit 提交信息并执行 `git commit` 与打 Tag。
+    3. **暂存区审计与变更范围防线 (`gitnexus detect-changes`)**：在 `git commit` 前执行 `gitnexus detect-changes --scope staged`，拦截非预期的污染文件或异常符号改动；
+    4. 生成规范的 Conventional Commit 提交信息并执行 `git commit` 与打 Tag；
+    5. 推送远端仓库及 CM4 生产机器部署；
+    6. **增量刷新图谱与健康基线**：发布完成后执行 `gitnexus analyze` 刷新代码图谱，并执行 `fallow --save-regression-baseline .fallow-baseline.json` 固化当前版本健康基线，供下一阶段增量比对。
 - **独立 Tab 物理隔离**：
   - 在专有的 `ops` Tab 中常驻运行，彻底隔离常驻进程与海量命令行日志，不污染主工作区。
 

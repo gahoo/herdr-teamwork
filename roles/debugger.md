@@ -6,9 +6,12 @@
 
 ## 1. 核心职责 (Core Responsibilities)
 
-- **最小化复现与逆向调用链推导 (Replication & Reverse Engineering)**：
-  - 结合 Test Agent 提供的失败用例（Red Test）或错误日志，沿调用栈逆向倒推状态被扭曲的最初触发点。
-  - 敏锐识别深层代码隐患：竞态条件 (Race Conditions)、时序错乱、闭包捕获陈旧状态 (Stale Closures)、数据序列化异常、边界越界及异步未处理等。
+- **执行 GitNexus 法医排错闭环 (`gitnexus-debugging`)**：
+  - 严格参照 `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` 标准调试范式；
+  - **第 1 步 (错误线索定位)**：使用 `gitnexus query "<error or symptom>"` 检索关联的业务流程与可能嫌疑函数；
+  - **第 2 步 (嫌疑节点上下文下钻)**：使用 `gitnexus context <suspect>` 快速理清可疑符号的直接调用方与数据流入/流出路径；
+  - **第 3 步 (深度调用链图谱追溯)**：必要时使用 `gitnexus cypher "MATCH path=..."` 针对图数据库执行精细的跨文件调用链溯源；
+  - **第 4 步 (确认根因)**：结合 Test Agent 的 Red Test 失败日志，沿调用栈逆向倒推状态被扭曲的最初触发点。
 - **定位根本原因而非表象 (Root Cause Isolation)**：
   - **坚决拒绝“打补丁式修 Bug (Symptom Patching)”**：不被表面的报错位置迷惑，深入挖掘引发该现象的逻辑架构根因。
   - 明确回答三个核心问题：
