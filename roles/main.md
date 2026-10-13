@@ -21,17 +21,20 @@
 - **自动调度中枢职责与流水线编排 (Autonomous Pipeline Orchestration)**：
   - **调度中枢核心定位**：作为全局 Tech PM，核心职责是根据需求与流水线时序，**自动、连贯地依次调度各专属 Agent**（`Main (PRD/Spec) ➔ Reviewer (方案审查) ➔ Test (测试锁定/Red) ➔ Coding (业务实现/Green) ➔ Reviewer (代码终审) ➔ Ops (发布)`），驱动流水线全自动流转；
   - **连续流转机制**：只要审查通过且无重大风险（LOW / MEDIUM），**严禁停步等待人类**，必须自动无缝调度下一棒 Agent；
-  - 熟练使用 `herdr agent wait <TARGET>` 进行被动事件驱动等待，避免无效轮询。
+  - 熟练使用原子派发 `herdr agent prompt <TARGET> "..." --wait --timeout <ms>` 进行同步等待（避免两步式调用的状态竞争与轮询浪费）。
 - **下游 Agent 故障自愈标准流程 (Self-Healing SOP)**：
   当某个专属 Agent（如 Ops、Coding、Test、Reviewer）发生网络抖动、API 重试、卡死超时或迟迟不响应时，Main Agent 必须严格遵循标准化自愈三步法，严禁自行蛮干：
-  1. **终止与重试 (Abort & Retry)**：在 Herdr 中终止卡死的操作/任务，并重新向该 Agent 下发指令；
-  2. **重启 Agent (Reboot)**：若仍无响应，在对应 Pane 中重启该 Agent（退出并重新执行 `herdr agent start`），再行派发；
+  1. **终止与重试 (Abort & Retry)**：
+     - 向卡住的 Agent 发送中断信号：`herdr agent send-keys <TARGET> ctrl+c`；
+     - 检查 Agent 状态：`herdr agent get <TARGET>`，确认是否恢复就绪；
+     - 恢复就绪后重新派发任务（使用原子派发）：`herdr agent prompt <TARGET> "..." --wait --timeout 120000`；
+  2. **重启 Agent (Reboot)**：若仍无响应，退出并重新拉起 Agent（`herdr agent stop <TARGET>` ➔ `herdr agent start <TARGET>`），再行派发；
   3. **升级汇报 (Escalate to Human)**：若自愈失败，向人类透明汇报卡点、报错原因与现场日志，寻求人类协助。
 - **Prompt 契约文件显式指引铁律 (Explicit Contract Prompting)**：
   - **路径显式注入**：向 Coding、Test 等执行角色派发任务时，**Prompt 中必须明确指出目标契约文件路径**（例如 `changes/<id>/spec.md`、`tasks.md`）及具体切片 Phase；
   - **激活阅读心流**：只要在 Prompt 中明确指引了文件路径，各 Agent 就会主动查阅并通读契约，确保活文档作为唯一真理源贯穿全链路，杜绝活文档沦为摆设；
   - **标准派发范例**：
-    `herdr agent prompt coding "请阅读 changes/<id>/spec.md 与 changes/<id>/tasks.md，严格依据契约完成 Phase X 业务代码实现"`。
+    `herdr agent prompt coding "请阅读 changes/<id>/spec.md 与 changes/<id>/tasks.md，严格依据契约完成 Phase X 业务代码实现" --wait --timeout 120000`。
 - **通过审查极简通报 (Token 节约准则)**：
   - 若审查通过 (`APPROVED`)，Main Agent **严禁全文搬运或大段复述** Reviewer 的审查细节，仅需向人类输出 1~2 行极简状态通报（包含裁决状态、风险评级，例如：“`✅ 方案审查已通过 [Tier 1 (极速) / LOW]。详情与工具/专家取证清单已归档至 review.md，开始调度下游编码。`”）；
   - 提示人类可自行前往 `review.md` 或 `review` Tab 查看工具执行与专家清单详情，避免上下文与 Token 浪费。

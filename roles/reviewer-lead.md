@@ -52,9 +52,9 @@
     ## 🛠️ 工具执行与取证清单 (Tool Invocations)
     | 工具名称 | 关键入参 | 调用目的 | 关键返回指标 / 取证结果 |
     | :--- | :--- | :--- | :--- |
-    | gitnexus_detect_changes | --repo examBuilder | 终审改动映射与受影响业务流 | Risk Level: LOW, Affected: [gradeSubmission], Symbols: 2 |
-    | gitnexus_impact | target: "gradeSubmission", direction: "upstream" | 核心判分函数爆炸半径核查 | Direct Callers: 1, Depth-1 Processes: 1, 无外溢 |
-    | view_file | src/scoring.ts:40-85 | 核心行级代码与边界防御审查 | 确认防御代码到位，入参空值校验完整 |
+    | gitnexus_detect_changes | --repo <repo> | 终审改动映射与受影响业务流 | Risk Level: LOW, Affected: [handleAction], Symbols: 2 |
+    | gitnexus_impact | target: "handleAction", direction: "upstream" | 核心函数爆炸半径核查 | Direct Callers: 1, Depth-1 Processes: 1, 无外溢 |
+    | read_file | src/core/handler.ts:40-85 | 核心行级代码与边界防御审查 | 确认防御代码到位，入参空值校验完整 |
 
     ## 📝 待办与审查意见 (Action Items & Feedback)
     - [x] 契约遵从性校验

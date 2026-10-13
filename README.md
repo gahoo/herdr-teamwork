@@ -2,7 +2,7 @@
 
 > **Multi-Agent Spec Implementation Framework Orchestrated via Herdr**
 > 
-> 基于 **Herdr** 终端工作区管理工具构建的多 Agent 物理隔离与协同流水线工程规范。遵循 **OpenSpec 演进标准** 与 **事件驱动免轮询机制 (`herdr agent wait`)**，实现业务规格持久化、职责绝对正交与分形审查网络。
+> 基于 **Herdr** 终端工作区管理工具构建的多 Agent 物理隔离与协同流水线工程规范。遵循 **OpenSpec 演进标准** 与 **事件驱动免轮询机制 (`herdr agent prompt --wait`)**，实现业务规格持久化、职责绝对正交与分形审查网络。
 
 [![Skill](https://img.shields.io/badge/Agent_Skill-herdr--teamwork-blue?style=flat-square)](https://skills.sh)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
@@ -97,22 +97,20 @@ flowchart TD
 
 ---
 
-## ⚡ Herdr 免轮询调度指引 (`herdr agent wait`)
+## ⚡ Herdr 免轮询调度指引 (`herdr agent prompt --wait`)
 
-本体系通过事件驱动实现终端协作，**严禁使用高消耗的定时器轮询 (`schedule`) 频繁切屏**：
+本体系通过事件驱动实现终端协作，推荐使用原生原子派发与等待，**严禁使用高消耗的定时器轮询 (`schedule`) 频繁切屏**：
 
 ```bash
-# 1. 异步派发任务至 Coding Agent（显式指引契约文件路径并要求阅读）：
-herdr agent prompt coding "请阅读 changes/001/spec.md 和 tasks.md，严格依据契约实施代码"
+# 1. 推荐：原子派发任务至 Coding Agent（显式指引契约文件路径并要求阅读，内置 5 秒观察门禁自动等待完成）：
+herdr agent prompt coding "请阅读 changes/001/spec.md 和 tasks.md，严格依据契约实施代码" --wait --timeout 120000
 
-# 2. 被动阻塞等待 Coding Agent 执行完成并回到 idle 状态（超时 120 秒）：
-herdr agent wait coding --timeout 120000
+# 2. 备用：两步式调用（先派发，后被动等待回到 settled 状态，无需 --until done 避免误判超时）：
+herdr agent prompt ops "执行构建验证 npm run build"
+herdr agent wait ops --timeout 90000
 
-# 3. 阻塞等待 Ops Agent 构建完成：
-herdr agent wait ops --until done --timeout 90000
-
-# 4. 唤醒后按需抓取精准输出：
-herdr agent read coding --lines 50
+# 3. 唤醒后按需抓取精准输出（推荐 --source recent-unwrapped 保持 Markdown 表格与代码块排版完整）：
+herdr agent read coding --lines 50 --source recent-unwrapped
 ```
 
 ---
@@ -121,15 +119,18 @@ herdr agent read coding --lines 50
 
 会话状态保存在 `.agents/session.json` 中，随时保存、随时恢复：
 
-- **保存会话快照**：
+- **保存会话快照**（动态提取工作区 ID 与项目名）：
   ```bash
-  herdr agent list | jq '{updated_at: (now | todate), workspace_id: "w7", agents: [.result.agents[] | {key: (.name // "main"), value: {name: (.name // "main"), pane_id, tab_id, conversation_id: .agent_session.value, model: (.terminal_title | capture("--model (?<m>[^ ]+)") | .m // "gemini-3.8-flash-high")}}] | from_entries}' > .agents/session.json
+  WS=$(herdr status | jq -r '.workspace_id // "default"')
+  PROJ=$(basename "$PWD")
+  herdr agent list | jq --arg ws "$WS" --arg proj "$PROJ" '{updated_at: (now | todate), workspace_id: $ws, project: $proj, agents: [.result.agents[] | {key: (.name // "main"), value: {name: (.name // "main"), pane_id, tab_id, conversation_id: .agent_session.value, model: (.terminal_title | capture("--model (?<m>[^ ]+)") | .m // "gemini-3.8-flash-high")}}] | from_entries}' > .agents/session.json
   ```
 
 - **秒级复活 Agent（继承 100% 会话记忆）**：
   ```bash
   CODING_ID=$(jq -r '.agents.coding.conversation_id' .agents/session.json)
-  herdr agent start coding --kind agy --pane "w7:p2" -- --conversation "$CODING_ID" --model gemini-3.8-flash-medium
+  TARGET_PANE=$(jq -r '.agents.coding.pane_id' .agents/session.json)
+  herdr agent start coding --kind agy --pane "$TARGET_PANE" -- --conversation "$CODING_ID" --model gemini-3.8-flash-medium
   ```
 
 ---

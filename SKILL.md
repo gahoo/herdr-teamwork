@@ -135,7 +135,7 @@ flowchart TD
    - 严禁 Main Agent 亲自执行 `npm run build`、依赖安装或杀死服务进程重新拉起！
    - 严守契约隔离与角色职责边界，违规代庖将被视为严重破坏架构隔离。
 2. **标准故障自愈三步法 (Self-Healing SOP)**：
-   - **Step 1：终止与重试 (Abort & Retry)**：在 Herdr 中终止卡死的操作/任务，并重新向该 Agent 下发指令；
+   - **Step 1：终止与重试 (Abort & Retry)**：在 Herdr 中发送终止按键（`herdr agent send-keys <TARGET> ctrl+c`）复位状态，并使用 `herdr agent get <TARGET>` 确认就绪后重新下发指令；
    - **Step 2：重启 Agent (Reboot)**：若重试仍无响应，在对应 Pane 中重启该 Agent（退出并重新执行 `herdr agent start`），再行派发；
    - **Step 3：升级汇报 (Escalate to Human)**：若上述自愈步骤均失败，向人类透明汇报卡点、报错原因与现场日志，寻求人类协助。
 
@@ -146,32 +146,29 @@ flowchart TD
 **严禁使用定时器轮询 (`schedule`) 频繁切屏！** 采用事件驱动等待：
 
 ```bash
-# 1. 派发任务至 Coding Agent（异步，明确指引契约文件路径）：
-herdr agent prompt coding "请阅读 changes/002/spec.md 和 changes/002/tasks.md，严格依据契约实施 Phase 1 业务代码"
+# 1. 推荐：原子派发与阻塞等待（官方推荐，5 秒活动门禁防竞态）：
+herdr agent prompt coding "请阅读 changes/002/spec.md 和 changes/002/tasks.md，严格依据契约实施 Phase 1 业务代码" --wait --timeout 120000
 
-# 2. 被动阻塞等待 Coding Agent 完成并回归 idle（超时 120 秒）：
-herdr agent wait coding --timeout 120000
+# 2. 唤醒后读取结构化输出（使用 --source recent-unwrapped 避免终端软换行折断 Markdown/表格）：
+herdr agent read coding --source recent-unwrapped --lines 50
 
-# 3. 被动阻塞等待 Ops Agent 构建完成（匹配 done 状态）：
-herdr agent wait ops --until done --timeout 90000
-
-# 4. 唤醒后直接读取结构化输出：
-herdr agent read coding --lines 50
+# 3. （备用）被动阻塞等待后台/独立 Agent（不带 --until，避免 idle 与 seen 状态错位超时）：
+herdr agent wait ops --timeout 90000
 ```
 
 ### 6.1 Prompt 契约文件显式指引铁律 (Explicit Contract Path in Prompt)
 
 - **核心机制**：各执行 Agent（如 Coding、Test）只要在 Prompt 中看到明确的文件路径，就会主动查阅并通读契约。此机制彻底保障 `changes/` 目录活文档成为贯穿开发与测试全链路的唯一真理源，防止文档沦为摆设。
-- **Main Agent 派发红线**：向执行角色派发任务时，**严禁仅使用模糊的一两句自然语言指令**，必须在 Prompt 中显式指出目标契约文件路径与当前切片：
+- **Main Agent 派发红线**：向执行角色派发任务时，**严禁仅使用模糊的一两句自然语言指令**，必须在 Prompt 中显式指出目标契约文件路径与当前切片，并推荐启用原子 `--wait`：
   ```bash
-  # 派发至 Coding Agent：
-  herdr agent prompt coding "请阅读 changes/<id>/spec.md 与 changes/<id>/tasks.md，严格依据契约实施 Phase X 业务代码"
+  # 派发至 Coding Agent（原子派发与等待）：
+  herdr agent prompt coding "请阅读 changes/<id>/spec.md 与 changes/<id>/tasks.md，严格依据契约实施 Phase X 业务代码" --wait --timeout 120000
 
   # 派发至 Test Agent：
-  herdr agent prompt test "请阅读 changes/<id>/spec.md，依据验收标准与数据模型设计编写失败测试 (Red Test)"
+  herdr agent prompt test "请阅读 changes/<id>/spec.md，依据验收标准与数据模型设计编写失败测试 (Red Test)" --wait --timeout 120000
 
   # 派发至 Reviewer：
-  herdr agent prompt reviewer "请依据 changes/<id>/spec.md 执行 Phase 1 方案前置审查，并更新 changes/<id>/review.md"
+  herdr agent prompt reviewer "请依据 changes/<id>/spec.md 执行 Phase 1 方案前置审查，并更新 changes/<id>/review.md" --wait --timeout 120000
   ```
 - **执行角色首动规约**：Coding Agent 与 Test Agent 收到任务后，**必须将通读指引的契约文件作为首要执行步骤**，严禁在未阅读契约前盲目编写代码或测试。
 
@@ -180,14 +177,15 @@ herdr agent read coding --lines 50
 ## 7. 会话持久化与跨天秒级复活 (Session Persistence)
 
 会话状态保存在 `.agents/session.json`：
-- **保存快照**：
+- **保存快照（动态注入当前工作区与项目名）**：
   ```bash
-  herdr agent list | jq '{updated_at: (now | todate), workspace_id: "w7", project: "examBuilder", agents: [.result.agents[] | {key: (.name // "main"), value: {name: (.name // "main"), pane_id, tab_id, conversation_id: .agent_session.value, model: (.terminal_title | capture("--model (?<m>[^ ]+)") | .m // "gemini-3.8-flash-high")}}] | from_entries}' > .agents/session.json
+  herdr agent list | jq --arg ws "${HERDR_WORKSPACE_ID:-w1}" --arg proj "$(basename "$PWD")" '{updated_at: (now | todate), workspace_id: $ws, project: $proj, agents: [.result.agents[] | {key: (.name // "main"), value: {name: (.name // "main"), pane_id, tab_id, conversation_id: .agent_session.value, model: (.terminal_title | capture("--model (?<m>[^ ]+)") | .m // "gemini-3.8-flash-high")}}] | from_entries}' > .agents/session.json
   ```
 - **复活 Agent（继承 100% 记忆）**：
   ```bash
   CODING_ID=$(jq -r '.agents.coding.conversation_id' .agents/session.json)
-  herdr agent start coding --kind agy --pane "w7:p2" -- --conversation "$CODING_ID" --model gemini-3.8-flash-medium
+  TARGET_PANE=$(jq -r '.agents.coding.pane_id // "${HERDR_WORKSPACE_ID:-w1}:p2"' .agents/session.json)
+  herdr agent start coding --kind agy --pane "$TARGET_PANE" -- --conversation "$CODING_ID" --model gemini-3.8-flash-medium
   ```
 
 ---
@@ -200,11 +198,11 @@ herdr agent read coding --lines 50
 
 | 场景与意图 | 首选武器 | 说明与使用范式 | 举例命令 |
 | :--- | :--- | :--- | :--- |
-| **已知函数名/符号**<br>(查确切行号与上下游) | **`gitnexus context`**<br>(狙击镜头) | **确定性极高，零查空风险**。<br>秒级锁定定义文件与起始行号，并返回 360 度调用拓扑（谁调它、它调谁）。 | `gitnexus context --repo examBuilder handleKeyDown`<br>`gitnexus context --repo examBuilder gradeSubmission` |
-| **探索未知链路/业务概念**<br>(看数据流与拓扑) | **`gitnexus query`**<br>(卫星航拍) | **全局流程拓扑 (Execution Flow)**。<br>用于方案设计、排查跨层链路 Bug（前端 ➔ API ➔ DB），或不知道函数名时顺藤摸瓜。**提示：必须使用简短英文概念词**。 | `gitnexus query --repo examBuilder "exam submission"`<br>`gitnexus query --repo examBuilder "anti cheat"` |
-| **评估改动爆炸半径**<br>(改动前评估风险) | **`gitnexus impact`**<br>(雷达预警) | **向上追溯直接调用方与受影响流程**。<br>修改核心模块或公共接口前必跑，避免意外击穿下游。 | `gitnexus impact --repo examBuilder -d upstream gradeSubmission` |
-| **验证改动范围与影响面**<br>(改动后/终审门禁) | **`gitnexus detect-changes`**<br>(照妖镜门禁) | **将 Git Diff 映射到具体符号与业务流**。<br>验证当前代码改动是否超出预期边界，确认 Risk Level 与 Affected Processes。 | `gitnexus detect-changes --repo examBuilder`<br>`gitnexus detect-changes --repo examBuilder --scope staged` |
-| **查界面文本或精准报错**<br>(终极正则探针) | **`rg -n` (ripgrep)**<br>(极速探针) | **毫秒级定位 UI 特征字或配置项**。<br>当已知按钮文案（如“确认解析并导入”）、报错字面量或环境变量时，0.005 秒锁定行号。 | `rg -n "确认解析并导入" src/`<br>`rg -n "export function parseQuestions" src/` |
+| **已知函数名/符号**<br>(查确切行号与上下游) | **`gitnexus context`**<br>(狙击镜头) | **确定性极高，零查空风险**。<br>秒级锁定定义文件与起始行号，并返回 360 度调用拓扑（谁调它、它调谁）。 | `gitnexus context --repo <repo> handleAction`<br>`gitnexus context --repo <repo> parseInput` |
+| **探索未知链路/业务概念**<br>(看数据流与拓扑) | **`gitnexus query`**<br>(卫星航拍) | **全局流程拓扑 (Execution Flow)**。<br>用于方案设计、排查跨层链路 Bug（前端 ➔ API ➔ DB），或不知道函数名时顺藤摸瓜。**提示：必须使用简短英文概念词**。 | `gitnexus query --repo <repo> "user auth"`<br>`gitnexus query --repo <repo> "data sync"` |
+| **评估改动爆炸半径**<br>(改动前评估风险) | **`gitnexus impact`**<br>(雷达预警) | **向上追溯直接调用方与受影响流程**。<br>修改核心模块或公共接口前必跑，避免意外击穿下游。 | `gitnexus impact --repo <repo> -d upstream handleAction` |
+| **验证改动范围与影响面**<br>(改动后/终审门禁) | **`gitnexus detect-changes`**<br>(照妖镜门禁) | **将 Git Diff 映射到具体符号与业务流**。<br>验证当前代码改动是否超出预期边界，确认 Risk Level 与 Affected Processes。 | `gitnexus detect-changes --repo <repo>`<br>`gitnexus detect-changes --repo <repo> --scope staged` |
+| **查界面文本或精准报错**<br>(终极正则探针) | **`rg -n` (ripgrep)**<br>(极速探针) | **毫秒级定位 UI 特征字或配置项**。<br>当已知按钮文案（如“确认提交”）、报错字面量或环境变量时，0.005 秒锁定行号。 | `rg -n "确认提交" src/`<br>`rg -n "export function handleAction" src/` |
 
 ### 8.2 标准定位流转闭环
 
@@ -217,7 +215,7 @@ flowchart TD
 
     Ctx & Qry -->|若选词偏差查空| Probe[3. rg -n <特征字> 毫秒级探针兜底]
 
-    Ctx & Qry & Probe --> Slice[外科手术式切片读取 view_file<br/>指定 StartLine 与 EndLine (50~100行)]
+    Ctx & Qry & Probe --> Slice[外科手术式切片精准读取<br/>指定 StartLine 与 EndLine (50~100行)]
 ```
 
 ### 8.3 `detect-changes` 三重质量防线 (何时用？给谁用？)

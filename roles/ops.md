@@ -13,7 +13,7 @@
   - 执行依赖包的安装、更新与卸载（如 `npm install`、`pnpm add`、系统级包管理）。
   - 环境探针检测、网络连通性探测及运行环境基础配置。
 - **数据库运维与灾备快照 (Database Ops & Snapshot)**：
-  - **灾备快照与还原**：高风险改动或测试前自动备份 SQLite 物理文件（如 `cp data/quiz.db data/quiz.db.bak`），必要时一键秒级还原，充当数据安全熔断器。
+  - **灾备快照与还原**：高风险改动或测试前自动备份 SQLite 物理文件（如 `cp data/app.db data/app.db.bak`），必要时一键秒级还原，充当数据安全熔断器。
   - **环境种子注入**：执行测试数据初始化与 Seed 脚本填充，重置干净数据库底座。
   - **数据库健康诊断**：执行 `PRAGMA integrity_check`、检查 WAL 锁与共享内存状态。
 - **受控 Git 发布流水线执行 (Release & Git Ops)**：
@@ -22,7 +22,7 @@
     2. 执行提交前终验（`npm run build`），确保产物 100% 编译通过；
     3. **暂存区审计与变更范围防线 (`gitnexus detect-changes`)**：在 `git commit` 前执行 `gitnexus detect-changes --scope staged`，拦截非预期的污染文件或异常符号改动；
     4. 生成规范的 Conventional Commit 提交信息并执行 `git commit` 与打 Tag；
-    5. 推送远端仓库及 CM4 生产机器部署；
+    5. 推送远端仓库及目标生产环境部署；
     6. **增量刷新图谱与健康基线**：发布完成后执行 `gitnexus analyze` 刷新代码图谱，并执行 `fallow --save-regression-baseline .fallow-baseline.json` 固化当前版本健康基线，供下一阶段增量比对。
 - **独立 Tab 物理隔离**：
   - 在专有的 `ops` Tab 中常驻运行，彻底隔离常驻进程与海量命令行日志，不污染主工作区。
