@@ -78,6 +78,8 @@
 
 ---
 
-## 3. 运行推荐
-- **驻留位置**：主工作 Tab（Pane 1）。
-- **推荐模型**：`gemini-3.8-flash-high`。
+## 3. 运行时推荐规范 (Runtime Spec)
+- **驻留位置**：主工作 Tab（Pane 1，常驻）。
+- **理想 Harness 梯队**：`agy` > `claude-code` > `codex`
+- **理想思考深度**：**High (深度推理)**（百万上下文容纳完整 PRD/Spec，负责高维需求解构与时序依赖拓扑编排）。
+- **降级支持**：若系统仅有单一 Agent（如仅有 `claude` 或仅有 `agy`），开启该 Agent 的最大思考预算 (High / Extended Thinking)。

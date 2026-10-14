@@ -47,6 +47,7 @@ npx skills add <owner>/herdr-teamwork -g
 │       ├── review.md            # 审查裁决归档（报纸头条原则 + 审查团队与工具取证双清单）
 │       └── security-poc.md      # 红队渗透测试与漏洞复现报告（攻防演练产物）
 └── .agents/                     # Agent 运行时基建（按需忽略或持久化）
+    ├── environment.json         # 本地机器 Harness 探针画像与动态角色分配配置
     ├── session.json             # Herdr 会话状态快照与跨天秒级复活
     └── skills/herdr-teamwork/   # 本技能与角色契约库
 ```
@@ -128,12 +129,30 @@ herdr agent read coding --lines 50 --source recent-unwrapped
   herdr agent list | jq --arg ws "$WS" --arg proj "$PROJ" '{updated_at: (now | todate), workspace_id: $ws, project: $proj, agents: [.result.agents[] | {key: (.name // "main"), value: {name: (.name // "main"), pane_id, tab_id, conversation_id: .agent_session.value, model: (.terminal_title | capture("--model (?<m>[^ ]+)") | .m // "gemini-3.8-flash-high")}}] | from_entries}' > .agents/session.json
   ```
 
-- **秒级复活 Agent（继承 100% 会话记忆）**：
+- **秒级复活 Agent（继承 100% 会话记忆，并动态读取 environment.json 设定的 harness）**：
   ```bash
+  ROLE_HARNESS=$(jq -r '.roles.coding.harness // "agy"' .agents/environment.json 2>/dev/null || echo "agy")
+  ROLE_MODEL=$(jq -r '.roles.coding.model // "gemini-3.8-flash-medium"' .agents/environment.json 2>/dev/null || echo "gemini-3.8-flash-medium")
   CODING_ID=$(jq -r '.agents.coding.conversation_id' .agents/session.json)
   TARGET_PANE=$(jq -r '.agents.coding.pane_id' .agents/session.json)
-  herdr agent start coding --kind agy --pane "$TARGET_PANE" -- --conversation "$CODING_ID" --model gemini-3.8-flash-medium
+  herdr agent start coding --kind "$ROLE_HARNESS" --pane "$TARGET_PANE" -- --conversation "$CODING_ID" --model "$ROLE_MODEL"
   ```
+
+---
+
+## 🧩 异构 Agent 算力自适应与思考深度 (Adaptive Multi-Harness Profiling)
+
+流水线支持混合接入 `claude-code`、`codex`、`agy`、`pi`、`hermes` 等异构 Agent，并通过**“环境探针 ➔ 智能推荐 ➔ 交互对齐 ➔ 动态落盘”**机制自适应开发者的宿主环境：
+
+- **分层思考等级 (Thinking Budget)**：
+  - **High (深度推理 / 逆向推演)**：用于 Main Agent、Red Team Lead、Arch Reviewer；
+  - **Medium (适度推断 / 契约落地)**：用于 Coding Agent、Test Agent，防过度设计；
+  - **None / Low (极速吞吐 / 确定性)**：用于 Ops Agent、Quality Reviewer，毫秒级响应。
+- **环境探针与优雅降级**：
+  - 自动检测本地已安装的 Agent CLI；
+  - 若系统同时支持 `claude` 与 `codex`，自动组合最佳工种阵容；
+  - 若系统仅安装单一 Agent，**优雅降级为同构分层**，通过动态调节该 Agent 内部的 Thinking 预算与模型等级适配各角色。
+  - 用户确认后的方案持久化至 `.agents/environment.json`，驱动 Herdr 自动平滑拉起。
 
 ---
 

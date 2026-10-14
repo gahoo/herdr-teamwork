@@ -17,7 +17,7 @@ description: Multi-agent spec implementation orchestrated via Herdr terminal pan
 | 目录路径 | 属性 | 定位与核心内容 |
 | :--- | :--- | :--- |
 | **`changes/`** (根目录) | **第一类业务数据资产 (First-Class Artifacts)** | **业务演进历史与工程规格**：<br>- `changes/KANBAN.md`：全局大盘总看板；<br>- `changes/<id>/prd.md`：业务诉求、痛点与验收标准；<br>- `changes/<id>/spec.md`：技术契约与接口定义；<br>- `changes/<id>/plan.md`：任务切片与时序依赖；<br>- `changes/<id>/tasks.md`：本项执行看板块；<br>- `changes/<id>/review.md`：审查裁决归档；<br>- `changes/<id>/security-poc.md`：红队漏洞渗透与 PoC 报告（攻防演练产物）。 |
-| **`.agents/`** (隐藏目录) | **Agent 运行时支撑基建 (Infrastructure Surface)** | **多 Agent 调度基座**：<br>- `session.json`：Herdr 会话状态快照与跨天恢复；<br>- `skills/herdr-teamwork/roles/`：各 Agent 专属契约库。 |
+| **`.agents/`** (隐藏目录) | **Agent 运行时支撑基建 (Infrastructure Surface)** | **多 Agent 调度基座**：<br>- `environment.json`：本地机器已安装的 Harness 画像与各角色动态分配配置；<br>- `session.json`：Herdr 会话状态快照与跨天秒级恢复；<br>- `skills/herdr-teamwork/roles/`：各 Agent 专属契约库。 |
 
 ---
 
@@ -173,9 +173,56 @@ flowchart TD
    - Coding Agent 依据 `security-poc.md` 指引的根因进行最小化防御加固，使测试变绿（Green）；
    - Security Reviewer 在代码终审时依据 `security-poc.md` 逐条核验，确认所有漏洞均已闭环并签署裁决。
 
+## 6. 异构 Agent 环境探针与动态角色映射机制 (Adaptive Multi-Harness Profiling)
+
+为保障团队协同能自适应不同开发者的本地环境（支持混合接入 `claude-code`、`codex`、`agy`、`pi`、`hermes` 等），建立**“环境探针 ➔ 智能推荐 ➔ 交互对齐 ➔ 动态落盘”**的自适应机制。
+
+### 6.1 启动探针与能力发现 (Probing Phase)
+在项目初始化或启动多 Agent 协同前，Main Agent（或初始化脚本）执行本地探针检测：
+```bash
+# 1. 检测已安装的 Agent CLI
+AVAILABLE_HARNESSES=()
+for tool in claude codex agy pi hermes cursor; do
+  which "$tool" >/dev/null 2>&1 && AVAILABLE_HARNESSES+=("$tool")
+done
+
+# 2. 检测生效的环境变量与 API Key 支持
+# 如 ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY
+```
+
+### 6.2 动态撮合算法与优雅降级策略 (Adaptive Mapping Algorithm)
+撮合引擎根据各角色的【思考深度诉求】与【工程职责特质】，在机器实际支持的工具集中进行贪心匹配：
+
+| 角色类型 (Role) | 核心特质与算力诉求 | 优选 Harness 梯队 (由高到低) | 理想思考深度 | 单一 Agent 降级策略 |
+| :--- | :--- | :--- | :--- | :--- |
+| **Main / Arch / Red Team** | 极高维逻辑推理、逆向博弈与架构全局洞察 | `claude-code` ➔ `codex` ➔ `agy` | **High** (深度推理) | 单一 Agent 时开启 **最大思考预算 (High)** |
+| **Coding / Test** | 严格契约遵从、最小修改、精准断言、防过度设计 | `codex` ➔ `claude-code` ➔ `agy` | **Medium** (适度推断) | 单一 Agent 时开启 **中等思考预算 (Medium)** |
+| **Ops / Quality** | 毫秒级极速响应、海量原始日志提炼、确定性发布执行 | `pi` ➔ `hermes` ➔ `agy` ➔ `claude-code` | **None / Low** (确定性极速) | 单一 Agent 时**关闭思考或设为极低 (None/Low)** |
+
+### 6.3 交互式对齐与配置固化 (`.agents/environment.json`)
+探针检测完成后，Main Agent 必须主动向人类汇报探测结果，并给出针对当前机器的推荐搭配方案（例如：“`检测到您的环境支持 claude 与 agy。建议由 claude 承接 Main/RedTeam/Arch（High Thinking），agy 承接 Coding/Test/Ops（Medium/Low），是否确认？`”）。
+
+经人类确认后，将方案持久化至 `.agents/environment.json`：
+```json
+{
+  "updated_at": "2026-10-14T17:00:00Z",
+  "detected_harnesses": ["claude", "agy"],
+  "roles": {
+    "main": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
+    "redteam": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
+    "arch": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
+    "coding": { "harness": "agy", "model": "gemini-3.8-flash-medium", "thinking": "medium" },
+    "test": { "harness": "agy", "model": "gemini-3.8-flash-medium", "thinking": "medium" },
+    "quality": { "harness": "agy", "model": "gemini-3.8-flash-low", "thinking": "none" },
+    "ops": { "harness": "agy", "model": "gemini-3.8-flash-low", "thinking": "none" }
+  }
+}
+```
+后续 Herdr 启动命令与会话复活脚本统一从 `.agents/environment.json` 中读取对应角色的 `--kind` 与启动参数，实现全自动平滑拉起。
+
 ---
 
-## 6. Herdr 免轮询调度与等待技巧 (`herdr agent wait`)
+## 7. Herdr 免轮询调度与等待技巧 (`herdr agent wait`)
 
 **严禁使用定时器轮询 (`schedule`) 频繁切屏！** 采用事件驱动等待：
 
@@ -211,23 +258,25 @@ herdr agent wait ops --timeout 90000
 
 ---
 
-## 7. 会话持久化与跨天秒级复活 (Session Persistence)
+## 8. 会话持久化与跨天秒级复活 (Session Persistence)
 
 会话状态保存在 `.agents/session.json`：
 - **保存快照（动态注入当前工作区与项目名）**：
   ```bash
   herdr agent list | jq --arg ws "${HERDR_WORKSPACE_ID:-w1}" --arg proj "$(basename "$PWD")" '{updated_at: (now | todate), workspace_id: $ws, project: $proj, agents: [.result.agents[] | {key: (.name // "main"), value: {name: (.name // "main"), pane_id, tab_id, conversation_id: .agent_session.value, model: (.terminal_title | capture("--model (?<m>[^ ]+)") | .m // "gemini-3.8-flash-high")}}] | from_entries}' > .agents/session.json
   ```
-- **复活 Agent（继承 100% 记忆）**：
+- **复活 Agent（继承 100% 记忆，并动态读取 environment.json 设定的 harness）**：
   ```bash
+  ROLE_HARNESS=$(jq -r '.roles.coding.harness // "agy"' .agents/environment.json 2>/dev/null || echo "agy")
+  ROLE_MODEL=$(jq -r '.roles.coding.model // "gemini-3.8-flash-medium"' .agents/environment.json 2>/dev/null || echo "gemini-3.8-flash-medium")
   CODING_ID=$(jq -r '.agents.coding.conversation_id' .agents/session.json)
   TARGET_PANE=$(jq -r '.agents.coding.pane_id // "${HERDR_WORKSPACE_ID:-w1}:p2"' .agents/session.json)
-  herdr agent start coding --kind agy --pane "$TARGET_PANE" -- --conversation "$CODING_ID" --model gemini-3.8-flash-medium
+  herdr agent start coding --kind "$ROLE_HARNESS" --pane "$TARGET_PANE" -- --conversation "$CODING_ID" --model "$ROLE_MODEL"
   ```
 
 ---
 
-## 8. 智能代码定位与图谱导航规范 (Code Intelligence & Navigation)
+## 9. 智能代码定位与图谱导航规范 (Code Intelligence & Navigation)
 
 为提高定位效率、节省上下文 Token 并避免信息迷航，**强烈建议优先使用 GitNexus 知识图谱进行定位**，避免在毫无线索时盲目对大文件进行全量通读。遵循**“图谱定位先行、精准切片读取”**的最佳实践：
 
