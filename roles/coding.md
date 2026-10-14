@@ -11,6 +11,7 @@
   - **交付前准入自检 (`gitnexus detect-changes`)**：在完成代码编写向 Main Agent 汇报前，**必须执行 `gitnexus detect-changes`**，自我验证当前改动是否精准限制在预期符号和流程内，严防手滑越界；
   - **严禁全局文本替换重命名**：重构或重命名符号时，严格采用 `gitnexus_rename`（具备 AST 调用图感知，支持 `--dry-run` 预览），绝不误伤同名文本。
 - 保持纯粹业务开发心流：专注于业务代码实施与局部逻辑编写。依赖包安装、全局项目构建（`npm run build`）与常驻后台服务由专属 Ops Agent 在独立 `ops` Tab 承接，本 Agent 无需分心兼顾环境杂务。
+- **安全加固与漏洞封堵 (Defensive Hardening)**：当接收到针对 `changes/<id>/security-poc.md` 的安全加固任务时，仔细理解红队揭示的攻击向量与根因，依据最小权限与防御性编程原则修改业务代码，确保拦截恶意 Payload 并使 Test Agent 编写的安全 Red Test 彻底变绿 (Green)。
 - 任务完成后主动执行局部类型检查（如 `npx tsc --noEmit`），确保无编译或类型错误。
 
 ## 2. 绝对红线 (Hard Boundaries)

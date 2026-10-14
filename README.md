@@ -44,7 +44,8 @@ npx skills add <owner>/herdr-teamwork -g
 │       ├── spec.md              # 技术契约与接口定义（Living Truth）
 │       ├── plan.md              # 任务切片与时序依赖拓扑
 │       ├── tasks.md             # 本项执行看板与 Phase 卡片
-│       └── review.md            # 审查裁决归档（报纸头条原则 + 审查团队与工具取证双清单）
+│       ├── review.md            # 审查裁决归档（报纸头条原则 + 审查团队与工具取证双清单）
+│       └── security-poc.md      # 红队渗透测试与漏洞复现报告（攻防演练产物）
 └── .agents/                     # Agent 运行时基建（按需忽略或持久化）
     ├── session.json             # Herdr 会话状态快照与跨天秒级复活
     └── skills/herdr-teamwork/   # 本技能与角色契约库
@@ -85,6 +86,7 @@ flowchart TD
 | **Test Agent** | [`roles/test.md`](roles/test.md) | **质量与测试工程师**：设计高严谨度用例，负责 Red Test 锁定与全量回归。 | **严禁修改任何业务代码 (`src/`)**；严禁为了变绿弱化断言。 |
 | **Ops Agent** | [`roles/ops.md`](roles/ops.md) | **环境与发布守护者**：后台守护服务、构建打包、数据库快照与受控 Git 提交。 | **严禁修改业务代码与测试**；严禁擅自提前 commit。 |
 | **Debug Agent** | [`roles/debugger.md`](roles/debugger.md) | **法医式排错专家**：穿透表象溯源根因，输出最小化《Fix Spec 修复规格》。 | **拥有严格只读权限，绝不直接动手改代码**。 |
+| **Red Team Lead** | [`roles/security-redteam.md`](roles/security-redteam.md) | **红队渗透测试领队**：威胁建模、逆向代码审计、沙箱动态渗透并产出 `security-poc.md`。 | **严禁向非授权与生产环境攻击**；严禁改业务代码；**即用即销不常驻**。 |
 
 ### 🔬 分形审查矩阵 (The Reviewer Ensemble)
 在独立的 `review` 工作区中，实行 **“1 主审统筹 + 5 领域专家”** 架构，严格贯彻【👥 审查团队披露】与【🛠️ 工具执行与取证清单】：
@@ -92,7 +94,7 @@ flowchart TD
 - **Quality Reviewer** ([`roles/reviewer-quality.md`](roles/reviewer-quality.md))：独占消化静态工具原始海量日志，输出 ≤15 行健康简报。
 - **Arch Reviewer** ([`roles/reviewer-arch.md`](roles/reviewer-arch.md))：审查深模块设计、状态提升与调用拓扑爆炸半径 (`gitnexus impact`)。
 - **Perf Reviewer** ([`roles/reviewer-perf.md`](roles/reviewer-perf.md))：审查重渲染、内存泄漏、慢查询与缓存陷阱。
-- **Security Reviewer** ([`roles/reviewer-security.md`](roles/reviewer-security.md))：审查鉴权漏洞、注入隐患与供应链安全。
+- **Security Reviewer** ([`roles/reviewer-security.md`](roles/reviewer-security.md))：蓝队安全防线，审查鉴权漏洞、注入隐患与供应链安全，并终审复核红队 PoC 修复闭环。
 - **UX & A11y Reviewer** ([`roles/reviewer-ux.md`](roles/reviewer-ux.md))：审查键盘快捷键流、焦点捕获与无障碍合规。
 
 ---

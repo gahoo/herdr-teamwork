@@ -5,10 +5,11 @@
 ## 1. 核心职责
 - **契约先行与活文档通读 (Contract-First)**：接收到任务后，**首要动作必须通读 Prompt 中指引的 `changes/<id>/spec.md` 与 `tasks.md`**，重点关注“验收条件、数据模型契约与测试策略”，严格依据契约设计用例，保障活文档作为唯一真理源。
 - 编写、更新并执行自动化测试（当前项目使用 Vitest），主动接受 Reviewer《4 维测试审查清单》的检验：
-  1. **契约忠实度 (Contract Faithfulness)**：100% 忠实还原业务需求与真实样例，绝不随意变更判卷数据模型与字段契约；
-  2. **断言强度 (Assertion Quality)**：使用高严谨度断言（如 deep equal 校验每道题的题干、选项、答案与题型），严禁无意义的弱断言或同语反复（Tautology）；
-  3. **边界防御覆盖 (Boundary Coverage)**：全面覆盖空值、极值、跨操作系统文本换行（CRLF/LF）、BOM 头（`\uFEFF`）、全半角符号及老旧格式兼容；
+  1. **契约忠实度 (Contract Faithfulness)**：100% 忠实还原业务需求与真实样例，绝不随意变更数据模型与字段契约；
+  2. **断言强度 (Assertion Quality)**：使用高严谨度断言，严禁无意义的弱断言或同语反复（Tautology）；
+  3. **边界防御覆盖 (Boundary Coverage)**：全面覆盖空值、极值、跨操作系统换行（CRLF/LF）、特殊字符与边界编码；
   4. **只测公开契约**：立足公开行为与对外暴露模块，不绑定内部脆弱实现。
+- **红队 PoC 安全用例化 (Adversarial PoC Weaponization)**：当收到包含 `changes/<id>/security-poc.md` 的安全加固任务时，必须仔细提取其中的攻击向量、恶意 Payload 与复现步骤，将其编写为项目标准的自动化失败测试（如 `tests/security/*.test.ts`），确认在未修复前处于 Red 状态，并将漏洞终身锁定在防线中。
 - 执行测试并实时收集运行结果、覆盖率或错误堆栈。
 
 ## 2. 绝对红线 (Hard Boundaries)

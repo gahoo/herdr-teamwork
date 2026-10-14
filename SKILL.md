@@ -16,7 +16,7 @@ description: Multi-agent spec implementation orchestrated via Herdr terminal pan
 
 | 目录路径 | 属性 | 定位与核心内容 |
 | :--- | :--- | :--- |
-| **`changes/`** (根目录) | **第一类业务数据资产 (First-Class Artifacts)** | **业务演进历史与工程规格**：<br>- `changes/KANBAN.md`：全局大盘总看板；<br>- `changes/<id>/prd.md`：业务诉求、痛点与验收标准；<br>- `changes/<id>/spec.md`：技术契约与接口定义；<br>- `changes/<id>/plan.md`：任务切片与时序依赖；<br>- `changes/<id>/tasks.md`：本项执行看板块；<br>- `changes/<id>/review.md`：审查裁决归档。 |
+| **`changes/`** (根目录) | **第一类业务数据资产 (First-Class Artifacts)** | **业务演进历史与工程规格**：<br>- `changes/KANBAN.md`：全局大盘总看板；<br>- `changes/<id>/prd.md`：业务诉求、痛点与验收标准；<br>- `changes/<id>/spec.md`：技术契约与接口定义；<br>- `changes/<id>/plan.md`：任务切片与时序依赖；<br>- `changes/<id>/tasks.md`：本项执行看板块；<br>- `changes/<id>/review.md`：审查裁决归档；<br>- `changes/<id>/security-poc.md`：红队漏洞渗透与 PoC 报告（攻防演练产物）。 |
 | **`.agents/`** (隐藏目录) | **Agent 运行时支撑基建 (Infrastructure Surface)** | **多 Agent 调度基座**：<br>- `session.json`：Herdr 会话状态快照与跨天恢复；<br>- `skills/herdr-teamwork/roles/`：各 Agent 专属契约库。 |
 
 ---
@@ -31,6 +31,7 @@ description: Multi-agent spec implementation orchestrated via Herdr terminal pan
 | **`prd.md`** | Main Agent (Tech PM) | **就地演进 (In-place)**：需求调整直接在原文修改。 | 文末附 2~3 行简明 `## 变更备忘录 (Changelog)` 记录妥协原因。 |
 | **`spec.md`** | Main / Arch Reviewer | **活契约原则 (Living Truth)**：反映当前生效接口。 | 永远呈现最新规范，历史交由 Git 追溯，正文不留冗余弃用字段。 |
 | **`tasks.md`** | Main Agent (Tech PM) | **任务状态更新与 Phase 追加**。 | 勾选 `[x]` 与 `[-]`，追加新阶段任务卡片。 |
+| **`security-poc.md`** | Red Team Lead (红队领队) | **攻防演练产物**：演练触发时单次产出，任务结束即销毁。 | 包含 CVSS 定级、漏洞复现步骤、最小化 PoC 验证脚本与蓝队加固建议。<br>- Main Agent：宏观定级并在 `tasks.md` 追加加固切片；<br>- Test Agent：将 PoC 转化为自动化失败用例 (Red Test) 锁定防线。 |
 
 ---
 
@@ -43,6 +44,7 @@ description: Multi-agent spec implementation orchestrated via Herdr terminal pan
 | **Test Agent** | [`roles/test.md`](roles/test.md) | **质量与测试工程师**：深入 `spec.md` 独立设计测试方案，编写失败用例 (Red) 与全量回归。 | **严禁修改任何业务代码 (`src/`)**；严禁为了变绿而弱化断言。 |
 | **Ops Agent** (独立 Tab) | [`roles/ops.md`](roles/ops.md) | **环境守护与发布者**：`npm run build`、后台守护进程、端口探针与受控 Git 发布。 | **严禁修改业务代码与测试**；严禁擅自提前 commit。 |
 | **Debug Agent** (按需唤起) | [`roles/debugger.md`](roles/debugger.md) | **法医式排错专家**：逆向推导根因，输出《Fix Spec 修复规格》。 | **只读权限，绝不直接动手改代码**。 |
+| **Red Team Lead** (按需唤起/即用即销) | [`roles/security-redteam.md`](roles/security-redteam.md) | **红队渗透领队**：威胁建模、逆向代码审计、沙箱动态渗透、产出 `security-poc.md`。 | **严禁向非授权与生产环境攻击**；严禁修改业务代码与测试；任务交付后立即销毁。 |
 
 ---
 
@@ -70,8 +72,8 @@ description: Multi-agent spec implementation orchestrated via Herdr terminal pan
    - 审视深模块设计、状态提升合理性、开闭原则与调用链爆炸半径 (`gitnexus_impact`)。
 4. **Perf Reviewer (性能与扩展专家，按需)** [`roles/reviewer-perf.md`](roles/reviewer-perf.md)：
    - 审视 React 重渲染、闭包陷阱、内存泄漏、SQLite 缓存与全表扫描风险。
-5. **Security Reviewer (安全合规专家，按需)** [`roles/reviewer-security.md`](roles/reviewer-security.md)：
-   - 审视防作弊完备性、XSS/SQL 注入与供应链漏洞。
+5. **Security Reviewer (蓝队安全专家，按需)** [`roles/reviewer-security.md`](roles/reviewer-security.md)：
+   - 审视 XSS/SQL 注入防御、鉴权守卫、第三方 CVE 供应链风险，并复核红队漏洞修复闭环。
 6. **UX & A11y Reviewer (交互与体验专家，按需)** [`roles/reviewer-ux.md`](roles/reviewer-ux.md)：
    - 审视键盘流热键冲突、焦点捕获管理与组件无障碍属性。
 
@@ -139,6 +141,38 @@ flowchart TD
    - **Step 2：重启 Agent (Reboot)**：若重试仍无响应，在对应 Pane 中重启该 Agent（退出并重新执行 `herdr agent start`），再行派发；
    - **Step 3：升级汇报 (Escalate to Human)**：若上述自愈步骤均失败，向人类透明汇报卡点、报错原因与现场日志，寻求人类协助。
 
+### 5.3 红蓝对抗安全攻防演练流水线 (Adversarial Security SOP)
+
+为防范关键业务盲区并锻造极端鲁棒性，针对高风险特性（认证鉴权、敏感数据读写、复杂并发、外部公开 API），实行**“红蓝对抗”**攻防闭环：
+
+```mermaid
+flowchart TD
+    Main[1. 识别高危: Main Agent 编排攻防切片] --> Ops[2. 沙箱隔离: Ops 备份快照与隔离端口]
+    Ops --> Red[3. 动态渗透: Red Team 即用即销<br/>威胁建模 + 白盒分析 + 沙箱渗透 PoC]
+    Red --> Destroy[🧹 销毁 redteam 窗格，释放资源]
+    Red --> PoC[交付 changes/id/security-poc.md]
+    
+    PoC -->|宏观定级 & 编排加固| Main
+    PoC -->|提取 Payload 武器化| Test[4. 锁定防线: Test Agent 编写自动化 Red Test]
+    Test --> Coding[5. 防御加固: Coding Agent 实施防御变绿 Green]
+    Coding --> Rev[6. 蓝队终审: Security Reviewer 复核 PoC 彻底闭环]
+```
+
+1. **触发时机与环境准备 (Trigger & Sandbox Isolation)**：
+   - 当任务切片涉及认证鉴权、越权控制、敏感资金/资产、复杂并发或对外开放端点时，Main Agent 在 `tasks.md` 中追加 `Phase: Security Pentest`；
+   - Ops Agent 在独立的测试端口拉起隔离服务，并执行物理快照备份（`cp data/app.db data/app.db.bak`），确保测试数据与生产环境严格物理隔离。
+2. **红队即用即销渗透 (Ephemeral Red Teaming)**：
+   - Main Agent 临时在独立 Tab 唤起 `security-redteam` 领队；
+   - 红队执行三阶段渗透：① 依据 `spec.md` 威胁建模 ➔ ② 白盒源码污点追踪 ➔ ③ 沙箱动态渗透 Fuzzing 与 Payload 攻击；
+   - 完成后在 `changes/<id>/security-poc.md` 中输出漏洞复现报告与最小化 PoC 验证脚本；
+   - **用后立即销毁**：任务反馈完成后，立即关闭销毁 `redteam` 窗格，严禁常驻，防止历史攻击上下文污染后续任务。
+3. **`security-poc.md` 契约双向消费法则**：
+   - **Main Agent（宏观定级与编排）**：读取报告摘要与 CVSS 定级；若含 `CRITICAL` / `HIGH` 级别漏洞，触发法定节点向人类通报大盘风险；并在 `tasks.md` 追加安全加固切片；
+   - **Test Agent（微观复现与武器化）**：深入通读攻击向量与 Payload，改写为项目标准的自动化失败用例（`tests/security/*.test.ts`），确认在未修复前处于 Red 状态，并将漏洞终身锁定在工程防线中。
+4. **加固与复核闭环 (Hardening & Verification)**：
+   - Coding Agent 依据 `security-poc.md` 指引的根因进行最小化防御加固，使测试变绿（Green）；
+   - Security Reviewer 在代码终审时依据 `security-poc.md` 逐条核验，确认所有漏洞均已闭环并签署裁决。
+
 ---
 
 ## 6. Herdr 免轮询调度与等待技巧 (`herdr agent wait`)
@@ -169,6 +203,9 @@ herdr agent wait ops --timeout 90000
 
   # 派发至 Reviewer：
   herdr agent prompt reviewer "请依据 changes/<id>/spec.md 执行 Phase 1 方案前置审查，并更新 changes/<id>/review.md" --wait --timeout 120000
+
+  # 派发至 Red Team 进行攻防演练（临时唤起，即用即销）：
+  herdr agent prompt redteam-lead "请依据 changes/<id>/spec.md 对 Phase X 发起攻防渗透测试，并在 changes/<id>/security-poc.md 输出 PoC 报告" --wait --timeout 180000
   ```
 - **执行角色首动规约**：Coding Agent 与 Test Agent 收到任务后，**必须将通读指引的契约文件作为首要执行步骤**，严禁在未阅读契约前盲目编写代码或测试。
 

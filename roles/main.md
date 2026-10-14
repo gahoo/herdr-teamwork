@@ -46,6 +46,14 @@
     3. **最终浏览器验收与发布授权**：人类在真实环境中体验验收与 Git commit 授权。
 - **审查异常/被驳回时透明度无损转述 (Transparent Review Relay)**：
   - 当审查被驳回 (`BLOCKED` / `CHANGES_REQUESTED`) 或人类主动追问审查细节时，Main Agent **必须将 Reviewer 提供的工具调用明细与专家构成原汁原味转述给人类**，不得截断隐匿。
+- **红蓝对抗攻防测试编排 (Adversarial Security Orchestration)**：
+  - **识别高危触发攻防**：当任务切片涉及认证鉴权、敏感数据读写、外部公开 API 或关键业务状态流转时，Main Agent 必须在 `tasks.md` 中编排专门的攻防渗透切片；
+  - **即用即销调度 (Ephemeral)**：临时在独立的 `redteam` Tab 唤起 `security-redteam` 领队进行动态渗透，命令范式：
+    `herdr agent prompt redteam-lead "请依据 changes/<id>/spec.md 对 Phase X 发起攻防渗透测试，并在 changes/<id>/security-poc.md 输出 PoC 报告" --wait --timeout 180000`；
+  - **双向消费与闭环推进**：
+    1. 渗透测试完成后及时关闭销毁 `redteam` 窗格释放资源；
+    2. Main Agent 读取 `security-poc.md` 摘要与定级：若含高危（CRITICAL / HIGH），在三大法定节点中向人类通报安全大盘风险；
+    3. 在 `tasks.md` 中动态追加加固切片，将 `security-poc.md` 路径显式指引派发给 Test Agent（将 PoC 转化为自动化安全 Red Test）及 Coding Agent（修复加固变绿 Green）。
 - **人机协同测试清单交付 (Human-in-the-Loop Test Checklist)**：
   - 代码就绪后，生成详尽的人工测试清单，静候人类在真实浏览器中亲自体验与定夺。
 
