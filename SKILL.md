@@ -45,6 +45,7 @@ description: Multi-agent spec implementation orchestrated via Herdr terminal pan
 | **Ops Agent** (独立 Tab) | [`roles/ops.md`](roles/ops.md) | **环境守护与发布者**：`npm run build`、后台守护进程、端口探针与受控 Git 发布。 | **严禁修改业务代码与测试**；严禁擅自提前 commit。 |
 | **Debug Agent** (按需唤起) | [`roles/debugger.md`](roles/debugger.md) | **法医式排错专家**：逆向推导根因，输出《Fix Spec 修复规格》。 | **只读权限，绝不直接动手改代码**。 |
 | **Red Team Lead** (按需唤起/即用即销) | [`roles/security-redteam.md`](roles/security-redteam.md) | **红队渗透领队**：威胁建模、逆向代码审计、沙箱动态渗透、产出 `security-poc.md`。 | **严禁向非授权与生产环境攻击**；严禁修改业务代码与测试；任务交付后立即销毁。 |
+| **E2E Specialist** (按需唤起/即用即销) | [`roles/test-e2e.md`](roles/test-e2e.md) | **端到端交互与冒烟测试专家**：双轨制走查（小模型现场冒烟查白屏/Console红字，核心黄金路径脚本化）。 | **严禁为日常切片制造脆弱脚本债务**；严禁改业务代码；即用即销。 |
 
 ---
 
@@ -173,6 +174,20 @@ flowchart TD
    - Coding Agent 依据 `security-poc.md` 指引的根因进行最小化防御加固，使测试变绿（Green）；
    - Security Reviewer 在代码终审时依据 `security-poc.md` 逐条核验，确认所有漏洞均已闭环并签署裁决。
 
+### 5.4 端到端交互与冒烟走查双轨制 (E2E & Smoke Testing Dual-Track)
+
+端到端测试严格防止“过度脚本化”与“维护负债”，实行**“小模型现场冒烟走查 + 黄金路径原子脚本”**双轨制：
+
+| 维度 | 常态轨：小模型现场冒烟走查 (90% 切片) | 沉淀轨：黄金路径原子脚本 (10% 核心) |
+| :--- | :--- | :--- |
+| **触发场景** | 日常新功能、UI 频繁变动期、PR 提交前冒烟走查。 | 系统全局生命线（用户登录认证、系统初始化、核心交易/结算）。 |
+| **执行载体** | **小模型 (Qwen3.6 / Qwen3.8 / Gemini Flash)** 直接调 `chrome-devtools-mcp`。 | **纯异步 JavaScript 脚本**，通过 `evaluate_script` 原生毫秒级注入。 |
+| **核心关注点** | 聚焦三大灾难性指标：① **页面白屏**；② **Console 红色未捕获错误**；③ **网络 500 崩溃**。 | 严格数据校验与状态流转断言。 |
+| **自愈机制** | 小模型凭借语义理解**就地自愈**（点掉弹窗遮罩、重试等待）。 | 脚本自身包含 `try/catch` 与显式 `setTimeout` 等待。 |
+| **资产策略** | **用完即焚**：输出走查结论与快照证据，**不生成任何脚本代码**，零维护负担。 | **长期固化**：存为 `tests/e2e/golden-path.js`，供未来免 Token 毫秒级回归。 |
+
+---
+
 ## 6. 异构 Agent 环境探针与动态角色映射机制 (Adaptive Multi-Harness Profiling)
 
 为保障团队协同能自适应不同开发者的本地环境（支持混合接入 `claude-code`、`codex`、`agy`、`pi`、`hermes` 等），建立**“环境探针 ➔ 智能推荐 ➔ 交互对齐 ➔ 动态落盘”**的自适应机制。
@@ -198,9 +213,10 @@ done
 | **Main / Arch / Red Team** | 极高维逻辑推理、逆向博弈与架构全局洞察 | `claude-code` ➔ `codex` ➔ `agy` | **High** (深度推理) | 单一 Agent 时开启 **最大思考预算 (High)** |
 | **Coding / Test** | 严格契约遵从、最小修改、精准断言、防过度设计 | `codex` ➔ `claude-code` ➔ `agy` | **Medium** (适度推断) | 单一 Agent 时开启 **中等思考预算 (Medium)** |
 | **Ops / Quality** | 毫秒级极速响应、海量原始日志提炼、确定性发布执行 | `pi` ➔ `hermes` ➔ `agy` ➔ `claude-code` | **None / Low** (确定性极速) | 单一 Agent 时**关闭思考或设为极低 (None/Low)** |
+| **E2E Specialist** | 极速页面走查、语义自愈、排查白屏与 Console 错误 | `agy` ➔ `pi` ➔ `claude-code` | **Low ~ Medium** (极速自愈) | 单一 Agent 时设为 Low/Medium 预算 |
 
 ### 6.3 交互式对齐与配置固化 (`.agents/environment.json`)
-探针检测完成后，Main Agent 必须主动向人类汇报探测结果，并给出针对当前机器的推荐搭配方案（例如：“`检测到您的环境支持 claude 与 agy。建议由 claude 承接 Main/RedTeam/Arch（High Thinking），agy 承接 Coding/Test/Ops（Medium/Low），是否确认？`”）。
+探针检测完成后，Main Agent 必须主动向人类汇报探测结果，并给出针对当前机器的推荐搭配方案（例如：“`检测到您的环境支持 claude 与 agy。建议由 claude 承接 Main/RedTeam/Arch（High Thinking），agy 承接 Coding/Test/Ops/E2E（Medium/Low），是否确认？`”）。
 
 经人类确认后，将方案持久化至 `.agents/environment.json`：
 ```json
@@ -214,7 +230,8 @@ done
     "coding": { "harness": "agy", "model": "gemini-3.8-flash-medium", "thinking": "medium" },
     "test": { "harness": "agy", "model": "gemini-3.8-flash-medium", "thinking": "medium" },
     "quality": { "harness": "agy", "model": "gemini-3.8-flash-low", "thinking": "none" },
-    "ops": { "harness": "agy", "model": "gemini-3.8-flash-low", "thinking": "none" }
+    "ops": { "harness": "agy", "model": "gemini-3.8-flash-low", "thinking": "none" },
+    "e2e": { "harness": "agy", "model": "gemini-3.8-flash-medium", "thinking": "low" }
   }
 }
 ```
@@ -253,6 +270,9 @@ herdr agent wait ops --timeout 90000
 
   # 派发至 Red Team 进行攻防演练（临时唤起，即用即销）：
   herdr agent prompt redteam-lead "请依据 changes/<id>/spec.md 对 Phase X 发起攻防渗透测试，并在 changes/<id>/security-poc.md 输出 PoC 报告" --wait --timeout 180000
+
+  # 派发至 E2E Specialist（临时唤起，执行现场冒烟走查）：
+  herdr agent prompt e2e "请对当前前端页面执行端到端冒烟走查，重点排查白屏与 Console 报错" --wait --timeout 120000
   ```
 - **执行角色首动规约**：Coding Agent 与 Test Agent 收到任务后，**必须将通读指引的契约文件作为首要执行步骤**，严禁在未阅读契约前盲目编写代码或测试。
 

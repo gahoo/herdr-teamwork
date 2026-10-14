@@ -54,6 +54,11 @@
     1. 渗透测试完成后及时关闭销毁 `redteam` 窗格释放资源；
     2. Main Agent 读取 `security-poc.md` 摘要与定级：若含高危（CRITICAL / HIGH），在三大法定节点中向人类通报安全大盘风险；
     3. 在 `tasks.md` 中动态追加加固切片，将 `security-poc.md` 路径显式指引派发给 Test Agent（将 PoC 转化为自动化安全 Red Test）及 Coding Agent（修复加固变绿 Green）。
+- **按需端到端冒烟走查编排 (On-Demand E2E & Smoke Testing)**：
+  - **切片级一次性走查**：当人类需要无人值守验证或复杂界面交互走查时，临时在独立的 `e2e` Tab 唤起 `test-e2e` 专家；
+  - **命令范式**：
+    `herdr agent prompt e2e "请对当前前端页面执行端到端冒烟走查，重点排查白屏与 Console 报错" --wait --timeout 120000`；
+  - **轻量防债务准则**：走查完成后立即关闭销毁 `e2e` 窗格，严禁要求其为普通临时切片编写可重用脚本。
 - **人机协同测试清单交付 (Human-in-the-Loop Test Checklist)**：
   - 代码就绪后，生成详尽的人工测试清单，静候人类在真实浏览器中亲自体验与定夺。
 

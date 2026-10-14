@@ -88,6 +88,7 @@ flowchart TD
 | **Ops Agent** | [`roles/ops.md`](roles/ops.md) | **环境与发布守护者**：后台守护服务、构建打包、数据库快照与受控 Git 提交。 | **严禁修改业务代码与测试**；严禁擅自提前 commit。 |
 | **Debug Agent** | [`roles/debugger.md`](roles/debugger.md) | **法医式排错专家**：穿透表象溯源根因，输出最小化《Fix Spec 修复规格》。 | **拥有严格只读权限，绝不直接动手改代码**。 |
 | **Red Team Lead** | [`roles/security-redteam.md`](roles/security-redteam.md) | **红队渗透测试领队**：威胁建模、逆向代码审计、沙箱动态渗透并产出 `security-poc.md`。 | **严禁向非授权与生产环境攻击**；严禁改业务代码；**即用即销不常驻**。 |
+| **E2E Specialist** | [`roles/test-e2e.md`](roles/test-e2e.md) | **端到端交互与冒烟测试专家**：双轨制走查（小模型现场冒烟查白屏/Console红字，黄金路径脚本化）。 | **严禁制造脆弱测试脚本债务**；严禁改业务代码；**即用即销不常驻**。 |
 
 ### 🔬 分形审查矩阵 (The Reviewer Ensemble)
 在独立的 `review` 工作区中，实行 **“1 主审统筹 + 5 领域专家”** 架构，严格贯彻【👥 审查团队披露】与【🛠️ 工具执行与取证清单】：
