@@ -38,7 +38,7 @@ npx skills add <owner>/herdr-teamwork -g
 
 ```text
 ├── changes/                     # 第一类业务数据资产（项目根目录，纳入版本管理）
-│   ├── KANBAN.md                # 全局大盘总看板
+│   ├── KANBAN.md                # 全局大盘总看板（含需求收件与待开展占位池 Inbox / Backlog，需求未启看板先行）
 │   └── <id>/                    # 具体特性变更集
 │       ├── prd.md               # 业务诉求、痛点与验收标准（Definition of Done）
 │       ├── spec.md              # 技术契约与接口定义（Living Truth）
@@ -69,6 +69,7 @@ flowchart TD
 ```
 
 > **⚡ 流转效率、动态按需裁剪与自愈法则**：
+> - **需求未启，看板先行**：全局大盘 `changes/KANBAN.md` 顶部设立统一收件与待开展占位池 (Inbox / Backlog)，所有新需求意向第一时间入池占位，严禁私建碎片化 `Inbox.md`，杜绝临阵补录；
 > - **动态按需裁剪与人机对齐**：Main Agent 绝不机械拉满全流程；根据复杂度动态规划“最小必要 Agent 集合”（微型通道：`Main ➔ Coding ➔ Ops`；标准通道：`Main ➔ Test ➔ Coding ➔ Reviewer ➔ Ops`；全量通道：全流程 + 红队攻防），并在第 1 法定节点与人类明确对齐角色清单与调度时序后启动；
 > - **自动调度中枢**：Main Agent 依序自动调度各专属 Agent 流水线，审查通过且无重大风险时全自动无缝流转；
 > - **通过审查极简通报 (Token 节约)**：审查通过时，Main Agent 仅向人类通报 1~2 行状态与风险等级，提示前往 `review.md` 查看详情，严禁大段全文搬运；

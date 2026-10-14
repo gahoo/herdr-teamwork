@@ -27,6 +27,7 @@ description: Multi-agent spec implementation orchestrated via Herdr terminal pan
 
 | 文档类型 | 唯一维护人 (Owner) | 维护策略 | 历史记录处理与格式范式 |
 | :--- | :--- | :--- | :--- |
+| **`KANBAN.md`** | **Main Agent (Tech PM)** | **单文件大盘全局内聚 (Single Source of Truth)**：<br>严禁私建 `Inbox.md` 等碎片文档；顶部常设 `## 📥 需求收件与待开展占位池 (Inbox / Backlog)`。 | **需求未启，看板先行与前置占位**：<br>- 凡用户提出新需求或拆解出的远期切片，必须第一时间在顶部占位池登记建档，严禁临阵补录；<br>- **生命周期流转**：`📥 占位池 (Inbox/Backlog)` ➔ `🚀 进行中 (In Progress)` ➔ `✅ 已完成归档 (Done)`；<br>- 需求正式启动排期时平滑移入 In Progress，并创建对应 `changes/<id>/` 目录。 |
 | **`review.md`** | **Lead Reviewer 独占统筹** | **单文件收敛**：严禁各专家私建碎片文件。 | **报纸头条原则 (Newspaper Style) 与披露双清单**：<br>- **顶部法定专区**：<br>  1. 裁决看板 (状态 APPROVED/BLOCKED/CHANGES_REQUESTED、轮次与风险评级 Tier 1/2/3)；<br>  2. 【👥 审查团队构成与专家分流 (Review Team & Experts)】：显式列出本次唤起的专家清单及 pane/职责；若零专家唤起必须注明 Tier 路由依据；<br>  3. 【🛠️ 工具执行与取证清单 (Tool Invocations)】：记录本次实际调用工具名、关键入参、调用目的与返回指标（如 callers、affected processes 等）；<br>  4. 待办摘要与审查意见；<br>- **历史记录处理**：历史轮次向下追加，已解决的历史轮次使用 `<details><summary>` 折叠。 |
 | **`prd.md`** | Main Agent (Tech PM) | **就地演进 (In-place)**：需求调整直接在原文修改。 | 文末附 2~3 行简明 `## 变更备忘录 (Changelog)` 记录妥协原因。 |
 | **`spec.md`** | Main / Arch Reviewer | **活契约原则 (Living Truth)**：反映当前生效接口。 | 永远呈现最新规范，历史交由 Git 追溯，正文不留冗余弃用字段。 |
