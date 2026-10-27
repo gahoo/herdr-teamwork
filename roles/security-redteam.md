@@ -11,10 +11,10 @@
   - 研读 `changes/<id>/spec.md`，围绕 **STRIDE**（欺骗、篡改、抵赖、信息泄露、拒绝服务、权限提升）梳理高价值攻击面；
   - 结合 `gitnexus` 追踪不可信输入源（Source）到敏感操作汇聚点（Sink）的调用链，挖掘未授权端点、参数篡改与并发竞态（Race Condition）漏洞。
 - **隔离沙箱动态渗透与 Fuzzing (Dynamic Sandbox Exploitation)**：
-  - 针对 `tasks.md` 指定的本地隔离测试端口与快照数据库，构造恶意 Payload 与并发请求进行实战验证；
+  - 针对 `Dispatcher` 传入（源自 `changes/<id>/pipeline.jsonl`）的本地隔离测试端口与快照数据库，构造恶意 Payload 与并发请求进行实战验证；
   - 覆盖 SQLi/XSS/命令注入、跨租户/跨用户横向越权（IDOR/BOLA）、状态机跳步绕过与畸形输入 Fuzzing。
 - **交付标准化攻击资产 (`changes/<id>/security-poc.md`)**：
-  - 渗透完成后，严格按标准模板生成 `changes/<id>/security-poc.md`，供 `Dispatcher` 双向派发给 `Test Agent`（转化为自动化 Red Test）与 `Coding Agent`（实施防御加固）：
+  - 渗透完成后，严格按标准模板生成 `changes/<id>/security-poc.md`，供 `Dispatcher` 双向派发给 `TDD Agent` (`tdd`，转化为自动化 Red Test) 与 `Coding Agent` (`coding`，实施防御加固)：
 
 ```markdown
 # Security Pentest & PoC Report: <Change ID>
@@ -29,7 +29,7 @@
 ### [VULN-001] 跨用户资源越权访问 (IDOR)
 - **攻击向量与根因**: 缺少资源所属权上下文校验。
 - **复现步骤**: 1. 账号 A 获取 Token；2. 请求账号 B 的资源 ID；3. 实际返回 200 及敏感数据（预期应为 403）。
-- **最小化 PoC 验证脚本 (可直接供 Test Agent 转化为自动化用例)**:
+- **最小化 PoC 验证脚本 (可直接供 TDD Agent 转化为自动化用例)**:
   ```typescript
   // PoC 断言示例
   ```

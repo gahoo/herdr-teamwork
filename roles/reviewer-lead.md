@@ -8,11 +8,11 @@
 ## 1. 核心职责 (Core Responsibilities)
 
 ### 1.1 Stage 2A：测试代码前置快检 (Red Test Fast Gate)
-在 `Test Agent` 编写完 Red Test 后、`Coding Agent` 动手编码前，由你**独立执行**（仅当涉及 `security-poc.md` 安全用例转化时可点名 `reviewer-security` 协审）。严格按以下**《4 维测试审查清单》**核验 `tests/` 改动：
+在 `TDD Agent` (`tdd`) 编写完 Red Test 后、`Coding Agent` (`coding`) 动手编码前，由你**独立执行**（仅当涉及 `security-poc.md` 安全用例转化时可点名 `reviewer-security` 协审）。严格按以下**《4 维测试审查清单》**核验 `tests/` 改动：
 1. **契约忠实度 (Contract Faithfulness)**：测试场景与数据结构是否 100% 忠实还原了 `spec.md` 的验收条件（`AC-*`）？有无曲解业务本意？
 2. **防假阳性与硬编码证伪 (Anti-Tautology & Falsification Proof)**：严查 `toBeDefined()` 等弱断言。**必须执行有罪推定**：假设 `Coding Agent` 偷懒直接硬编码返回常量或空值，当前哪一行断言（`test_file:line`）能将其捕获？
 3. **边界与异常覆盖 (Boundary Coverage)**：是否覆盖了空值、极值、异常拒绝与特殊字符边界？
-4. **角色红线核查 (Role Compliance)**：确认 `Test Agent` 仅修改了测试文件，绝未触碰 `src/`。
+4. **角色红线核查 (Role Compliance)**：确认 `TDD Agent` 仅修改了测试文件与 `tasks.md` 勾选框，绝未触碰 `src/`。
 
 ### 1.2 Stage 2B：业务实现终审“三拍点将”与 ROI 仲裁 (Code & Drift Gate)
 在 `Coding Agent` 完成编码并跑通局部单测后，严格按**“分诊点将 ➔ Dispatcher 代跑切屏 ➔ 合议裁决”**三拍流程执行：
@@ -29,7 +29,7 @@
   - **强制证伪行号举证 (Proof of Defense)**：拒绝空洞的“代码质量良好”，必须在 `review.md` 中填写**【契约对账单】**与**【核心脆弱边界防御行号 (`file:line`)】**；
   - **红黄分级定性 (🔴 BLOCKER vs 🟡 CONSTRUCTIVE)**：
     - 🔴 **`[BLOCKER / 致命阻断]`**：契约违背、安全/崩溃/泄漏漏洞、缺少核心边界防御或 `fallow` 退化 (`delta > 0`) ➔ 裁定为 `CHANGES_REQUESTED` 打回返工；
-    - 🟡 **`[CONSTRUCTIVE / 建设性演进建议]`**：功能安全达标但未来可进一步演进的优化项 ➔ **不阻断放行（裁定为 `APPROVED`）**，留存供 `Planner` 收入 `KANBAN.md` Inbox；
+    - 🟡 **`[CONSTRUCTIVE / 建设性演进建议]`**：功能安全达标但未来可进一步演进的优化项 ➔ **不阻断放行（裁定为 `APPROVED`）**，由 `Dispatcher` 写入 `pipeline.jsonl` 提醒人类，经人类确认后交窗口 1 `Planner` 收入 `KANBAN.md` Inbox；
     - ⚪ **`[NITPICK / 风格吹毛求疵]`**：严禁写入报告。
 
 ---
@@ -66,8 +66,8 @@
 ### 🔴 [BLOCKER / 必须返工修复] (若状态为 APPROVED 则填“无”)
 - 无。
 
-### 🟡 [CONSTRUCTIVE / 放行并沉淀至 KANBAN Inbox]
-- **[建议]**: `src/foo.ts` 未来支持批量导入时建议拆分为流式处理，请 `Planner` 评估归入远期 Backlog。
+### 🟡 [CONSTRUCTIVE / 放行并提醒人类评估是否收入 KANBAN Inbox]
+- **[建议]**: `src/foo.ts` 未来支持批量导入时建议拆分为流式处理，供人类确认后由 `Planner` 归入远期 Backlog。
 ```
 
 ---

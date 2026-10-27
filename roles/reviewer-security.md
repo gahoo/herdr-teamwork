@@ -15,7 +15,7 @@
   - 核查资源访问是否强制校验所属权上下文（防横向越权 IDOR / 纵向提权）与敏感字段脱敏（防密码散列、密钥或未脱敏隐私数据泄露至客户端）。
 - **供应链 CVE 审计与红队 PoC 闭环复核 (Supply Chain & Red Team Verification)**：
   - 当 `package.json` 发生变更时，运行依赖安全审计（如 `npm audit` / `pnpm audit`）排查高危 CVE；
-  - 当存在 `changes/<id>/security-poc.md` 时，严格复核：① `Test Agent` 是否已将每个 PoC 转化为有效的自动化安全测试；② `Coding Agent` 的加固代码是否从根源封堵了攻击向量且测试全部转绿。
+  - 当存在 `changes/<id>/security-poc.md` 时，严格复核：① `TDD Agent` (`tdd`) 是否已将每个 PoC 转化为有效的自动化安全测试；② `Coding Agent` (`coding`) 的加固代码是否从根源封堵了攻击向量且测试全部转绿。
 - **证伪举证与一票否决汇报**：
   - 输出专项安全简报（≤25 行），必须包含：
     1. **【🛠️ 工具执行与取证清单】**；

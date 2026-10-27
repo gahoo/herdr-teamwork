@@ -19,7 +19,7 @@
   - 输出专项简报（≤25 行），必须包含：
     1. **【🛠️ 工具执行与取证清单】**（列明 `gitnexus impact/context` 入参与返回的 callers/processes 数量）；
     2. **【🛡️ 架构边界行号举证 (`file:line`)】**（指出模块解耦或向后兼容防御所在的具体代码行）；
-    3. **【🔴 BLOCKER / 🟡 CONSTRUCTIVE】分级意见**（对不影响当前交付安全的远期架构演进建议，统一标为 🟡 `CONSTRUCTIVE` 供 `Planner` 沉淀至看板，绝不滥用 🔴 卡死流水线）。
+    3. **【🔴 BLOCKER / 🟡 CONSTRUCTIVE】分级意见**（对不影响当前交付安全的远期架构演进建议，统一标为 🟡 `CONSTRUCTIVE` 供人类验收确认后由 `Planner` 沉淀至看板，绝不滥用 🔴 卡死流水线）。
 
 ---
 
