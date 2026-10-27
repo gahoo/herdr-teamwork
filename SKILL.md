@@ -1,341 +1,286 @@
 ---
 name: herdr-teamwork
-description: Multi-agent spec implementation orchestrated via Herdr terminal panes and tabs (Main, Coding, Test, Reviewer matrix, Ops). Use when initiating multi-agent spec implementation, complex code changes, or when the user requests multi-agent teamwork.
+description: Multi-agent spec implementation orchestrated via Herdr terminal panes, tabs, and optional Git Worktrees (Planner, Explorer, Dispatcher, Coding, Test, Reviewer Ensemble, Ops, Debugger, RedTeam, E2E). Use when initiating multi-agent spec implementation, parallel feature development, or complex engineering workflows.
 ---
 
-# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范)
+# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.0)
 
-本技能通过 Herdr 终端工作区管理工具构建多 Agent 物理隔离与协作体系。
-遵循 **OpenSpec 演进标准** 与 **事件驱动免轮询机制 (`herdr agent wait`)**，实现业务规格持久化、职责绝对正交与分形审查网络。
-
----
-
-## 1. 核心目录组织哲学 (Asset vs Infrastructure)
-
-严格遵循“业务数据资产”与“运行工具基建”物理隔离：
-
-| 目录路径 | 属性 | 定位与核心内容 |
-| :--- | :--- | :--- |
-| **`changes/`** (根目录) | **第一类业务数据资产 (First-Class Artifacts)** | **业务演进历史与工程规格**：<br>- `changes/KANBAN.md`：全局大盘总看板；<br>- `changes/<id>/prd.md`：业务诉求、痛点与验收标准；<br>- `changes/<id>/spec.md`：技术契约与接口定义；<br>- `changes/<id>/plan.md`：任务切片与时序依赖；<br>- `changes/<id>/tasks.md`：本项执行看板块；<br>- `changes/<id>/review.md`：审查裁决归档；<br>- `changes/<id>/security-poc.md`：红队漏洞渗透与 PoC 报告（攻防演练产物）。 |
-| **`.agents/`** (隐藏目录) | **Agent 运行时支撑基建 (Infrastructure Surface)** | **多 Agent 调度基座**：<br>- `environment.json`：本地机器已安装的 Harness 画像与各角色动态分配配置；<br>- `session.json`：Herdr 会话状态快照与跨天秒级恢复；<br>- `skills/herdr-teamwork/roles/`：各 Agent 专属契约库。 |
+本技能通过 Herdr 终端工作区管理工具构建**“前店后厂、控制流两级星型、数据流文件直连”**的多 Agent 物理隔离与协作体系。
+遵循 **OpenSpec 活文档标准**、**事件驱动免轮询机制 (`herdr agent prompt --wait`)** 与 **单向异步信箱机制**，实现规划与调度彻底解耦、职责绝对正交与证伪式分形审查。
 
 ---
 
-## 2. 变更集核心文档维护准则 (Living Specs & Review Rules)
+## 1. 核心目录组织哲学与双模式架构 (Asset vs Infrastructure & Dual-Mode)
 
-为防止多轮迭代引起的“文档债务”与“Token 爆炸”，建立统一维护规范：
+系统支持 **常规单线模式 (`standard`)** 与 **Worktree 并行模式 (`worktree`)**，由用户在初始化时自由决定并发度（无硬性上限）。严格遵循“业务数据资产”与“运行工具基建”物理隔离：
 
-| 文档类型 | 唯一维护人 (Owner) | 维护策略 | 历史记录处理与格式范式 |
+```text
+project-root/                        # 【主工作区 (Main Workspace)】：Planner 与 Explorer 驻留基准目录
+├── changes/                         # 第一类业务数据资产 (First-Class Artifacts，纳入版本管理)
+│   ├── KANBAN.md                    # 全局大盘总看板 (Planner 独占维护，含占位池 Inbox 与认知队列)
+│   └── <id>/                        # 具体特性变更集目录 (如 001-user-auth/)
+│       ├── prd.md                   # 业务诉求、痛点与验收标准 (Definition of Done)
+│       ├── spec.md                  # 技术契约、架构边界与接口定义 (Living Truth)
+│       ├── tasks.md                 # 状态信箱头 + 依赖拓扑与执行阶段卡片 (吸收原 plan.md)
+│       ├── review.md                # 审查裁决归档 (含对账单、防御行号举证、双清单与红黄分级)
+│       ├── debug.md                 # 法医排错根因诊断与 Fix Spec 报告 (按需产出)
+│       ├── security-poc.md          # 红队渗透测试与 PoC 验证报告 (按需产出)
+│       └── explore.md               # 复杂历史代码可行性预研简报 (按需产出)
+├── .agents/                         # Agent 运行时支撑基建 (Infrastructure Surface)
+│   ├── environment.json             # 宿主机器 Harness 画像、并发模式与 15 角色动态配置
+│   ├── session.json                 # Herdr 会话状态快照与跨天秒级复活配置
+│   └── skills/herdr-teamwork/roles/ # 15 个正交角色的专属契约库
+└── .worktrees/                      # 【并行执行隔离区】(仅在 worktree 模式启用，纳入 .gitignore)
+    └── <id>/                        # 对应特性的独立 Git Worktree 检出目录 (独立分支 + 独立端口)
+        ├── changes -> ../../changes # 🔗 软链接指向主工作区 changes/，实现契约 0 延迟双向共享
+        ├── .agents -> ../../.agents # 🔗 软链接指向主工作区 .agents/，共享环境与会话配置
+        ├── src/                     # 当前特性隔离修改的业务源码
+        └── tests/                   # 当前特性隔离修改的测试代码
+```
+
+---
+
+## 2. 变更集核心文档维护准则 (Living Specs & Single Owner Rules)
+
+为防止多 Agent 并发写冲突与“文档债务”，严格执行**单文件唯一维护人（Single Owner）**与**状态拉取信箱（Pull-based Mailbox）**规范：
+
+| 文档路径 | 唯一维护人 (Owner) | 维护策略与核心机制 | 格式范式与历史处理 |
 | :--- | :--- | :--- | :--- |
-| **`KANBAN.md`** | **Main Agent (Tech PM)** | **单文件大盘全局内聚 (Single Source of Truth)**：<br>严禁私建 `Inbox.md` 等碎片文档；顶部常设 `## 📥 需求收件与待开展占位池 (Inbox / Backlog)`。 | **需求未启，看板先行与前置占位**：<br>- 凡用户提出新需求或拆解出的远期切片，必须第一时间在顶部占位池登记建档，严禁临阵补录；<br>- **生命周期流转**：`📥 占位池 (Inbox/Backlog)` ➔ `🚀 进行中 (In Progress)` ➔ `✅ 已完成归档 (Done)`；<br>- 需求正式启动排期时平滑移入 In Progress，并创建对应 `changes/<id>/` 目录。 |
-| **`review.md`** | **Lead Reviewer 独占统筹** | **单文件收敛**：严禁各专家私建碎片文件。 | **报纸头条原则 (Newspaper Style) 与披露双清单**：<br>- **顶部法定专区**：<br>  1. 裁决看板 (状态 APPROVED/BLOCKED/CHANGES_REQUESTED、轮次与风险评级 Tier 1/2/3)；<br>  2. 【👥 审查团队构成与专家分流 (Review Team & Experts)】：显式列出本次唤起的专家清单及 pane/职责；若零专家唤起必须注明 Tier 路由依据；<br>  3. 【🛠️ 工具执行与取证清单 (Tool Invocations)】：记录本次实际调用工具名、关键入参、调用目的与返回指标（如 callers、affected processes 等）；<br>  4. 待办摘要与审查意见；<br>- **历史记录处理**：历史轮次向下追加，已解决的历史轮次使用 `<details><summary>` 折叠。 |
-| **`prd.md`** | Main Agent (Tech PM) | **就地演进 (In-place)**：需求调整直接在原文修改。 | 文末附 2~3 行简明 `## 变更备忘录 (Changelog)` 记录妥协原因。 |
-| **`spec.md`** | Main / Arch Reviewer | **活契约原则 (Living Truth)**：反映当前生效接口。 | 永远呈现最新规范，历史交由 Git 追溯，正文不留冗余弃用字段。 |
-| **`tasks.md`** | Main Agent (Tech PM) | **任务状态更新与 Phase 追加**。 | 勾选 `[x]` 与 `[-]`，追加新阶段任务卡片。 |
-| **`security-poc.md`** | Red Team Lead (红队领队) | **攻防演练产物**：演练触发时单次产出，任务结束即销毁。 | 包含 CVSS 定级、漏洞复现步骤、最小化 PoC 验证脚本与蓝队加固建议。<br>- Main Agent：宏观定级并在 `tasks.md` 追加加固切片；<br>- Test Agent：将 PoC 转化为自动化失败用例 (Red Test) 锁定防线。 |
+| **`changes/KANBAN.md`** | **`Planner`** | **全局大盘单文件内聚**：<br>严禁私建碎片化 `Inbox.md`，所有新需求与 [🟡 CONSTRUCTIVE] 演进建议第一时间入池占位。 | **需求未启，看板先行**：<br>- 状态流转：`📥 占位池 (Inbox/Backlog)` ➔ `🚀 进行中 (In Progress)` ➔ `🔔 待人类处理 (Pending Human)` ➔ `✅ 已完成 (Done)`。 |
+| **`changes/<id>/tasks.md`** | **`Planner`** (建档)<br>**`Dispatcher`** (更新状态) | **异步状态信箱 + 任务切片拓扑**：<br>- `Dispatcher` 严禁主动向 `Planner` 发终端消息打断对话，仅通过更新本文件顶部状态头投递信号。 | **顶部法定状态信箱头**：<br>`> 🔔 **STATUS**: RUNNING \| WAITING_HUMAN_DECISION \| WAITING_HUMAN_ACCEPTANCE`<br>`> 🌐 **PORT**: 3001 \| **BRANCH**: feat/001`<br>- 下方为按依赖排序的 Phase 任务勾选卡 (`[ ]` / `[-]` / `[x]`)。 |
+| **`changes/<id>/prd.md`** | **`Planner`** | **就地演进 (In-place)**：需求调整直接在原文修改。 | 文末附 2~3 行简明 `## 变更备忘录 (Changelog)` 记录妥协或调整原因。 |
+| **`changes/<id>/spec.md`** | **`Planner`**<br>(可咨询 `Arch`/`Sec`) | **活契约原则 (Living Truth)**：反映当前生效的最新接口与数据结构。 | 原地更新，不留弃用字段，历史交由 Git 追溯；含明确的验收条件编号 (`AC-1`, `AC-2`)。 |
+| **`changes/<id>/review.md`** | **`Lead Reviewer`**<br>(Phase 1 可由 `Arch`/`Sec` 写入预审意见) | **单文件权威收敛**：严禁各审查专家私建碎片文件。 | **报纸头条原则 + 四大法定专区**：<br>1. 裁决看板与红黄分级摘要 (`APPROVED` / `CHANGES_REQUESTED`)；<br>2. 【👥 审查团队构成与路由依据】；<br>3. 【🛠️ 工具执行与取证清单】；<br>4. 【🛡️ 契约对账单与核心防线行号举证 (Proof of Defense)】。历史轮次使用 `<details>` 折叠。 |
+| **`changes/<id>/debug.md`** | **`Debug Agent`** | **法医溯源与修复契约**：人类验收报障、E2E 崩溃或终审回归失败时产出。 | 最新一轮排障置顶，包含：问题现象、调用链根因定位 (`file:line`)、最小化《Fix Spec》与建议补充的断言。 |
+| **`changes/<id>/security-poc.md`** | **`Red Team Lead`** | **攻防演练产物**：高危特性触发，任务结束即销毁窗格。 | 含 STRIDE 威胁类型、CVSS 定级、复现步骤、最小化可运行 PoC 脚本与加固建议。 |
+| **`changes/<id>/explore.md`** | **`Explorer`** | **深度代码考古简报**：复杂历史代码摸底时按需产出。 | 浓缩现有相关模块拓扑、技术债约束与演进可行性评估，保护 `Planner` 上下文不被海量源码污染。 |
 
 ---
 
-## 3. 角色矩阵与职责正交契约 (Role Contracts)
+## 3. 角色矩阵与职责正交契约 (15 Orthogonal Role Contracts)
 
-| 角色 | 契约文件 | 核心职责 | 绝对红线 (Hard Boundaries) |
-| :--- | :--- | :--- | :--- |
-| **Main Agent** | [`roles/main.md`](roles/main.md) | **Tech PM / 项目总负责人**：需求对齐、任务纵向切片解构、KANBAN 维护、自动调度流水线。 | **严禁亲自编写业务代码、测试用例或执行构建发布**；严禁自我审查；**严禁越权替卡死 Agent 代庖**。 |
-| **Coding Agent** | [`roles/coding.md`](roles/coding.md) | **业务代码实现者**：根据 `spec.md` 进行最小行级代码编写，执行 `tsc --noEmit`。 | **严禁修改任何测试文件 (`tests/`)**；严禁过度设计。 |
-| **Test Agent** | [`roles/test.md`](roles/test.md) | **质量与测试工程师**：深入 `spec.md` 独立设计测试方案，编写失败用例 (Red) 与全量回归。 | **严禁修改任何业务代码 (`src/`)**；严禁为了变绿而弱化断言。 |
-| **Ops Agent** (独立 Tab) | [`roles/ops.md`](roles/ops.md) | **环境守护与发布者**：`npm run build`、后台守护进程、端口探针与受控 Git 发布。 | **严禁修改业务代码与测试**；严禁擅自提前 commit。 |
-| **Debug Agent** (按需唤起) | [`roles/debugger.md`](roles/debugger.md) | **法医式排错专家**：逆向推导根因，输出《Fix Spec 修复规格》。 | **只读权限，绝不直接动手改代码**。 |
-| **Red Team Lead** (按需唤起/即用即销) | [`roles/security-redteam.md`](roles/security-redteam.md) | **红队渗透领队**：威胁建模、逆向代码审计、沙箱动态渗透、产出 `security-poc.md`。 | **严禁向非授权与生产环境攻击**；严禁修改业务代码与测试；任务交付后立即销毁。 |
-| **E2E Specialist** (按需唤起/即用即销) | [`roles/test-e2e.md`](roles/test-e2e.md) | **端到端交互与冒烟测试专家**：双轨制走查（小模型现场冒烟查白屏/Console红字，核心黄金路径脚本化）。 | **严禁为日常切片制造脆弱脚本债务**；严禁改业务代码；即用即销。 |
+全系统划分为**“前店规划层”**、**“后厂调度与执行层”**与**“分形审查层”**三大正交集群：
 
----
-
-## 4. 专业 Reviewer 分形审查矩阵 (The Reviewer Ensemble)
-
-在独立的 `review` Tab 中，实行 **“一主五专 (1 Lead + 5 Specialists)”** 架构：
-
-```
-+-------------------------------------------------------------+
-|                     独立 Tab: "review"                      |
-+------------------------------+------------------------------+
-|                              | 动态专家 Pane (右上)          |
-| Lead Reviewer (左侧，全高)   | 按需切出，完成即退            |
-| 角色: 主审查统筹与门禁裁决   +------------------------------+
-| 模型: gemini-3.8-flash-high  | 动态专家 Pane (右下)          |
-| 状态: 常驻                    | 按需切出，完成即退            |
-+------------------------------+------------------------------+
-```
-
-1. **Lead Reviewer (主审统筹，常驻)** [`roles/reviewer-lead.md`](roles/reviewer-lead.md)：
-   - 统筹全局门禁（方案前置审 + 代码终审），平衡 ROI，将最终裁决单一持久化归档至 `changes/<id>/review.md`。
-2. **Quality Reviewer (代码健康专家，按需)** [`roles/reviewer-quality.md`](roles/reviewer-quality.md)：
-   - **独占消化 `fallow` 与编译器海量原始日志**，过滤噪音，只向 Lead 汇报不超过 15 行的健康指标简报。
-3. **Arch Reviewer (架构与设计专家，按需)** [`roles/reviewer-arch.md`](roles/reviewer-arch.md)：
-   - 审视深模块设计、状态提升合理性、开闭原则与调用链爆炸半径 (`gitnexus_impact`)。
-4. **Perf Reviewer (性能与扩展专家，按需)** [`roles/reviewer-perf.md`](roles/reviewer-perf.md)：
-   - 审视 React 重渲染、闭包陷阱、内存泄漏、SQLite 缓存与全表扫描风险。
-5. **Security Reviewer (蓝队安全专家，按需)** [`roles/reviewer-security.md`](roles/reviewer-security.md)：
-   - 审视 XSS/SQL 注入防御、鉴权守卫、第三方 CVE 供应链风险，并复核红队漏洞修复闭环。
-6. **UX & A11y Reviewer (交互与体验专家，按需)** [`roles/reviewer-ux.md`](roles/reviewer-ux.md)：
-   - 审视键盘流热键冲突、焦点捕获管理与组件无障碍属性。
-
-> **生命周期铁律**：专家由 Lead Reviewer 按需分屏切出；专家汇报完毕后，Lead 执行 `herdr pane close` 关闭专家 Pane，保持界面整洁。
-
-### 4.1 风险分级审查通道 (Risk-Tiered Protocol)
-根据改动路径、行数与爆炸半径（Blast Radius），Lead Reviewer 严格执行 3 级审查分流，拒绝无意义的 Token 浪费：
-
-| 风险等级 | 判定标准 (触发条件) | 执行方式 | 唤起专家数 |
-| :--- | :--- | :--- | :--- |
-| **Tier 1：极速通道**<br>(Fast Track) | 改动 < 20 行；纯文档/文案修正；纯样式微调；单文件配置。 | **零专家唤起**。Lead Reviewer 扫视 Diff 秒级核验并签字。 | **0 位** |
-| **Tier 2：标准通道**<br>(Standard Track) | 改动 20~150 行；影响 2~4 个文件；局部组件/Hook/单一接口。 | **靶向唤起 1~2 位专家**。Quality 跑 `fallow`，并**定向仅切 1 位专属专家**（改热键切 UX，改查询切 Perf）。 | **1 ~ 2 位** |
-| **Tier 3：全面审计**<br>(Full Ensemble) | 涉及防作弊/鉴权；SQLite 核心表/判分引擎；重大重构/全站依赖。 | **多专家并行会审**。并发切出 Quality、Arch、Security 深度审查。 | **3 ~ 5 位** |
-
-### 4.2 审查工具与专家团队透明度硬性约束 (Disclosure Protocol)
-
-1. **🛠️ 工具执行与取证清单 (Tool Invocation Disclosure)**：
-   - Reviewer（包含 Lead 及所有垂直专家）在生成 `review.md` 与阶段汇报时，**必须在醒目位置设立【🛠️ 工具执行与取证清单】**；
-   - 显式列出本次审查实际调用的工具明细（如 `gitnexus_impact`、`gitnexus_context`、`gitnexus_detect_changes`、`view_file`、`grep` / `rg`、`fallow` 等），包含**关键入参**、**调用目的**与**返回指标**（如 callers 计数、affected processes 列表、risk level 等）；
-   - **取证实证铁律**：严禁隐匿工具调用，严禁在未真正调用工具的情况下做口头推测或伪造分析。
-2. **👥 专家 Reviewer 调用透明度 (Expert Roster Disclosure)**：
-   - Lead Reviewer 必须在 `review.md` 头部设立【👥 审查团队构成与专家分流 (Review Team & Experts)】；
-   - 显式汇报本次审查究竟唤起了哪些垂直领域专家（如 Quality / Arch / Security / UX / Perf）及其 pane/职责；
-   - 若本次未唤起任何垂直专家（由 Lead Reviewer 独立完成），**必须显式给出 Tier 路由依据与理由**（如“当前为 Tier 1 极速通道 / Tier 2 纯表现层，依据规则由 Lead 独立闭环，不额外唤起垂直专家”），严禁让用户猜测。
-
----
-
-## 5. 标准多 Agent 协同流水线 (6 步闭环)
-
-```mermaid
-flowchart TD
-    User([用户诉求]) --> Main[1. 立项与拆解: Main Agent 编写 prd/spec/tasks]
-    Main --> RevPhase1[2. 方案审查: Lead 审查 spec.md 并签署 review.md]
-    RevPhase1 --> TestRed[3. 锁定测试: Test Agent 编写失败测试 Red Test]
-    TestRed --> CodeGreen[4. 业务实施: Coding 编码 + fallow --summary 快速自检]
-    CodeGreen --> RevPhase2[5. 代码终审: Quality 执行 fallow --fail-on-regression + Lead 终审]
-    RevPhase2 --> OpsDeploy[6. 受控发布: Ops 构建、部署并刷新 fallow 基线与图谱]
-```
-
-### 5.1 流水线流转与人机交接准则 (Pipeline Progression & Handover Rules)
-
-1. **Main Agent 自动调度中枢职责 (Autonomous Pipeline Orchestration)**：
-   - Main Agent 作为全局 Tech PM 与调度中枢，核心职责是根据需求与流水线时序，**自动、连贯地依次调度各专属 Agent**（`Reviewer ➔ Test ➔ Coding ➔ Reviewer ➔ Ops`），驱动流水线全自动流转；
-   - 只要审查通过且无重大风险（LOW / MEDIUM），**严禁停步等待人类**，必须自动无缝调度下一棒。
-2. **通过审查极简通报 (Token 节约准则)**：
-   - 若审查通过 (`APPROVED`)，Main Agent **严禁全文搬运或大段复述** Reviewer 的审查细节，仅需输出 1~2 行极简状态通报（包含裁决状态、风险评级）；
-   - 提示人类可自行前往 `review.md` 或 `review` Tab 查看工具执行与专家清单详情，避免上下文与 Token 浪费。
-3. **低中风险自动流转 (免非必要人工阻断)**：
-   - 凡审查通过且不涉及重大风险（非 `HIGH`/`CRITICAL`）或关键路线决策，Main Agent 必须直接自主执行下一步，立即调度 Coding Agent 开展业务编码，严禁停下等待人类决策；
-   - **三大法定暂停节点 (Mandatory Human Touchpoints)**：
-     1. **初始需求与方案对齐**：需求理解、实施计划、方案设计确认，**及【📋 拟启用 Agent 团队与调度顺序】的对齐确认**；
-     2. **审查驳回或重大分歧**：审查状态为 `BLOCKED` / `CHANGES_REQUESTED` 或涉及高危风险与关键架构路线决策；
-     3. **最终浏览器验收与发布授权**：人类在真实环境中体验验收与 Git commit 授权。
-4. **动态按需裁剪流水线与调度顺序人机对齐 (Dynamic Pipeline Tailoring & Human Alignment)**：
-   - **严禁无脑拉满全流程**：针对不同复杂度的变更，实行三级动态分流，规划最小必要 Agent 集合，杜绝杀鸡用牛刀：
-     - **微型轻量通道 (Quick-Fix)**（<20 行 / 纯样式 / 纯文案 / 简单配置）：`Main ➔ Coding ➔ Ops`（跳过独立前置方案审查与独立红灯测试，由 Lead 秒级扫视签字或 Main 闭环）；
-     - **标准功能通道 (Standard)**（20~150 行 / 局部新功能 / 单一组件）：`Main ➔ Test (Red) ➔ Coding (Green) ➔ Lead Reviewer (终审) ➔ Ops`；
-     - **全量/高危通道 (Full Rigor)**（核心架构 / 鉴权安全 / 数据迁移）：完整 6 步 + `Red Team` 攻防演练 + Reviewer 垂直专家会审。
-   - **法定对齐门禁（节点 1 必须人机对齐）**：Main Agent 在立项对齐阶段向用户汇报方案时，**必须显式披露【📋 拟启用 Agent 团队与调度顺序】**，包含：评估通道等级、拟启用角色列表、流转时序与裁剪理由；
-   - **必须等待用户明确确认同意该调度方案后，方可启动第一棒调度**。
-
-### 5.2 故障处置铁律：严禁越权代庖与自愈 SOP (Fault Handling & Self-Healing SOP)
-
-1. **绝对红线：严禁越权代庖与大包大揽 (No Overreach on Agent Stalls)**：
-   - 当某个专属 Agent（如 Ops、Coding、Test、Reviewer）发生网络抖动、API 重试、卡死超时或迟迟不响应时，**Main Agent 绝对严禁越权替该 Agent 亲自执行工作**！
-   - 严禁 Main Agent 亲自修改业务代码；
-   - 严禁 Main Agent 亲自编写或修复测试用例；
-   - 严禁 Main Agent 亲自执行 `npm run build`、依赖安装或杀死服务进程重新拉起！
-   - 严守契约隔离与角色职责边界，违规代庖将被视为严重破坏架构隔离。
-2. **标准故障自愈三步法 (Self-Healing SOP)**：
-   - **Step 1：终止与重试 (Abort & Retry)**：在 Herdr 中发送终止按键（`herdr agent send-keys <TARGET> ctrl+c`）复位状态，并使用 `herdr agent get <TARGET>` 确认就绪后重新下发指令；
-   - **Step 2：重启 Agent (Reboot)**：若重试仍无响应，在对应 Pane 中重启该 Agent（退出并重新执行 `herdr agent start`），再行派发；
-   - **Step 3：升级汇报 (Escalate to Human)**：若上述自愈步骤均失败，向人类透明汇报卡点、报错原因与现场日志，寻求人类协助。
-
-### 5.3 红蓝对抗安全攻防演练流水线 (Adversarial Security SOP)
-
-为防范关键业务盲区并锻造极端鲁棒性，针对高风险特性（认证鉴权、敏感数据读写、复杂并发、外部公开 API），实行**“红蓝对抗”**攻防闭环：
-
-```mermaid
-flowchart TD
-    Main[1. 识别高危: Main Agent 编排攻防切片] --> Ops[2. 沙箱隔离: Ops 备份快照与隔离端口]
-    Ops --> Red[3. 动态渗透: Red Team 即用即销<br/>威胁建模 + 白盒分析 + 沙箱渗透 PoC]
-    Red --> Destroy[🧹 销毁 redteam 窗格，释放资源]
-    Red --> PoC[交付 changes/id/security-poc.md]
-    
-    PoC -->|宏观定级 & 编排加固| Main
-    PoC -->|提取 Payload 武器化| Test[4. 锁定防线: Test Agent 编写自动化 Red Test]
-    Test --> Coding[5. 防御加固: Coding Agent 实施防御变绿 Green]
-    Coding --> Rev[6. 蓝队终审: Security Reviewer 复核 PoC 彻底闭环]
-```
-
-1. **触发时机与环境准备 (Trigger & Sandbox Isolation)**：
-   - 当任务切片涉及认证鉴权、越权控制、敏感资金/资产、复杂并发或对外开放端点时，Main Agent 在 `tasks.md` 中追加 `Phase: Security Pentest`；
-   - Ops Agent 在独立的测试端口拉起隔离服务，并执行物理快照备份（`cp data/app.db data/app.db.bak`），确保测试数据与生产环境严格物理隔离。
-2. **红队即用即销渗透 (Ephemeral Red Teaming)**：
-   - Main Agent 临时在独立 Tab 唤起 `security-redteam` 领队；
-   - 红队执行三阶段渗透：① 依据 `spec.md` 威胁建模 ➔ ② 白盒源码污点追踪 ➔ ③ 沙箱动态渗透 Fuzzing 与 Payload 攻击；
-   - 完成后在 `changes/<id>/security-poc.md` 中输出漏洞复现报告与最小化 PoC 验证脚本；
-   - **用后立即销毁**：任务反馈完成后，立即关闭销毁 `redteam` 窗格，严禁常驻，防止历史攻击上下文污染后续任务。
-3. **`security-poc.md` 契约双向消费法则**：
-   - **Main Agent（宏观定级与编排）**：读取报告摘要与 CVSS 定级；若含 `CRITICAL` / `HIGH` 级别漏洞，触发法定节点向人类通报大盘风险；并在 `tasks.md` 追加安全加固切片；
-   - **Test Agent（微观复现与武器化）**：深入通读攻击向量与 Payload，改写为项目标准的自动化失败用例（`tests/security/*.test.ts`），确认在未修复前处于 Red 状态，并将漏洞终身锁定在工程防线中。
-4. **加固与复核闭环 (Hardening & Verification)**：
-   - Coding Agent 依据 `security-poc.md` 指引的根因进行最小化防御加固，使测试变绿（Green）；
-   - Security Reviewer 在代码终审时依据 `security-poc.md` 逐条核验，确认所有漏洞均已闭环并签署裁决。
-
-### 5.4 端到端交互与冒烟走查双轨制 (E2E & Smoke Testing Dual-Track)
-
-端到端测试严格防止“过度脚本化”与“维护负债”，实行**“小模型现场冒烟走查 + 黄金路径原子脚本”**双轨制：
-
-| 维度 | 常态轨：小模型现场冒烟走查 (90% 切片) | 沉淀轨：黄金路径原子脚本 (10% 核心) |
-| :--- | :--- | :--- |
-| **触发场景** | 日常新功能、UI 频繁变动期、PR 提交前冒烟走查。 | 系统全局生命线（用户登录认证、系统初始化、核心交易/结算）。 |
-| **执行载体** | **小模型 (Qwen3.6 / Qwen3.8 / Gemini Flash)** 直接调 `chrome-devtools-mcp`。 | **纯异步 JavaScript 脚本**，通过 `evaluate_script` 原生毫秒级注入。 |
-| **核心关注点** | 聚焦三大灾难性指标：① **页面白屏**；② **Console 红色未捕获错误**；③ **网络 500 崩溃**。 | 严格数据校验与状态流转断言。 |
-| **自愈机制** | 小模型凭借语义理解**就地自愈**（点掉弹窗遮罩、重试等待）。 | 脚本自身包含 `try/catch` 与显式 `setTimeout` 等待。 |
-| **资产策略** | **用完即焚**：输出走查结论与快照证据，**不生成任何脚本代码**，零维护负担。 | **长期固化**：存为 `tests/e2e/golden-path.js`，供未来免 Token 毫秒级回归。 |
-
----
-
-## 6. 异构 Agent 环境探针与动态角色映射机制 (Adaptive Multi-Harness Profiling)
-
-为保障团队协同能自适应不同开发者的本地环境（支持混合接入 `claude-code`、`codex`、`agy`、`pi`、`hermes` 等），建立**“环境探针 ➔ 智能推荐 ➔ 交互对齐 ➔ 动态落盘”**的自适应机制。
-
-### 6.1 启动探针与能力发现 (Probing Phase)
-在项目初始化或启动多 Agent 协同前，Main Agent（或初始化脚本）执行本地探针检测：
-```bash
-# 1. 检测已安装的 Agent CLI
-AVAILABLE_HARNESSES=()
-for tool in claude codex agy pi hermes cursor; do
-  which "$tool" >/dev/null 2>&1 && AVAILABLE_HARNESSES+=("$tool")
-done
-
-# 2. 检测生效的环境变量与 API Key 支持
-# 如 ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY
-```
-
-### 6.2 动态撮合算法与优雅降级策略 (Adaptive Mapping Algorithm)
-撮合引擎根据各角色的【思考深度诉求】与【工程职责特质】，在机器实际支持的工具集中进行贪心匹配：
-
-| 角色类型 (Role) | 核心特质与算力诉求 | 优选 Harness 梯队 (由高到低) | 理想思考深度 | 单一 Agent 降级策略 |
+| 集群 | 角色 ID (全局统一) | 契约文件 | 核心职责 | 绝对红线 (Hard Boundaries) |
 | :--- | :--- | :--- | :--- | :--- |
-| **Main / Arch / Red Team** | 极高维逻辑推理、逆向博弈与架构全局洞察 | `claude-code` ➔ `codex` ➔ `agy` | **High** (深度推理) | 单一 Agent 时开启 **最大思考预算 (High)** |
-| **Coding / Test** | 严格契约遵从、最小修改、精准断言、防过度设计 | `codex` ➔ `claude-code` ➔ `agy` | **Medium** (适度推断) | 单一 Agent 时开启 **中等思考预算 (Medium)** |
-| **Ops / Quality** | 毫秒级极速响应、海量原始日志提炼、确定性发布执行 | `pi` ➔ `hermes` ➔ `agy` ➔ `claude-code` | **None / Low** (确定性极速) | 单一 Agent 时**关闭思考或设为极低 (None/Low)** |
-| **E2E Specialist** | 极速页面走查、语义自愈、排查白屏与 Console 错误 | `agy` ➔ `pi` ➔ `claude-code` | **Low ~ Medium** (极速自愈) | 单一 Agent 时设为 Low/Medium 预算 |
+| **前店<br>规划层** | **`planner`** | [`roles/planner.md`](roles/planner.md) | **产品与架构规划师**：直面人类沟通、维护 `KANBAN.md`、撰写 `prd/spec/tasks`、管理人类认知单工队列、异步点火 `dispatcher`。 | **严禁阻塞等待流水线**；严禁通读海量业务源码（交由 `explorer`）；**严禁越权执行构建、测试、改代码或直接调度后厂工人**。 |
+| **前店<br>规划层** | **`explorer`**<br>(按需/即用即销) | [`roles/explorer.md`](roles/explorer.md) | **代码探路与可行性预研员**：深入复杂历史源码库验证用户想法的现实可行性，输出 `explore.md` 简报。 | **严格只读权限**；严禁修改任何代码或契约；完成预研汇报后立即销毁窗格。 |
+| **后厂<br>执行层** | **`dispatcher`** | [`roles/dispatcher.md`](roles/dispatcher.md) | **无头流水线状态机调度员**：接管单个 Change，阻塞式依次调度后厂角色、替 `reviewer-lead` 物理切屏拉起专家、执行三步自愈 SOP、更新 `tasks.md` 状态信箱。 | **物理蒙眼：严禁读取 `src/` 与 `tests/` 源码**；**全系统仅允许写 `changes/<id>/tasks.md`**；严禁运行 `npm/tsc/vitest/fallow/gitnexus/kill`；严禁反向唤醒 `planner`。 |
+| **后厂<br>执行层** | **`test`** | [`roles/test.md`](roles/test.md) | **测试工程师**：依据 `spec.md`、`debug.md` 或 `security-poc.md` 编写高严谨度失败用例 (Red Test)。 | **严禁修改业务代码 (`src/`)**；严禁为迎合通过而弱化断言或编写同语反复假阳性测试。 |
+| **后厂<br>执行层** | **`coding`** | [`roles/coding.md`](roles/coding.md) | **业务代码实现者**：依据 `spec.md` / `debug.md` 编写业务代码，**运行当前关联单测迭代至 Green**，执行 `tsc --noEmit` 与 `gitnexus detect-changes` 自检。 | **严禁修改任何测试文件 (`tests/`)**；严禁私自安装依赖或启停服务（缺依赖输出 `NEED_OPS` 交由 `dispatcher` 调 `ops`）。 |
+| **后厂<br>执行层** | **`ops`** | [`roles/ops.md`](roles/ops.md) | **环境与发布守护者**：随叫随到安装依赖、**非阻塞**后台守护服务（支持动态端口绑定）、数据库快照、构建打包、受控 Git 提交/Worktree 合入与刷新图谱/基线。 | **严禁在前台阻塞自身交互主线程**（常驻服务必须后台化或分屏）；严禁修改源码与测试；严禁未经授权提前 commit。 |
+| **后厂<br>执行层** | **`debugger`**<br>(按需/即用即销) | [`roles/debugger.md`](roles/debugger.md) | **法医式排错侦探**：在人类验收报障、E2E 崩溃或终审意外回归失败时出马，利用 `gitnexus` 逆向溯源并输出 `changes/<id>/debug.md`。 | **严格只读权限，绝不亲自动手改代码**；严禁倒灌原始调试日志；输出 `debug.md` 后即刻销毁。 |
+| **后厂<br>执行层** | **`security-redteam`**<br>(按需/即用即销) | [`roles/security-redteam.md`](roles/security-redteam.md) | **红队渗透测试领队**：STRIDE 威胁建模、白盒污点追踪、隔离沙箱动态渗透，产出 `security-poc.md`。 | **严禁攻击非授权或生产环境**；严禁修改业务代码与标准测试；交付后立即销毁。 |
+| **后厂<br>执行层** | **`test-e2e`**<br>(按需/即用即销) | [`roles/test-e2e.md`](roles/test-e2e.md) | **端到端与冒烟测试专家**：双轨制走查（90% 小模型现场冒烟查白屏/Console红字/500错误用完即焚；10% 黄金链路原子 JS 脚本化）。 | **严禁为日常易变切片制造脆弱脚本债务**；单动作自愈 ≤3 次、总步数 ≤15 步刚性熔断；用后即销。 |
+| **分形<br>审查层** | **`reviewer-lead`** | [`roles/reviewer-lead.md`](roles/reviewer-lead.md) | **主审统筹与裁决官**：常驻 `review` 左屏；独立执行 **Stage 2A 测试代码快检**；在 **Stage 2B 代码终审**中分诊输出 `SPAWN_EXPERTS` 点将令，回收简报后做 ROI 仲裁并独占签署 `review.md`。 | **严禁亲自运行 `fallow/tsc/vitest/impact/audit`**；严禁亲自敲 `herdr pane` 切屏命令（交由 `dispatcher` 代跑）；严禁无行号举证的无脑 `APPROVED`。 |
+| **分形<br>审查层** | **`reviewer-quality`**<br>(按需/即用即销) | [`roles/reviewer-quality.md`](roles/reviewer-quality.md) | **代码健康与回归过滤官**：独占运行并消化 `fallow`、`tsc --noEmit` 与 **全量测试套件回归 (`vitest run`)** 原始日志，输出 ≤15 行健康简报。 | **严禁向主审倒灌原始终端日志**；严禁伪造 `delta: +0` 或回归通过率；只读权限。 |
+| **分形<br>审查层** | **`reviewer-arch`**<br>(按需/即用即销) | [`roles/reviewer-arch.md`](roles/reviewer-arch.md) | **系统架构专家**：承接前店 **Stage 1 宏观架构会诊** 与后厂 **Stage 2B 架构终审**；审查深模块设计、单向数据流与 `gitnexus impact` 爆炸半径。 | 必须附带【🛠️ 工具执行与取证清单】及防线行号举证；只读权限。 |
+| **分形<br>审查层** | **`reviewer-perf`**<br>(按需/即用即销) | [`roles/reviewer-perf.md`](roles/reviewer-perf.md) | **性能与并发专家**：审查无效重渲染、闭包内存泄漏、N+1 查询、全表扫描与缓存并发安全。 | 必须给出具体瓶颈行号与复杂度推导；只读权限。 |
+| **分形<br>审查层** | **`reviewer-security`**<br>(按需/即用即销) | [`roles/reviewer-security.md`](roles/reviewer-security.md) | **蓝队安全合规专家**：承接前店安全预审与后厂安全终审；审查注入防御、RBAC/ABAC 越权、供应链 CVE (`npm audit`)，复核红队 PoC 闭环。 | 对高危漏洞拥有一票否决权；必须附带防御行号举证；只读权限。 |
+| **分形<br>审查层** | **`reviewer-ux`**<br>(按需/即用即销) | [`roles/reviewer-ux.md`](roles/reviewer-ux.md) | **交互与无障碍专家**：审查快捷键冲突、输入法容错、焦点陷阱 (Focus Trap)、ARIA 无障碍属性与界面文案。 | 只读权限；完成专项汇报后由 `dispatcher` 销毁分屏。 |
 
-### 6.3 交互式对齐与配置固化 (`.agents/environment.json`)
-探针检测完成后，Main Agent 必须主动向人类汇报探测结果，并给出针对当前机器的推荐搭配方案（例如：“`检测到您的环境支持 claude 与 agy。建议由 claude 承接 Main/RedTeam/Arch（High Thinking），agy 承接 Coding/Test/Ops/E2E（Medium/Low），是否确认？`”）。
+---
 
-经人类确认后，将方案持久化至 `.agents/environment.json`：
+## 4. 两阶段审查体系与证伪式分形审查矩阵 (Two-Stage Review & Falsification Protocol)
+
+为彻底根治“带着宏观架构硬伤进入编码”、“Lead Reviewer 偷懒不派活”以及“Reviewer 走过场无脑 Approve（Rubber Stamping）”，建立**两阶段、三拍点将、证伪举证与红黄分级**体系：
+
+### 4.1 两阶段审查全链路划分
+1. **🏛️ 第一阶段：计划期宏观与架构预审 (Stage 1: Macro & Arch Consultation —— 前店按需触发)**
+   - **触发时机**：`Planner` 起草完 `changes/<id>/spec.md` 后，若涉及跨模块架构重构、核心数据模型演进或高危安全机制，在呈交人类最终拍板前触发（常规轻量需求可跳过）。
+   - **执行方式**：**略过 `reviewer-lead`**，由 `Planner` 直接按需切屏咨询 **`reviewer-arch`** 或 **`reviewer-security`**，评估深模块合理性与 `gitnexus impact` 爆炸半径，将宏观修正直接融入 `spec.md` 并记录于 `review.md` 的 Stage 1 章节，完事即销。
+2. **🔬 第二阶段：实施期测试与代码细节/防偏离终审 (Stage 2: Implementation & Drift Gate —— 后厂强制门禁)**
+   - **子阶段 2A：测试代码前置快检 (Red Test Gate)**：在 `Test Agent` 写完 Red Test 后、`Coding Agent` 动手前，由 **`reviewer-lead` 独立执行**（仅在涉及红队 PoC 转化时点名 `reviewer-security` 协审）。严格按《4 维测试审查清单》与“硬编码证伪法”拦截弱断言与契约偏差。
+   - **子阶段 2B：业务实现与防偏离终审 (Code & Drift Gate)**：在 `Coding Agent` 跑通局部单测变绿后触发，实行**“主审开方点将 ➔ Dispatcher 抓药切屏 ➔ 主审合议裁决”**三拍闭环：
+     - **第 1 拍（主审分诊点将）**：`reviewer-lead` 仅运行 `git diff --stat` 与 `gitnexus detect-changes`（**严禁自己跑 `fallow`/`tsc`/`vitest`/`impact`**）。若属 Tier 1（<20 行纯文档/文案/样式微调），直接签字放行；若属 Tier 2/3，立即向终端输出一行点将令并结束回合：
+       `TRIAGE_RESULT: Tier 2 | SPAWN_EXPERTS: [reviewer-quality, reviewer-perf] | FOCUS: "核查 xxx 模块"`
+     - **第 2 拍（Dispatcher 并发代跑）**：`dispatcher` 解析点将令，在 `review` Tab 右侧并发切出对应专家 Pane、传入 `FOCUS` 指令并 `--wait` 等待，收集 ≤15 行专家简报后执行 `herdr pane close` 销毁专家窗格。
+     - **第 3 拍（主审 ROI 仲裁与落盘）**：`dispatcher` 将全部专家简报喂回 `reviewer-lead`，由主审权衡冲突、剔除吹毛求疵，统一写入 `changes/<id>/review.md`。
+
+### 4.2 垂直专家具象触发特征矩阵 (Concrete Routing Heuristics)
+`reviewer-lead` 在第 1 拍分诊时，严格依据以下客观特征组合点名专家：
+
+| 专家角色 ID | 具象触发条件（命中任一特征即必须点名唤起） |
+| :--- | :--- |
+| **`reviewer-quality`** | **凡改动包含任何业务源码 (`src/`) 或测试代码 (`tests/`)**（非纯文档/注释微调），100% 必调！负责跑 `fallow` 增量健康度、`tsc` 与 **全量测试套件回归**。 |
+| **`reviewer-arch`** | 1. `gitnexus detect-changes` 显示风险 `>= MEDIUM` 或波及业务流 `>= 2` 个；<br>2. 触及公共核心层、全局状态管理或数据库 Schema；<br>3. 跨 `>= 3` 个模块目录修改，或怀疑实现偏离了 `spec.md` 既定架构边界。 |
+| **`reviewer-security`** | 1. 触及认证鉴权、权限守卫、加密脱敏、资金/计费/敏感状态流转；<br>2. 含数据库查询、文件 I/O、系统命令执行、富文本渲染或新增外部 API；<br>3. 修改了 `package.json` 依赖，或当前变更集存在 `security-poc.md`。 |
+| **`reviewer-perf`** | 1. 数据层涉及循环内查询、大表查询、索引/缓存策略或并发锁；<br>2. 视图层涉及高频事件监听、定时器、海量节点渲染或复杂闭包。 |
+| **`reviewer-ux`** | 1. 涉及前端交互组件、弹窗模态框、表单校验或布局样式；<br>2. 涉及键盘快捷键流、焦点捕获管理 (Focus Trap)、无障碍属性或用户提示文案。 |
+
+### 4.3 防橡皮图章与防过度挑刺双保险：证伪举证 + 红黄分级
+1. **🛡️ 核心防线证伪核查 (Proof of Defense —— 杜绝无脑 Approve)**：
+   - 任何 Reviewer（含主审与专家）在给予通过前，必须在报告中明确指出本次改动**最脆弱的边界/异常点**，并**贴出源码或测试中实施防御的确切文件名与行号 (`file:line`)**。拿不出确切防御行号，严禁给予 `APPROVED`。
+2. **🚦 审查意见三级定性 (Severity Triage —— 杜绝过度挑刺浪费 Token)**：
+   - 🔴 **`[BLOCKER / 致命阻断]`**：违背 `spec.md` 契约、存在安全/崩溃/泄漏漏洞、测试假阳性、缺少核心边界防御或 `fallow` 退化 (`delta > 0`)。➔ **触发 `CHANGES_REQUESTED` 打回返工（最多允许 2 轮返工，超限挂起交人类裁决）**。
+   - 🟡 **`[CONSTRUCTIVE / 建设性演进建议]`**：当前功能正确且安全，但存在中远期可优化的架构演进或扩展点。➔ **不阻断当前流水线（状态仍为 `APPROVED` 直接放行发布），由 `Planner` 在结项时提取并登记至 `KANBAN.md` 的 Inbox 占位池**！
+   - ⚪ **`[NITPICK / 主观风格吹毛求疵]`**：已被 Linter 覆盖的格式问题或个人命名偏好。➔ **绝对禁止输出**。
+
+---
+
+## 5. 标准协同流水线与前店后厂交互机制 (Pipeline & Mailbox Protocol)
+
+```mermaid
+flowchart TD
+    subgraph 前店规划层 [前店: 主工作区 (永不阻塞)]
+        User([👤 人类开发者]) <-->|讨论需求 / 认知单工队列| Planner[Planner 规划师<br/>维护 KANBAN / prd / spec / tasks]
+        Planner -.->|复杂历史代码摸底| Explorer[Explorer 探路员<br/>输出 explore.md 即用即销]
+        Planner -.->|Stage 1: 宏观架构按需会诊| ArchPre[Arch / Security 专家<br/>把关宏观方向]
+    end
+
+    Planner ==>|1. 人类拍板后异步点火<br/>herdr agent prompt dispatcher (无 --wait)| Dispatcher
+
+    subgraph 后厂执行层 [后厂: Standard 原地 或 .worktrees/id/ 隔离并发]
+        Dispatcher[Dispatcher 状态机调度员<br/>仅读写 tasks.md 状态头] --> OpsDep[按需前置: Ops 安装新增依赖]
+        OpsDep --> TestRed[2. 锁定测试: Test 编写失败用例 Red Test]
+        TestRed --> Rev2A[3. 测试快检 Stage 2A: Lead Reviewer 审测试 4 维清单]
+        Rev2A --> CodeGreen[4. 业务实施: Coding 编码 + 跑局部单测至 Green + detect-changes]
+        CodeGreen --> Rev2B[5. 代码终审 Stage 2B:<br/>Lead 点将 ➔ Dispatcher 并发切专家 ➔ Lead 合议写 review.md]
+        Rev2B -.->|按需冒烟| E2E[E2E Specialist 现场走查]
+        Rev2B & E2E -->|更新 tasks.md 为 WAITING_HUMAN_ACCEPTANCE| Mailbox[(tasks.md 状态信箱)]
+    end
+
+    Mailbox -.->|Planner 空闲时拉取并按 FIFO 呈报人类| User
+    User ==>|人类验收报障| DebugFlow[Planner 异步唤醒 Dispatcher ➔ 调 Debug Agent 产出 debug.md ➔ Test/Coding 修复]
+    User ==>|人类验收通过授权| OpsRelease[Planner 异步唤醒 Dispatcher ➔ 调 Ops 构建/Commit/合并 Worktree/刷新图谱]
+```
+
+### 5.1 动态流水线裁剪通道 (Dynamic Pipeline Tailoring)
+`Planner` 在与人类进行【法定节点 1：需求与方案对齐】时，必须根据改动规模在 `tasks.md` 头部明确标定执行通道：
+- **微型轻量通道 (`Quick-Fix`)**（<20 行 / 纯文案 / 纯样式 / 简单配置）：`Dispatcher ➔ Coding ➔ Lead Reviewer (Tier 1 秒审) ➔ Ops`。
+- **标准功能通道 (`Standard`)**（20~150 行 / 局部新特性 / 常规组件）：`Dispatcher ➔ Test (Red) ➔ Lead Reviewer (Stage 2A 测试快检) ➔ Coding (局部 Green) ➔ Reviewer Ensemble (Stage 2B 终审 + 全量回归) ➔ Ops`。
+- **全量高危通道 (`Full-Rigor`)**（核心架构 / 鉴权计费 / 数据库迁移）：`Stage 1 宏观预审 ➔ Standard 全流程 + Red Team 动态渗透 (security-poc.md) + E2E Specialist 冒烟走查`。
+- **疑难排障通道 (`Bugfix`)**（人类验收报障 / E2E 崩溃 / 终审回归失败）：`Dispatcher ➔ Debug Agent (产出 debug.md) ➔ Test (补写复现 Red Test) ➔ Coding (按 Fix Spec 修复变绿) ➔ Reviewer 终审`。
+
+### 5.2 三大法定人类交互节点与单工认知队列 (Human Touchpoints & Cognitive Queue)
+1. **三大法定人类介入节点**：
+   - **节点 1（立项与通道拍板）**：`Planner` 完成 `prd.md`、`spec.md` 与 `tasks.md`（含推荐通道与端口分配），经人类确认后异步点火 `Dispatcher`。
+   - **节点 2（审查重大阻断或返工超限）**：当审查遭遇 `BLOCKED`、高危架构分歧或 `Coding` 连续 2 轮返工仍未通过时，`Dispatcher` 将 `tasks.md` 标为 `WAITING_HUMAN_DECISION` 并静默挂起。
+   - **节点 3（浏览器真实体验验收与发布授权）**：代码终审通过且服务就绪后，`Dispatcher` 将 `tasks.md` 标为 `WAITING_HUMAN_ACCEPTANCE` 并静默挂起，等待人类体验验收与 Git 提交授权。
+2. **人类认知单工队列 (FIFO Cognitive Funnel)**：
+   - 当后台多个并行 Worktree 同时处于 `WAITING_HUMAN_*` 状态时，`Planner` **每次仅向人类呈报 1 个变更集**的决策或验收清单，末尾仅用 1 行提示队列余量（如 `⏳ 队列中另有 [002, 003] 已就绪静候处理`），杜绝多任务轰炸导致的认知过载。
+
+### 5.3 下游 Agent 故障自愈三步法 (Self-Healing SOP)
+当 `Dispatcher` 执行 `--wait` 发生超时或下游异常时，**严禁越权代庖**，必须按序执行：
+1. **观察与中断重试 (Read, Abort & Retry)**：先执行 `herdr agent read <TARGET> --lines 20` 检查是否仍在正常输出；若确系卡死，执行 `herdr agent send-keys <TARGET> ctrl+c`，确认 `herdr agent get <TARGET>` 恢复就绪后重新派发。
+2. **重启进程 (Reboot Agent)**：若重试无效，执行 `herdr agent stop <TARGET>` 后重新 `herdr agent start <TARGET>` 恢复会话。
+3. **挂起上报 (Escalate via Mailbox)**：若自愈仍失败，`Dispatcher` 将报错现场记录至 `tasks.md` 并设为 `WAITING_HUMAN_DECISION` 挂起。
+
+---
+
+## 6. 异构 Agent 环境探针与全角色映射 (`.agents/environment.json`)
+
+初始化时探测本地已安装的 CLI (`claude`, `codex`, `agy`, `pi`, `hermes`)，根据 15 个角色的算力诉求生成 `.agents/environment.json`（全局与各 `roles/*.md` 梯队严格对齐）：
+
+| 角色集群与 ID | 核心算力诉求 | 优选 Harness 梯队 (由高到低) | 理想思考深度 (Thinking) |
+| :--- | :--- | :--- | :--- |
+| **`planner` / `explorer` / `debugger` / `security-redteam` / `reviewer-lead` / `reviewer-arch` / `reviewer-perf` / `reviewer-security`** | 高维架构抽象、法医式逆向溯源、攻防博弈与证伪裁决 | `claude-code` ➔ `codex` ➔ `agy` | **High** (深度推理) |
+| **`coding` / `test` / `reviewer-ux`** | 严格契约遵从、边界用例推演、精准行级实现与交互审计 | `codex` ➔ `claude-code` ➔ `agy` | **Medium** (适度推断) |
+| **`test-e2e`** | 极速 DOM/A11y 树理解、页面语义自愈与冒烟走查 | `agy` ➔ `claude-code` ➔ `pi` | **Low ~ Medium** (极速自愈) |
+| **`dispatcher` / `ops` / `reviewer-quality`** | 毫秒级状态机流转、确定性构建发布、海量原始日志吞吐过滤 | `pi` ➔ `hermes` ➔ `agy` ➔ `claude-code` | **None / Low** (零延迟确定性) |
+
+### `.agents/environment.json` 标准完整结构
 ```json
 {
-  "updated_at": "2026-10-14T17:00:00Z",
-  "detected_harnesses": ["claude", "agy"],
+  "updated_at": "2026-10-27T00:00:00Z",
+  "mode": "standard",
+  "base_port": 3000,
+  "detected_harnesses": ["claude", "codex", "agy", "pi"],
   "roles": {
-    "main": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
-    "redteam": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
-    "arch": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
-    "coding": { "harness": "agy", "model": "gemini-3.8-flash-medium", "thinking": "medium" },
-    "test": { "harness": "agy", "model": "gemini-3.8-flash-medium", "thinking": "medium" },
-    "quality": { "harness": "agy", "model": "gemini-3.8-flash-low", "thinking": "none" },
-    "ops": { "harness": "agy", "model": "gemini-3.8-flash-low", "thinking": "none" },
-    "e2e": { "harness": "agy", "model": "gemini-3.8-flash-medium", "thinking": "low" }
+    "planner": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
+    "explorer": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
+    "dispatcher": { "harness": "pi", "model": "gemini-3.8-flash-low", "thinking": "none" },
+    "coding": { "harness": "codex", "model": "gpt-5-codex", "thinking": "medium" },
+    "test": { "harness": "codex", "model": "gpt-5-codex", "thinking": "medium" },
+    "ops": { "harness": "pi", "model": "gemini-3.8-flash-low", "thinking": "none" },
+    "debugger": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
+    "security-redteam": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
+    "test-e2e": { "harness": "agy", "model": "gemini-3.8-flash-medium", "thinking": "low" },
+    "reviewer-lead": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
+    "reviewer-quality": { "harness": "pi", "model": "gemini-3.8-flash-low", "thinking": "none" },
+    "reviewer-arch": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
+    "reviewer-perf": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
+    "reviewer-security": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
+    "reviewer-ux": { "harness": "codex", "model": "gpt-5-codex", "thinking": "medium" }
   }
 }
 ```
-后续 Herdr 启动命令与会话复活脚本统一从 `.agents/environment.json` 中读取对应角色的 `--kind` 与启动参数，实现全自动平滑拉起。
 
 ---
 
-## 7. Herdr 免轮询调度与等待技巧 (`herdr agent wait`)
+## 7. Herdr 免轮询调度、分屏范式与会话持久化 (CLI Patterns & Session Persistence)
 
-**严禁使用定时器轮询 (`schedule`) 频繁切屏！** 采用事件驱动等待：
-
+### 7.1 前店异步点火与后厂阻塞调度范式
 ```bash
-# 1. 推荐：原子派发与阻塞等待（官方推荐，5 秒活动门禁防竞态）：
-herdr agent prompt coding "请阅读 changes/002/spec.md 和 changes/002/tasks.md，严格依据契约实施 Phase 1 业务代码" --wait --timeout 120000
+# 1. 【前店 Planner】异步点火 Dispatcher（严禁加 --wait，0 秒释放主窗口）：
+herdr agent prompt dispatcher-001 "请接管 changes/001，严格依据 changes/001/tasks.md 启动 Standard 通道流水线"
 
-# 2. 唤醒后读取结构化输出（使用 --source recent-unwrapped 避免终端软换行折断 Markdown/表格）：
-herdr agent read coding --source recent-unwrapped --lines 50
+# 2. 【后厂 Dispatcher】阻塞式派发执行角色（必须显式指明契约文件路径，并带 --wait）：
+herdr agent prompt test "请阅读 changes/001/spec.md 与 changes/001/tasks.md，编写 Phase 1 失败测试 (Red Test)" --wait --timeout 120000
+herdr agent prompt reviewer-lead "请依据 changes/001/spec.md 对新增测试文件执行 Stage 2A 测试代码快检，并更新 changes/001/review.md" --wait --timeout 90000
+herdr agent prompt coding "请阅读 changes/001/spec.md 与 changes/001/tasks.md，实施业务代码并运行关联单测迭代至 Green" --wait --timeout 180000
 
-# 3. （备用）被动阻塞等待后台/独立 Agent（不带 --until，避免 idle 与 seen 状态错位超时）：
-herdr agent wait ops --timeout 90000
+# 3. 读取输出（使用 --source recent-unwrapped 防止终端软换行截断表格/路径）：
+herdr agent read reviewer-lead --source recent-unwrapped --lines 40
 ```
 
-### 6.1 Prompt 契约文件显式指引铁律 (Explicit Contract Path in Prompt)
+### 7.2 Dispatcher 替 Lead Reviewer 动态切屏并发调度专家范式
+当 `reviewer-lead` 输出 `SPAWN_EXPERTS: [reviewer-quality, reviewer-arch]` 时，由 `dispatcher` 执行以下标准生命周期：
+```bash
+# 1. 在 review Tab 右侧切分新窗格并启动垂直专家（自动读取 environment.json 配置）：
+QUAL_PANE=$(herdr pane split --target review:p1 --direction right -q)
+ARCH_PANE=$(herdr pane split --target "$QUAL_PANE" --direction down -q)
 
-- **核心机制**：各执行 Agent（如 Coding、Test）只要在 Prompt 中看到明确的文件路径，就会主动查阅并通读契约。此机制彻底保障 `changes/` 目录活文档成为贯穿开发与测试全链路的唯一真理源，防止文档沦为摆设。
-- **Main Agent 派发红线**：向执行角色派发任务时，**严禁仅使用模糊的一两句自然语言指令**，必须在 Prompt 中显式指出目标契约文件路径与当前切片，并推荐启用原子 `--wait`：
-  ```bash
-  # 派发至 Coding Agent（原子派发与等待）：
-  herdr agent prompt coding "请阅读 changes/<id>/spec.md 与 changes/<id>/tasks.md，严格依据契约实施 Phase X 业务代码" --wait --timeout 120000
+herdr agent start reviewer-quality --kind $(jq -r '.roles["reviewer-quality"].harness' .agents/environment.json) --pane "$QUAL_PANE" -- --model $(jq -r '.roles["reviewer-quality"].model' .agents/environment.json)
+herdr agent start reviewer-arch --kind $(jq -r '.roles["reviewer-arch"].harness' .agents/environment.json) --pane "$ARCH_PANE" -- --model $(jq -r '.roles["reviewer-arch"].model' .agents/environment.json)
 
-  # 派发至 Test Agent：
-  herdr agent prompt test "请阅读 changes/<id>/spec.md，依据验收标准与数据模型设计编写失败测试 (Red Test)" --wait --timeout 120000
+# 2. 并发派发任务（先连发不带 --wait 的指令实现并行，再依次 wait 回收）：
+herdr agent prompt reviewer-quality "请执行静态健康度扫描与全量测试回归，输出 <=15 行简报"
+herdr agent prompt reviewer-arch "请结合 changes/001/spec.md 审查架构边界与爆炸半径，焦点：$FOCUS"
+herdr agent wait reviewer-quality --timeout 120000
+herdr agent wait reviewer-arch --timeout 120000
 
-  # 派发至 Reviewer：
-  herdr agent prompt reviewer "请依据 changes/<id>/spec.md 执行 Phase 1 方案前置审查，并更新 changes/<id>/review.md" --wait --timeout 120000
+# 3. 提取专家简报后立即关闭专家窗格释放资源：
+QUAL_REPORT=$(herdr agent read reviewer-quality --source recent-unwrapped --lines 30)
+ARCH_REPORT=$(herdr agent read reviewer-arch --source recent-unwrapped --lines 45)
+herdr pane close "$QUAL_PANE"
+herdr pane close "$ARCH_PANE"
+```
 
-  # 派发至 Red Team 进行攻防演练（临时唤起，即用即销）：
-  herdr agent prompt redteam-lead "请依据 changes/<id>/spec.md 对 Phase X 发起攻防渗透测试，并在 changes/<id>/security-poc.md 输出 PoC 报告" --wait --timeout 180000
+### 7.3 Worktree 创建与软链接初始化范式
+在 `worktree` 并行模式下，启动新特性 `<id>` 时的标准目录初始化命令：
+```bash
+mkdir -p .worktrees
+git worktree add -b "feat/<id>" ".worktrees/<id>"
+ln -sfn "../../changes" ".worktrees/<id>/changes"
+ln -sfn "../../.agents" ".worktrees/<id>/.agents"
+```
 
-  # 派发至 E2E Specialist（临时唤起，执行现场冒烟走查）：
-  herdr agent prompt e2e "请对当前前端页面执行端到端冒烟走查，重点排查白屏与 Console 报错" --wait --timeout 120000
-  ```
-- **执行角色首动规约**：Coding Agent 与 Test Agent 收到任务后，**必须将通读指引的契约文件作为首要执行步骤**，严禁在未阅读契约前盲目编写代码或测试。
+### 7.4 会话快照与跨天秒级复活 (`.agents/session.json`)
+```bash
+# 保存快照（统一使用环境变量回退机制，零外部子命令依赖）：
+herdr agent list | jq --arg ws "${HERDR_WORKSPACE_ID:-w1}" --arg proj "$(basename "$PWD")" \
+  '{updated_at: (now | todate), workspace_id: $ws, project: $proj, agents: [.result.agents[] | {key: (.name // "planner"), value: {name: (.name // "planner"), pane_id, tab_id, conversation_id: .agent_session.value, model: (.terminal_title | capture("--model (?<m>[^ ]+)") | .m // "default")}}] | from_entries}' > .agents/session.json
+
+# 按角色复活 Agent（结合 environment.json 与 session.json）：
+ROLE="coding"
+HARNESS=$(jq -r --arg r "$ROLE" '.roles[$r].harness // "codex"' .agents/environment.json)
+MODEL=$(jq -r --arg r "$ROLE" '.roles[$r].model // "default"' .agents/environment.json)
+CONV_ID=$(jq -r --arg r "$ROLE" '.agents[$r].conversation_id' .agents/session.json)
+PANE_ID=$(jq -r --arg r "$ROLE" '.agents[$r].pane_id' .agents/session.json)
+herdr agent start "$ROLE" --kind "$HARNESS" --pane "$PANE_ID" -- --conversation "$CONV_ID" --model "$MODEL"
+```
 
 ---
 
-## 8. 会话持久化与跨天秒级复活 (Session Persistence)
+## 8. 智能代码定位与图谱导航规范 (Code Intelligence & Navigation)
 
-会话状态保存在 `.agents/session.json`：
-- **保存快照（动态注入当前工作区与项目名）**：
-  ```bash
-  herdr agent list | jq --arg ws "${HERDR_WORKSPACE_ID:-w1}" --arg proj "$(basename "$PWD")" '{updated_at: (now | todate), workspace_id: $ws, project: $proj, agents: [.result.agents[] | {key: (.name // "main"), value: {name: (.name // "main"), pane_id, tab_id, conversation_id: .agent_session.value, model: (.terminal_title | capture("--model (?<m>[^ ]+)") | .m // "gemini-3.8-flash-high")}}] | from_entries}' > .agents/session.json
-  ```
-- **复活 Agent（继承 100% 记忆，并动态读取 environment.json 设定的 harness）**：
-  ```bash
-  ROLE_HARNESS=$(jq -r '.roles.coding.harness // "agy"' .agents/environment.json 2>/dev/null || echo "agy")
-  ROLE_MODEL=$(jq -r '.roles.coding.model // "gemini-3.8-flash-medium"' .agents/environment.json 2>/dev/null || echo "gemini-3.8-flash-medium")
-  CODING_ID=$(jq -r '.agents.coding.conversation_id' .agents/session.json)
-  TARGET_PANE=$(jq -r '.agents.coding.pane_id // "${HERDR_WORKSPACE_ID:-w1}:p2"' .agents/session.json)
-  herdr agent start coding --kind "$ROLE_HARNESS" --pane "$TARGET_PANE" -- --conversation "$CODING_ID" --model "$ROLE_MODEL"
-  ```
+遵循**“图谱定位先行、精准切片读取”**原则，严禁盲目全量通读大文件：
 
----
-
-## 9. 智能代码定位与图谱导航规范 (Code Intelligence & Navigation)
-
-为提高定位效率、节省上下文 Token 并避免信息迷航，**强烈建议优先使用 GitNexus 知识图谱进行定位**，避免在毫无线索时盲目对大文件进行全量通读。遵循**“图谱定位先行、精准切片读取”**的最佳实践：
-
-### 8.1 武器库定位矩阵 (何时用什么？)
-
-| 场景与意图 | 首选武器 | 说明与使用范式 | 举例命令 |
+| 场景与意图 | 首选工具 | 说明与使用范式 | 典型调用者 |
 | :--- | :--- | :--- | :--- |
-| **已知函数名/符号**<br>(查确切行号与上下游) | **`gitnexus context`**<br>(狙击镜头) | **确定性极高，零查空风险**。<br>秒级锁定定义文件与起始行号，并返回 360 度调用拓扑（谁调它、它调谁）。 | `gitnexus context --repo <repo> handleAction`<br>`gitnexus context --repo <repo> parseInput` |
-| **探索未知链路/业务概念**<br>(看数据流与拓扑) | **`gitnexus query`**<br>(卫星航拍) | **全局流程拓扑 (Execution Flow)**。<br>用于方案设计、排查跨层链路 Bug（前端 ➔ API ➔ DB），或不知道函数名时顺藤摸瓜。**提示：必须使用简短英文概念词**。 | `gitnexus query --repo <repo> "user auth"`<br>`gitnexus query --repo <repo> "data sync"` |
-| **评估改动爆炸半径**<br>(改动前评估风险) | **`gitnexus impact`**<br>(雷达预警) | **向上追溯直接调用方与受影响流程**。<br>修改核心模块或公共接口前必跑，避免意外击穿下游。 | `gitnexus impact --repo <repo> -d upstream handleAction` |
-| **验证改动范围与影响面**<br>(改动后/终审门禁) | **`gitnexus detect-changes`**<br>(照妖镜门禁) | **将 Git Diff 映射到具体符号与业务流**。<br>验证当前代码改动是否超出预期边界，确认 Risk Level 与 Affected Processes。 | `gitnexus detect-changes --repo <repo>`<br>`gitnexus detect-changes --repo <repo> --scope staged` |
-| **查界面文本或精准报错**<br>(终极正则探针) | **`rg -n` (ripgrep)**<br>(极速探针) | **毫秒级定位 UI 特征字或配置项**。<br>当已知按钮文案（如“确认提交”）、报错字面量或环境变量时，0.005 秒锁定行号。 | `rg -n "确认提交" src/`<br>`rg -n "export function handleAction" src/` |
-
-### 8.2 标准定位流转闭环
-
-```mermaid
-flowchart TD
-    Need[需要查阅/修改代码] --> SymbolKnown{是否已知函数名/符号名？}
-
-    SymbolKnown -->|是: 强烈优先| Ctx[1. gitnexus context <symbol><br/>获取精确 startLine/endLine 与上下游]
-    SymbolKnown -->|否: 仅知业务动作| Qry[2. gitnexus query <english_concept><br/>获取业务执行流拓扑 Execution Flow]
-
-    Ctx & Qry -->|若选词偏差查空| Probe[3. rg -n <特征字> 毫秒级探针兜底]
-
-    Ctx & Qry & Probe --> Slice[外科手术式切片精准读取<br/>指定 StartLine 与 EndLine (50~100行)]
-```
-
-### 8.3 `detect-changes` 三重质量防线 (何时用？给谁用？)
-
-1. **Coding Agent 自检**：编写业务代码完成后、向 Main 汇报前，跑 `gitnexus detect-changes` 自我核验范围；
-2. **Reviewer 终审门禁**：执行 Phase 2 代码终审时，主审/架构专家跑 `gitnexus detect-changes` 检查 `Affected processes` 是否越权；
-3. **Ops Agent 提交防线**：在受控发布执行 `git commit` 前，跑 `gitnexus detect-changes --scope staged` 拦截异常暂存产物。并在发布完成后自动执行 `gitnexus analyze` 刷新图谱。
-
-
+| **已知符号查行号与上下游** | **`gitnexus context`** | 秒级锁定定义文件、起止行号与 360 度调用拓扑。 | `planner`, `explorer`, `coding`, `debugger` |
+| **探索未知业务执行流** | **`gitnexus query`** | 输入简短英文概念词（如 `"user auth"`），获取跨层执行拓扑。 | `planner`, `explorer`, `debugger` |
+| **评估改动爆炸半径** | **`gitnexus impact`** | `gitnexus impact -d upstream <symbol>` 追溯上游调用方与受波及流程。 | `reviewer-arch`, `coding`, `explorer` |
+| **验证改动范围与越界门禁** | **`gitnexus detect-changes`** | 将 Git Diff 映射到符号与业务流，形成**三重防线**（Coding 自检 ➔ Lead Reviewer 终审分诊 ➔ Ops 提交前 staged 拦截）。 | `coding`, `reviewer-lead`, `ops` |
+| **查文案或精准报错字面量** | **`rg -n` (ripgrep)** | 毫秒级锁定 UI 文案、错误码或环境变量所在行号。 | 除 `dispatcher` 外的全体探查/实现角色 |

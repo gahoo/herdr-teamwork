@@ -1,8 +1,8 @@
-# Herdr Teamwork ⚡
+# Herdr Teamwork v2.0 ⚡
 
-> **Multi-Agent Spec Implementation Framework Orchestrated via Herdr**
-> 
-> 基于 **Herdr** 终端工作区管理工具构建的多 Agent 物理隔离与协同流水线工程规范。遵循 **OpenSpec 演进标准** 与 **事件驱动免轮询机制 (`herdr agent prompt --wait`)**，实现业务规格持久化、职责绝对正交与分形审查网络。
+> **Multi-Agent Spec Implementation Framework Orchestrated via Herdr & Git Worktrees**
+>
+> 基于 **Herdr** 终端工作区管理工具构建的**“前店后厂、控制流两级星型、数据流文件直连”**多 Agent 协同工程规范。遵循 **OpenSpec 活文档标准**、**事件驱动免轮询 (`herdr agent prompt --wait`)** 与 **单向异步信箱 (`tasks.md`)**，支持常规单线开发与多 Worktree 高并发并行交付。
 
 [![Skill](https://img.shields.io/badge/Agent_Skill-herdr--teamwork-blue?style=flat-square)](https://skills.sh)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
@@ -11,159 +11,60 @@
 
 ## 🚀 快速安装 (Installation)
 
-本项目遵循标准 [Agent Skills](https://skills.sh) 规范。无需复杂配置，直接通过 `npx skills` 将本技能一键安装至你的工程或全局环境中：
+无需复杂配置，直接通过 `npx skills` 将本技能一键安装至你的工程或全局环境中：
 
-### 1. 安装至当前项目
 ```bash
-# 安装至当前项目（自动检测并配置工程内的 Agent 客户端，如 Claude Code、Cursor、Antigravity 等）
+# 1. 安装至当前项目
 npx skills add <owner>/herdr-teamwork
 
-# 或者指定安装的目标 Agent
-npx skills add <owner>/herdr-teamwork -a claude-code cursor
-```
-
-### 2. 全局安装 (User Scope)
-```bash
-# 全局安装，所有项目均可随时调用
+# 2. 或者全局安装 (User Scope)
 npx skills add <owner>/herdr-teamwork -g
 ```
 
-安装完成后，你的 AI Agent 会自动注册 `herdr-teamwork` 技能，并在需要进行多 Agent 协同拆解、复杂规格落地或团队流水线作业时自动触发。
+---
+
+## 🏛️ 核心架构亮点 (v2.0 Architecture Highlights)
+
+1. **前店后厂彻底解耦（永不阻塞人类主窗口）**：
+   - **前店（规划与探索）**：`Planner` 常驻主窗口与人类高频对话、维护 `changes/KANBAN.md` 与 `prd/spec/tasks.md`；遇到复杂历史代码按需唤起 `Explorer` 深潜摸底；遇到重大架构变更直接按需咨询 `Arch / Security` 专家（Stage 1 预审）。
+   - **后厂（无头流水线）**：方案经人类拍板后，`Planner` 单向异步点火 `Dispatcher`（零阻塞释放主窗口）。`Dispatcher` 被物理剥夺源码读取权（禁读 `src/` 与 `tests/`），专注驱动 `Test ➔ Reviewer ➔ Coding ➔ Ops` 闭环，彻底根治管理型 Agent“越俎代庖抢活干”的顽疾。
+2. **双模式自适应（`standard` 单线 vs `worktree` 并发）**：
+   - 支持单目录极简推进，也支持基于 `.worktrees/<id>/` + 软链接共享 `changes/` 的多特性并行开发。
+   - **单向信箱与认知排队（Cognitive Funnel）**：后台 `Dispatcher` 遇到卡点或完工待验收时，仅更新各自 `changes/<id>/tasks.md` 的状态头并静默挂起，绝不反向打断正在对话的 `Planner`；`Planner` 在空闲时按 FIFO 单工队列逐个向人类呈报，保护人类心流。
+3. **三拍点将与证伪式审查（杜绝橡皮图章与过度挑刺）**：
+   - **三拍点将**：`Lead Reviewer` 分诊输出一行 `SPAWN_EXPERTS` 点将令 ➔ `Dispatcher` 代为物理切屏并发拉起专家并回收简报 ➔ `Lead Reviewer` 进行 ROI 仲裁。
+   - **行号级证伪举证 (Proof of Defense)**：要求所有 Reviewer 必须贴出源码/测试中防御脆弱边界的确切行号 (`file:line`) 方可放行。
+   - **红黄分级分流**：严格区分 🔴 `BLOCKER`（打回返工，限 2 轮）与 🟡 `CONSTRUCTIVE`（当前直接放行，由 `Planner` 提取沉淀至 `KANBAN.md` Inbox 占位池），禁绝 ⚪ `NITPICK`。
 
 ---
 
-## 🏛️ 核心组织哲学 (Asset vs Infrastructure)
-
-严格贯彻**“第一类业务数据资产 (First-Class Artifacts)”**与**“运行工具基建 (Infrastructure Surface)”**物理隔离原则：
+## 📂 目录结构规范
 
 ```text
-├── changes/                     # 第一类业务数据资产（项目根目录，纳入版本管理）
-│   ├── KANBAN.md                # 全局大盘总看板（含需求收件与待开展占位池 Inbox / Backlog，需求未启看板先行）
-│   └── <id>/                    # 具体特性变更集
-│       ├── prd.md               # 业务诉求、痛点与验收标准（Definition of Done）
-│       ├── spec.md              # 技术契约与接口定义（Living Truth）
-│       ├── plan.md              # 任务切片与时序依赖拓扑
-│       ├── tasks.md             # 本项执行看板与 Phase 卡片
-│       ├── review.md            # 审查裁决归档（报纸头条原则 + 审查团队与工具取证双清单）
-│       └── security-poc.md      # 红队渗透测试与漏洞复现报告（攻防演练产物）
-└── .agents/                     # Agent 运行时基建（按需忽略或持久化）
-    ├── environment.json         # 本地机器 Harness 探针画像与动态角色分配配置
-    ├── session.json             # Herdr 会话状态快照与跨天秒级复活
-    └── skills/herdr-teamwork/   # 本技能与角色契约库
+project-root/
+├── changes/                         # 第一类业务数据资产（纳入 Git 版本管理）
+│   ├── KANBAN.md                    # 全局大盘总看板（含 Inbox 占位池与待人类处理队列）
+│   └── <id>/                        # 特性变更集目录
+│       ├── prd.md                   # 业务诉求与验收标准
+│       ├── spec.md                  # 技术契约与接口定义 (Living Truth)
+│       ├── tasks.md                 # 状态信箱头 + 阶段任务卡片 (含通道类型与端口分配)
+│       ├── review.md                # 审查裁决归档 (含对账单、防御行号举证与双清单)
+│       ├── debug.md                 # 法医排错根因诊断与 Fix Spec (按需产出)
+│       ├── security-poc.md          # 红队渗透测试与 PoC 报告 (按需产出)
+│       └── explore.md               # 复杂源码可行性预研简报 (按需产出)
+├── .agents/                         # Agent 运行时支撑基建
+│   ├── environment.json             # 宿主机器 Harness 画像与 15 角色配置
+│   ├── session.json                 # Herdr 会话状态快照
+│   └── skills/herdr-teamwork/       # 本技能与 15 角色契约库
+└── .worktrees/                      # Worktree 并行执行隔离区 (按需启用，软链接共享 changes/ 与 .agents/)
 ```
-
----
-
-## 🔄 标准 6 步协同流水线 (The 6-Stage Pipeline)
-
-各角色分工严密、职责绝对正交，形成从需求到部署的完整工程闭环：
-
-```mermaid
-flowchart TD
-    User([👤 用户诉求]) --> Main[1. 立项与拆解: Main Agent 编写 prd / spec / tasks]
-    Main --> RevPhase1[2. 方案前置审查: Lead Reviewer 审查 spec.md 并签署 review.md]
-    RevPhase1 --> TestRed[3. 锁定测试: Test Agent 编写失败用例 Red Test]
-    TestRed --> CodeGreen[4. 业务实施: Coding Agent 最小化实现 + 类型自检]
-    CodeGreen --> RevPhase2[5. 代码终审: Quality 跑静态健康 + Lead 终审签字]
-    RevPhase2 --> OpsDeploy[6. 受控发布: Ops Agent 构建验证、SemVer 自增与受控 Commit]
-```
-
-> **⚡ 流转效率、动态按需裁剪与自愈法则**：
-> - **需求未启，看板先行**：全局大盘 `changes/KANBAN.md` 顶部设立统一收件与待开展占位池 (Inbox / Backlog)，所有新需求意向第一时间入池占位，严禁私建碎片化 `Inbox.md`，杜绝临阵补录；
-> - **动态按需裁剪与人机对齐**：Main Agent 绝不机械拉满全流程；根据复杂度动态规划“最小必要 Agent 集合”（微型通道：`Main ➔ Coding ➔ Ops`；标准通道：`Main ➔ Test ➔ Coding ➔ Reviewer ➔ Ops`；全量通道：全流程 + 红队攻防），并在第 1 法定节点与人类明确对齐角色清单与调度时序后启动；
-> - **自动调度中枢**：Main Agent 依序自动调度各专属 Agent 流水线，审查通过且无重大风险时全自动无缝流转；
-> - **通过审查极简通报 (Token 节约)**：审查通过时，Main Agent 仅向人类通报 1~2 行状态与风险等级，提示前往 `review.md` 查看详情，严禁大段全文搬运；
-> - **低中风险自动流转**：低中风险且通过审查时，Main Agent 自主调度下游实施，严禁无故暂停；仅在“需求与角色时序对齐”、“审查驳回/重大决策分歧”、“最终浏览器验收与发布授权”三大法定节点暂停等待人类；
-> - **故障处置铁律与自愈 SOP**：下游 Agent 卡死超时时，**严禁 Main Agent 越权代庖写代码/测用例/搞构建**；必须执行三步自愈（终止重试 ➔ 重启 Agent ➔ 升级汇报）。
-
----
-
-## 🎭 角色矩阵与职责契约 (Role Contracts)
-
-各 Agent 在物理终端上通过独立的 Pane / Tab 隔离运行，遵循严格的红线契约：
-
-| 角色 | 契约文件 | 核心职责 | 绝对红线 (Hard Boundaries) |
-| :--- | :--- | :--- | :--- |
-| **Main Agent** | [`roles/main.md`](roles/main.md) | **Tech PM / 总负责人**：需求对齐、任务纵向切片解构、看板维护、**自动调度流水线**。 | **严禁亲自编写业务代码与测试**；严禁自我审查；通过时严禁大段复述；**严禁越权代庖替卡死 Agent 执行工作**。 |
-| **Coding Agent** | [`roles/coding.md`](roles/coding.md) | **业务代码实现者**：遵循 `spec.md` 进行最小行级代码变更，确保类型安全。 | **严禁修改任何测试文件 (`tests/`)**；严禁过度设计。 |
-| **Test Agent** | [`roles/test.md`](roles/test.md) | **质量与测试工程师**：设计高严谨度用例，负责 Red Test 锁定与全量回归。 | **严禁修改任何业务代码 (`src/`)**；严禁为了变绿弱化断言。 |
-| **Ops Agent** | [`roles/ops.md`](roles/ops.md) | **环境与发布守护者**：后台守护服务、构建打包、数据库快照与受控 Git 提交。 | **严禁修改业务代码与测试**；严禁擅自提前 commit。 |
-| **Debug Agent** | [`roles/debugger.md`](roles/debugger.md) | **法医式排错专家**：穿透表象溯源根因，输出最小化《Fix Spec 修复规格》。 | **拥有严格只读权限，绝不直接动手改代码**。 |
-| **Red Team Lead** | [`roles/security-redteam.md`](roles/security-redteam.md) | **红队渗透测试领队**：威胁建模、逆向代码审计、沙箱动态渗透并产出 `security-poc.md`。 | **严禁向非授权与生产环境攻击**；严禁改业务代码；**即用即销不常驻**。 |
-| **E2E Specialist** | [`roles/test-e2e.md`](roles/test-e2e.md) | **端到端交互与冒烟测试专家**：双轨制走查（小模型现场冒烟查白屏/Console红字，黄金路径脚本化）。 | **严禁制造脆弱测试脚本债务**；严禁改业务代码；**即用即销不常驻**。 |
-
-### 🔬 分形审查矩阵 (The Reviewer Ensemble)
-在独立的 `review` 工作区中，实行 **“1 主审统筹 + 5 领域专家”** 架构，严格贯彻【👥 审查团队披露】与【🛠️ 工具执行与取证清单】：
-- **Lead Reviewer** ([`roles/reviewer-lead.md`](roles/reviewer-lead.md))：常驻主审，执行 3 级风险分流（Tier 1 极速 / Tier 2 标准 / Tier 3 全面审计），独占维护 `changes/<id>/review.md` 头部双清单（披露专家构成/Tier 理由与工具指标）。
-- **Quality Reviewer** ([`roles/reviewer-quality.md`](roles/reviewer-quality.md))：独占消化静态工具原始海量日志，输出 ≤15 行健康简报。
-- **Arch Reviewer** ([`roles/reviewer-arch.md`](roles/reviewer-arch.md))：审查深模块设计、状态提升与调用拓扑爆炸半径 (`gitnexus impact`)。
-- **Perf Reviewer** ([`roles/reviewer-perf.md`](roles/reviewer-perf.md))：审查重渲染、内存泄漏、慢查询与缓存陷阱。
-- **Security Reviewer** ([`roles/reviewer-security.md`](roles/reviewer-security.md))：蓝队安全防线，审查鉴权漏洞、注入隐患与供应链安全，并终审复核红队 PoC 修复闭环。
-- **UX & A11y Reviewer** ([`roles/reviewer-ux.md`](roles/reviewer-ux.md))：审查键盘快捷键流、焦点捕获与无障碍合规。
-
----
-
-## ⚡ Herdr 免轮询调度指引 (`herdr agent prompt --wait`)
-
-本体系通过事件驱动实现终端协作，推荐使用原生原子派发与等待，**严禁使用高消耗的定时器轮询 (`schedule`) 频繁切屏**：
-
-```bash
-# 1. 推荐：原子派发任务至 Coding Agent（显式指引契约文件路径并要求阅读，内置 5 秒观察门禁自动等待完成）：
-herdr agent prompt coding "请阅读 changes/001/spec.md 和 tasks.md，严格依据契约实施代码" --wait --timeout 120000
-
-# 2. 备用：两步式调用（先派发，后被动等待回到 settled 状态，无需 --until done 避免误判超时）：
-herdr agent prompt ops "执行构建验证 npm run build"
-herdr agent wait ops --timeout 90000
-
-# 3. 唤醒后按需抓取精准输出（推荐 --source recent-unwrapped 保持 Markdown 表格与代码块排版完整）：
-herdr agent read coding --lines 50 --source recent-unwrapped
-```
-
----
-
-## 💾 会话持久化与跨天秒级复活 (Session Persistence)
-
-会话状态保存在 `.agents/session.json` 中，随时保存、随时恢复：
-
-- **保存会话快照**（动态提取工作区 ID 与项目名）：
-  ```bash
-  WS=$(herdr status | jq -r '.workspace_id // "default"')
-  PROJ=$(basename "$PWD")
-  herdr agent list | jq --arg ws "$WS" --arg proj "$PROJ" '{updated_at: (now | todate), workspace_id: $ws, project: $proj, agents: [.result.agents[] | {key: (.name // "main"), value: {name: (.name // "main"), pane_id, tab_id, conversation_id: .agent_session.value, model: (.terminal_title | capture("--model (?<m>[^ ]+)") | .m // "gemini-3.8-flash-high")}}] | from_entries}' > .agents/session.json
-  ```
-
-- **秒级复活 Agent（继承 100% 会话记忆，并动态读取 environment.json 设定的 harness）**：
-  ```bash
-  ROLE_HARNESS=$(jq -r '.roles.coding.harness // "agy"' .agents/environment.json 2>/dev/null || echo "agy")
-  ROLE_MODEL=$(jq -r '.roles.coding.model // "gemini-3.8-flash-medium"' .agents/environment.json 2>/dev/null || echo "gemini-3.8-flash-medium")
-  CODING_ID=$(jq -r '.agents.coding.conversation_id' .agents/session.json)
-  TARGET_PANE=$(jq -r '.agents.coding.pane_id' .agents/session.json)
-  herdr agent start coding --kind "$ROLE_HARNESS" --pane "$TARGET_PANE" -- --conversation "$CODING_ID" --model "$ROLE_MODEL"
-  ```
-
----
-
-## 🧩 异构 Agent 算力自适应与思考深度 (Adaptive Multi-Harness Profiling)
-
-流水线支持混合接入 `claude-code`、`codex`、`agy`、`pi`、`hermes` 等异构 Agent，并通过**“环境探针 ➔ 智能推荐 ➔ 交互对齐 ➔ 动态落盘”**机制自适应开发者的宿主环境：
-
-- **分层思考等级 (Thinking Budget)**：
-  - **High (深度推理 / 逆向推演)**：用于 Main Agent、Red Team Lead、Arch Reviewer；
-  - **Medium (适度推断 / 契约落地)**：用于 Coding Agent、Test Agent，防过度设计；
-  - **None / Low (极速吞吐 / 确定性)**：用于 Ops Agent、Quality Reviewer，毫秒级响应。
-- **环境探针与优雅降级**：
-  - 自动检测本地已安装的 Agent CLI；
-  - 若系统同时支持 `claude` 与 `codex`，自动组合最佳工种阵容；
-  - 若系统仅安装单一 Agent，**优雅降级为同构分层**，通过动态调节该 Agent 内部的 Thinking 预算与模型等级适配各角色。
-  - 用户确认后的方案持久化至 `.agents/environment.json`，驱动 Herdr 自动平滑拉起。
 
 ---
 
 ## 📖 规范全览
 
-详细的工程指引与智能代码图谱定位规范请查阅：
-- [SKILL.md](SKILL.md)：完整技能规范、命令矩阵与三层质量防线。
-- [roles/](roles/)：各 Agent 专属契约库。
+- [SKILL.md](SKILL.md)：完整工程规范、两阶段审查协议、命令矩阵与图谱导航指南。
+- [roles/](roles/)：15 个正交角色的专属契约库（`planner`, `explorer`, `dispatcher`, `coding`, `test`, `ops`, `debugger`, `security-redteam`, `test-e2e`, `reviewer-lead`, `reviewer-quality`, `reviewer-arch`, `reviewer-perf`, `reviewer-security`, `reviewer-ux`）。
 
 ---
 
