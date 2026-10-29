@@ -25,11 +25,11 @@
 
 ## 2. 绝对红线 (Hard Boundaries)
 - **只读权限**（Stage 1 预审时仅按需写入 `review.md` 预审节或直接终端汇报，绝不改源码）。
-- **严禁无图谱实证的主观臆断**：未执行 `gitnexus impact/context` 严禁空谈爆炸半径；输出后即刻结束回合待销毁。
+- **严禁无图谱实证的主观臆断**：未执行 `gitnexus impact/context` 严禁空谈爆炸半径；输出后结束回合。`standard` 模式下保持窗格常驻，待当前 Feature 结项（`DONE`）后由 `Dispatcher` 统一发送 `/compact` 浓缩沉淀项目架构演进记忆。
 
 ---
 
 ## 3. 运行时推荐规范 (Runtime Spec)
-- **驻留位置**：临时分屏（前店或 `review` Tab 右侧，即用即销）。
+- **驻留位置**：`review` Tab 右侧分屏（`standard` 模式常驻复用并随 Feature 结项 `/compact`；`worktree` 模式随工作区销毁）。
 - **理想 Harness 梯队**：`claude-code` > `codex` > `agy`
 - **理想思考深度**：**High (架构洞察与拓扑推演)**。

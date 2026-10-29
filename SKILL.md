@@ -55,7 +55,7 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 | **`changes/<id>/pipeline.jsonl`** | **`Planner`** (首行 `PLAN`)<br>**`Dispatcher`** (独占续写) | **宏观编排配方 + 运行状态事件流 (Event Sourcing)**：<br>合一承载动态定制的 Agent 工序序列与实时执行轨迹；下游工人严禁写此文件。 | **Append-Only 单行自包含 JSON**：<br>- 首行 `event:"PLAN"` 记模式、Workspace、端口与定制 `pipeline` 数组；<br>- 推进追加 `event:"STEP"`；中途变阵追加 `event:"REPLAN"`；<br>- 随特性结项一并归档为“黑匣子飞行记录仪”。 |
 | **`changes/<id>/review.md`** | **`Lead Reviewer`** | **单文件权威收敛**：严禁各审查专家私建碎片文件。 | **报纸头条原则 + 四大法定专区**：<br>1. 裁决看板与红黄分级 (`APPROVED` / `CHANGES_REQUESTED`)；<br>2. 审查团队与路由依据；<br>3. 工具执行取证清单；<br>4. 契约对账单与防线行号举证 (`Proof of Defense`)。历史轮次用 `<details>` 折叠。 |
 | **`changes/<id>/debug.md`** | **`Debug Agent`** | **法医溯源与修复契约**：窗口 2 验收报障、`e2e` 崩溃或终审回归失败时产出。 | 最新一轮置顶：含异常现象、根因定位 (`file:line`)、供 `coding` 执行的《Fix Spec》与供 `tdd` 执行的必补断言。 |
-| **`changes/<id>/security-poc.md`** | **`Red Team Lead`** | **攻防演练产物**：高危特性触发，任务结束即销毁窗格。 | 含 STRIDE 威胁类型、CVSS 定级、复现步骤、可直接转化的最小化 PoC 脚本与加固建议。 |
+| **`changes/<id>/security-poc.md`** | **`Red Team Lead`** | **攻防演练产物**：高危特性触发，隔离沙箱动态渗透。 | 含 STRIDE 威胁类型、CVSS 定级、复现步骤、可直接转化的最小化 PoC 脚本与加固建议。 |
 | **`changes/<id>/explore.md`** | **`Explorer`** | **深度代码考古简报**：复杂历史代码摸底时按需产出。 | 浓缩现有模块拓扑、技术债约束与演进可行性评估，保护 `Planner` 上下文不被海量源码污染。 |
 
 ---
@@ -66,21 +66,21 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 
 | 集群 | 角色 ID (全局统一) | 契约文件 | 核心职责 | 绝对红线 (Hard Boundaries) |
 | :--- | :--- | :--- | :--- | :--- |
-| **前店<br>规划层** | **`planner`** | [`roles/planner.md`](roles/planner.md) | **产品与架构规划师（窗口 1）**：直面人类聊需求、独占维护 `KANBAN.md`、撰写 `prd/spec/tasks`、动态定制工序并创建 `pipeline.jsonl` 首行 `PLAN`。 | **严禁介入后厂日常验收排障**；严禁带 `--wait` 阻塞；严禁通读海量源码；严禁改代码或直接调后厂工人。 |
-| **前店<br>规划层** | **`explorer`**<br>(按需/即用即销) | [`roles/explorer.md`](roles/explorer.md) | **代码探路与可行性预研员**：深入复杂历史源码验证用户想法的现实可行性，输出 `explore.md` 简报。 | **严格只读权限**；严禁倒灌大段原始源码；完成预研汇报后立即销毁窗格。 |
-| **后厂<br>执行层** | **`dispatcher`** | [`roles/dispatcher.md`](roles/dispatcher.md) | **交付总控与状态机调度员（窗口 2 总控 / `ws-<id>` 执行机）**：后台 `tail -f` 监听多任务、内部 `--wait` 阻塞调度、独占续写 `pipeline.jsonl`、替主审切屏拉专家、在窗口 2 就地闭环 90% 验收报障与发布授权。 | **物理蒙眼：禁读 `src/` 与 `tests/`**；**仅允许追加写入 `pipeline.jsonl`**（对所有 `.md` 只读）；严禁执行建场/构建/装包/Git 写命令（全归 `ops`）。 |
+| **前店<br>规划层** | **`planner`** | [`roles/planner.md`](roles/planner.md) | **产品与架构规划师（窗口 1）**：直面人类聊需求、独占维护 `KANBAN.md`、撰写 `prd/spec/tasks`、动态定制工序并创建 `pipeline.jsonl` 首行 `PLAN`（含上下文策略 `ctx`）。 | **严禁介入后厂日常验收排障**；严禁未经人类确认擅自压缩或清空上下文；严禁通读海量源码；严禁改代码或直接调后厂工人。 |
+| **前店<br>规划层** | **`explorer`**<br>(项目记忆沉淀) | [`roles/explorer.md`](roles/explorer.md) | **代码探路与可行性预研员**：深入复杂历史源码验证用户想法的现实可行性，输出 `explore.md` 简报并沉淀项目演进心智模型。 | **严格只读权限**；严禁倒灌大段原始源码；`standard` 模式常驻复用（Feature 结项后 `/compact`），`worktree` 模式随工作区销毁。 |
+| **后厂<br>执行层** | **`dispatcher`** | [`roles/dispatcher.md`](roles/dispatcher.md) | **交付总控与状态机调度员（窗口 2 总控 / `ws-<id>` 执行机）**：后台 `tail -f` 监听多任务、内部 `--wait` 阻塞调度、独占续写 `pipeline.jsonl`、替主审拉起/复用专家、在 Feature 结项后统一打理各角色上下文。 | **物理蒙眼：禁读 `src/` 与 `tests/`**；**仅允许追加写入 `pipeline.jsonl`**（对所有 `.md` 只读）；严禁执行建场/构建/装包/Git 写命令（全归 `ops`）。 |
 | **后厂<br>执行层** | **`tdd`** | [`roles/tdd.md`](roles/tdd.md) | **测试驱动开发工程师**：在业务编码前依据 `spec.md`、`tasks.md`、`debug.md` 或 `security-poc.md` 编写高严谨度失败用例 (Red Test) 并勾选 `tasks.md`。 | **严禁修改业务代码 (`src/`) 或 `pipeline.jsonl`**；严禁为迎合变绿而弱化断言或编写同语反复假阳性测试。 |
 | **后厂<br>执行层** | **`coding`** | [`roles/coding.md`](roles/coding.md) | **业务代码实现者**：依据 `spec.md` / `tasks.md` / `debug.md` 编写业务代码并勾选 `tasks.md`，**运行关联单测迭代至 Green**，执行 `tsc --noEmit` 与 `gitnexus detect-changes`。 | **严禁修改任何测试文件 (`tests/`) 或 `pipeline.jsonl`**；严禁私自装包或启停服务（缺包输出 `NEED_OPS`）。 |
 | **后厂<br>执行层** | **`ops`** | [`roles/ops.md`](roles/ops.md) | **环境、Worktree 与发布守护者**：全权负责 Worktree 物理建场与销毁、`node_modules` 写时解链装包、**非阻塞**后台守护服务、数据库快照、构建与受控 Git 发布。 | **严禁前台阻塞自身终端主线程**；**严禁在软链上直接装包污染主目录**；严禁改源码/测试/看板；严禁未授权提前 commit。 |
-| **后厂<br>执行层** | **`debugger`**<br>(按需/即用即销) | [`roles/debugger.md`](roles/debugger.md) | **法医式排错侦探**：窗口 2 验收报障、`e2e` 崩溃或终审回归失败时出马，利用 `gitnexus` 逆向溯源并输出 `changes/<id>/debug.md`。 | **严格只读权限，绝不亲自动手改代码**；严禁倒灌原始调试日志；输出 `debug.md` 后即刻销毁。 |
-| **后厂<br>执行层** | **`security-redteam`**<br>(按需/即用即销) | [`roles/security-redteam.md`](roles/security-redteam.md) | **红队渗透测试领队**：STRIDE 威胁建模、白盒污点追踪、隔离沙箱动态渗透，产出 `security-poc.md`。 | **严禁攻击非授权或生产环境**；严禁修改业务代码与标准测试；交付后立即销毁。 |
-| **后厂<br>执行层** | **`e2e`**<br>(按需/即用即销) | [`roles/e2e.md`](roles/e2e.md) | **端到端与冒烟测试专家**：双轨制走查（90% 小模型现场冒烟查白屏/Console红字/500错误用完即焚；10% 黄金链路原子 JS 脚本化）。 | **严禁为日常易变切片制造脆弱脚本债务**；单动作自愈 ≤3 次、总步数 ≤15 步刚性熔断；用后即销。 |
+| **后厂<br>执行层** | **`debugger`**<br>(项目记忆沉淀) | [`roles/debugger.md`](roles/debugger.md) | **法医式排错侦探**：窗口 2 验收报障、`e2e` 崩溃或终审回归失败时出马，利用 `gitnexus` 逆向溯源并输出 `changes/<id>/debug.md`。 | **严格只读权限，绝不亲自动手改代码**；严禁倒灌原始调试日志；`standard` 模式常驻并在 Feature 结项后 `/compact` 沉淀项目记忆。 |
+| **后厂<br>执行层** | **`security-redteam`**<br>(项目记忆沉淀) | [`roles/security-redteam.md`](roles/security-redteam.md) | **红队渗透测试领队**：STRIDE 威胁建模、白盒污点追踪、隔离沙箱动态渗透，产出 `security-poc.md`。 | **严禁攻击非授权或生产环境**；严禁修改业务代码与标准测试；`standard` 模式常驻并在 Feature 结项后 `/compact` 沉淀攻击面记忆。 |
+| **后厂<br>执行层** | **`e2e`**<br>(用完清空) | [`roles/e2e.md`](roles/e2e.md) | **端到端与冒烟测试专家**：双轨制走查（90% 小模型现场冒烟查白屏/Console红字/500错误；10% 黄金链路原子 JS 脚本化）。 | **严禁为日常易变切片制造脆弱脚本债务**；单动作自愈 ≤3 次、总步数 ≤15 步刚性熔断；Feature 结项后直接 `/clear` 清空过期 DOM 快照。 |
 | **分形<br>审查层** | **`reviewer-lead`** | [`roles/reviewer-lead.md`](roles/reviewer-lead.md) | **主审统筹与裁决官**：独立执行 **Stage 2A 测试快检**；在 **Stage 2B 终审**分诊输出 `SPAWN_EXPERTS` 点将令，回收简报后做 ROI 仲裁并独占签署 `review.md`。 | **严禁亲自运行 `fallow/tsc/vitest/impact/audit`**；严禁亲自敲 `herdr pane` 切屏命令；严禁无行号举证的无脑 `APPROVED`。 |
-| **分形<br>审查层** | **`reviewer-quality`**<br>(按需/即用即销) | [`roles/reviewer-quality.md`](roles/reviewer-quality.md) | **代码健康与回归过滤官**：独占运行并消化 `fallow`、`tsc --noEmit` 与 **全量测试套件回归 (`vitest run`)** 原始日志，输出 ≤15 行健康简报。 | **严禁向主审倒灌原始终端日志**；严禁伪造 `delta: +0` 或回归通过率；只读权限。 |
-| **分形<br>审查层** | **`reviewer-arch`**<br>(按需/即用即销) | [`roles/reviewer-arch.md`](roles/reviewer-arch.md) | **系统架构专家**：承接前店 **Stage 1 宏观预审** 与后厂 **Stage 2B 架构终审**；审查深模块设计、单向数据流与 `gitnexus impact` 爆炸半径。 | 必须附带工具取证清单与防线行号举证；只读权限。 |
-| **分形<br>审查层** | **`reviewer-perf`**<br>(按需/即用即销) | [`roles/reviewer-perf.md`](roles/reviewer-perf.md) | **性能与并发专家**：审查无效重渲染、闭包内存泄漏、N+1 查询、全表扫描与缓存并发安全。 | 必须给出具体瓶颈行号与复杂度推导；只读权限。 |
-| **分形<br>审查层** | **`reviewer-security`**<br>(按需/即用即销) | [`roles/reviewer-security.md`](roles/reviewer-security.md) | **蓝队安全合规专家**：承接前店安全预审与后厂安全终审；审查注入防御、RBAC/ABAC 越权、供应链 CVE，复核红队 PoC 闭环。 | 对高危漏洞拥有一票否决权；必须附带防御行号举证；只读权限。 |
-| **分形<br>审查层** | **`reviewer-ux`**<br>(按需/即用即销) | [`roles/reviewer-ux.md`](roles/reviewer-ux.md) | **交互与无障碍专家**：审查快捷键冲突、输入法容错、焦点闭环 (Focus Trap)、ARIA 无障碍属性与界面文案。 | 只读权限；完成专项汇报后由 `dispatcher` 销毁分屏。 |
+| **分形<br>审查层** | **`reviewer-quality`**<br>(用完清空) | [`roles/reviewer-quality.md`](roles/reviewer-quality.md) | **代码健康与回归过滤官**：独占运行并消化 `fallow`、`tsc --noEmit` 与 **全量测试套件回归 (`vitest run`)** 原始日志，输出 ≤15 行健康简报。 | **严禁向主审倒灌原始终端日志**；严禁伪造 `delta: +0` 或回归通过率；只读权限；Feature 结项后直接 `/clear` 清空。 |
+| **分形<br>审查层** | **`reviewer-arch`**<br>(项目记忆沉淀) | [`roles/reviewer-arch.md`](roles/reviewer-arch.md) | **系统架构专家**：承接前店 **Stage 1 宏观预审** 与后厂 **Stage 2B 架构终审**；审查深模块设计、单向数据流与 `gitnexus impact` 爆炸半径。 | 必须附带工具取证清单与防线行号举证；只读权限；`standard` 模式常驻并在 Feature 结项后 `/compact` 沉淀架构演进记忆。 |
+| **分形<br>审查层** | **`reviewer-perf`**<br>(项目记忆沉淀) | [`roles/reviewer-perf.md`](roles/reviewer-perf.md) | **性能与并发专家**：审查无效重渲染、闭包内存泄漏、N+1 查询、全表扫描与缓存并发安全。 | 必须给出具体瓶颈行号与复杂度推导；只读权限；`standard` 模式常驻并在 Feature 结项后 `/compact` 沉淀性能基线记忆。 |
+| **分形<br>审查层** | **`reviewer-security`**<br>(项目记忆沉淀) | [`roles/reviewer-security.md`](roles/reviewer-security.md) | **蓝队安全合规专家**：承接前店安全预审与后厂安全终审；审查注入防御、RBAC/ABAC 越权、供应链 CVE，复核红队 PoC 闭环。 | 对高危漏洞拥有一票否决权；必须附带防御行号举证；只读权限；`standard` 模式常驻并在 Feature 结项后 `/compact` 沉淀安全防线记忆。 |
+| **分形<br>审查层** | **`reviewer-ux`**<br>(项目记忆沉淀) | [`roles/reviewer-ux.md`](roles/reviewer-ux.md) | **交互与无障碍专家**：审查快捷键冲突、输入法容错、焦点闭环 (Focus Trap)、ARIA 无障碍属性与界面文案。 | 只读权限；`standard` 模式常驻并在 Feature 结项后 `/compact` 沉淀交互规范记忆。 |
 
 ---
 
@@ -91,13 +91,13 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 ### 4.1 两阶段审查全链路划分
 1. **🏛️ 第一阶段：计划期宏观与架构预审 (Stage 1: Macro & Arch Consultation —— 窗口 1 按需触发)**
    - **触发时机**：`Planner` 起草完 `changes/<id>/spec.md` 后，若涉及跨模块架构重构、核心数据模型演进或高危安全机制，在呈交人类最终拍板前触发（常规轻量需求可跳过）。
-   - **执行方式**：**略过 `reviewer-lead`**，由 `Planner` 直接按需切屏咨询 **`reviewer-arch`** 或 **`reviewer-security`**，评估深模块合理性与 `gitnexus impact` 爆炸半径，将宏观修正直接融入 `spec.md` 并记录于 `review.md` Stage 1 章节，完事即销。
+   - **执行方式**：**略过 `reviewer-lead`**，由 `Planner` 直接按需唤醒或复用 **`reviewer-arch`** 或 **`reviewer-security`**，评估深模块合理性与 `gitnexus impact` 爆炸半径，将宏观修正直接融入 `spec.md` 并记录于 `review.md` Stage 1 章节（`standard` 模式下窗格常驻保留上下文至 Feature 结项）。
 2. **🔬 第二阶段：实施期测试与代码细节/防偏离终审 (Stage 2: Implementation & Drift Gate —— 后厂强制门禁)**
    - **子阶段 2A：测试代码前置快检 (Red Test Gate)**：在 `tdd` 写完 Red Test 后、`coding` 动手前，由 **`reviewer-lead` 独立执行**（仅在涉及红队 PoC 转化时点名 `reviewer-security` 协审）。严格按《4 维测试审查清单》与“硬编码证伪法”拦截弱断言与契约偏差。
-   - **子阶段 2B：业务实现与防偏离终审 (Code & Drift Gate)**：在 `coding` 跑通局部单测变绿后触发，实行**“主审开方点将 ➔ Dispatcher 抓药切屏 ➔ 主审合议裁决”**三拍闭环：
+   - **子阶段 2B：业务实现与防偏离终审 (Code & Drift Gate)**：在 `coding` 跑通局部单测变绿后触发，实行**“主审开方点将 ➔ Dispatcher 抓药调度 ➔ 主审合议裁决”**三拍闭环：
      - **第 1 拍（主审分诊点将）**：`reviewer-lead` 仅运行 `git diff --stat` 与 `gitnexus detect-changes`（**严禁自己跑 `fallow`/`tsc`/`vitest`/`impact`**）。若属 Tier 1（<20 行纯文档/文案/样式微调），直接签字放行；若属 Tier 2/3，立即向终端输出一行点将令并结束回合：
        `TRIAGE_RESULT: Tier 2 | SPAWN_EXPERTS: [reviewer-quality, reviewer-perf] | FOCUS: "核查 xxx 模块"`
-     - **第 2 拍（Dispatcher 并发代跑）**：`dispatcher` 解析点将令，在 `review` Tab 右侧并发切出对应专家 Pane、传入 `FOCUS` 指令并 `wait` 等待，收集 ≤25 行专家简报后执行 `herdr pane close` 销毁专家窗格。
+     - **第 2 拍（Dispatcher 并发代跑）**：`dispatcher` 解析点将令，复用已常驻的专家窗格（若首次调用则切出对应专家 Pane）、传入 `FOCUS` 指令并 `wait` 等待，收集 ≤25 行专家简报（`standard` 模式下保留专家窗格至当前 Feature 结项后统一打理上下文；`worktree` 模式下可即用即关或随工作区销毁）。
      - **第 3 拍（主审 ROI 仲裁与落盘）**：`dispatcher` 将全部专家简报喂回 `reviewer-lead`，由主审权衡冲突、剔除吹毛求疵，统一写入 `changes/<id>/review.md`。
 
 ### 4.2 垂直专家具象触发特征矩阵 (Concrete Routing Heuristics)
@@ -127,7 +127,7 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 flowchart TD
     subgraph 主工作区左窗格 [窗口 1: Planner 总规划台 (上下文 100% 纯净)]
         H1([👤 人类开发者]) <-->|探讨需求 / 动态定制工序| Planner[Planner 规划师<br/>独占维护 KANBAN.md]
-        Planner -.->|复杂源码考古| Explorer[Explorer 探路员<br/>输出 explore.md 即销]
+        Planner -.->|复杂源码考古| Explorer[Explorer 探路员<br/>输出 explore.md 沉淀项目记忆]
         Planner -.->|Stage 1 预审| PreRev[Arch / Security 专家]
         Planner ==>|节点 1 拍板落盘:<br/>prd + spec + tasks + pipeline.jsonl 首行 PLAN| EventLog[(changes/id/pipeline.jsonl)]
     end
@@ -165,17 +165,28 @@ flowchart TD
 ### 5.2 `changes/<id>/pipeline.jsonl` 事件流规范 (8+ 字段扁平自包含快照)
 每一行均为合法的单行 JSON（严禁美化折行），确保 `tail -n 1` 即可获取完整上下文：
 ```jsonl
-{"ts":"2026-10-27T08:00:00Z","id":"001-auth","event":"PLAN","mode":"worktree","ws":"ws-001","port":3001,"branch":"feat/001-auth","pipeline":["tdd","reviewer-lead:2A","coding","reviewer-lead:2B","ops"],"round":1,"state":"QUEUED","msg":"节点1对齐完成"}
+{"ts":"2026-10-27T08:00:00Z","id":"001-auth","event":"PLAN","mode":"worktree","ws":"ws-001","port":3001,"branch":"feat/001-auth","ctx":"compact","pipeline":["tdd","reviewer-lead:2A","coding","reviewer-lead:2B","ops"],"round":1,"state":"QUEUED","msg":"节点1对齐完成"}
 {"ts":"2026-10-27T08:02:10Z","id":"001-auth","event":"STEP","ws":"ws-001","port":3001,"step":"tdd","round":1,"state":"RUNNING","msg":"Red Test 编写完成"}
 {"ts":"2026-10-27T08:15:30Z","id":"001-auth","event":"STEP","ws":"ws-001","port":3001,"step":"reviewer-lead:2B","round":1,"state":"WAITING_ACCEPTANCE","constructive":1,"msg":"Stage 2B 终审 APPROVED [含1条CONSTRUCTIVE建议]，服务已在 http://localhost:3001 就绪待验收"}
 ```
 - **`state` 核心状态机枚举（6 种）**：`QUEUED`（已立项待启动）| `RUNNING`（自动流转中）| `WAITING_ACCEPTANCE`（待人类浏览器验收）| `WAITING_DECISION`（审查阻断/返工满2轮/契约缺陷待人类拍板）| `STALLED`（自愈失败环境挂起）| `DONE`（已合并发布）。
+- **`ctx` 跨特性上下文策略枚举（专供 `standard` 常驻模式）**：`"keep"`（强关联连续小切片，直接保留）| `"compact"`（默认推荐，结项后主动压缩沉淀项目演进记忆）| `"clear"`（跨完全无关业务域，清空重置）。
 
 ### 5.3 下游 Agent 故障自愈三步法 (Self-Healing SOP)
 当 `Dispatcher` 执行 `--wait` 发生超时或下游异常时，**严禁越权代庖**，必须按序执行：
 1. **观察与中断重试**：先执行 `herdr agent read <TARGET> --lines 20` 检查是否仍在正常输出；若确系卡死，执行 `herdr agent send-keys <TARGET> ctrl+c`，确认 `herdr agent get <TARGET>` 恢复就绪后重试。
 2. **重启进程**：若重试无效，执行 `herdr agent stop <TARGET>` 后重新 `herdr agent start <TARGET>` 恢复会话。
 3. **挂起上报**：若自愈仍失败，`Dispatcher` 向 `changes/<id>/pipeline.jsonl` 追加 `"state": "STALLED"` 事件并上报窗口 2。
+
+### 5.4 非 Worktree (`standard`) 模式上下文生命周期管理 (Context Lifecycle Management)
+在 `worktree` 模式下，每个特性拥有全新 Workspace 与独立 Agent 实例，天然无历史污染；而在 **`standard` 单线常驻模式**下，严格遵循**“特性内全员保真、特性结项 (`DONE`) 后按 4 类角色分级打理”**准则：
+
+| 分类与角色 | 特性进行中 (Intra-Feature) | 特性结项后 (Post-Feature `DONE` / 下一特性启动前) |
+| :--- | :--- | :--- |
+| **1. 人类确认型 (1 个)**<br>`planner` (窗口 1) | 保持完整规划上下文 | **严禁擅自压缩或清空**！立项落盘或长对话后向人类提议，**获人类明确确认后**再执行 `/compact`（同域演进）或 `/clear`（跨大域重置）。 |
+| **2. 关联度动态型 (3 个)**<br>`tdd`, `coding`, `reviewer-lead` | 同一 `change-id` 内（含多轮返工）100% 保留完整记忆（仅当超长时 `/compact`） | 由 `Dispatcher` 按 `PLAN` 事件中的 `"ctx"` 策略执行：<br>- `compact`（默认）：压缩保留项目拓扑与公共模块约定；<br>- `keep`：强关联连续小切片直接沿用；<br>- `clear`：跨完全无关业务域时清空。 |
+| **3. 方案甲：常驻沉淀型专家 (7 个)**<br>`explorer`, `debugger`, `security-redteam`, `reviewer-arch/security/perf/ux` | **窗格常驻不销毁**；同一 `change-id` 内（如 Stage 1 ➔ Stage 2B、多次排障）保持完整上下文，不中途压缩 | 若在该 Feature 中被调用过，在 **Feature 完成 (`DONE`) 后统一执行 `/compact`**，将模块演进、鉴权边界与历史架构决策沉淀为长期心智模型，避免下次重头通读源码。 |
+| **4. 无脑清空型工具人 (4 个)**<br>`dispatcher`, `ops`, `reviewer-quality`, `e2e` | 单特性内保持运行 | **毫无跨特性记忆价值，从不使用 `/compact`**！在 Feature 结项（`DONE`）后直接执行 `/clear`（或 `/new`）瞬时归零，彻底清除过期 DOM 快照与海量命令日志。 |
 
 ---
 
@@ -256,14 +267,17 @@ herdr agent prompt coding "请阅读 changes/001-auth/spec.md 与 changes/001-au
 herdr agent read reviewer-lead --source recent-unwrapped --lines 40
 ```
 
-### 7.3 Dispatcher 替 Lead Reviewer 动态切屏并发调度专家范式
+### 7.3 Dispatcher 替 Lead Reviewer 动态调度与常驻复用专家范式
 ```bash
-# 1. 在当前 Workspace 的 review Tab 右侧切分新窗格并启动垂直专家：
-QUAL_PANE=$(herdr pane split --target review:p1 --direction right -q)
-ARCH_PANE=$(herdr pane split --target "$QUAL_PANE" --direction down -q)
-
-herdr agent start reviewer-quality --kind $(jq -r '.roles["reviewer-quality"].harness' .agents/environment.json) --pane "$QUAL_PANE" -- --model $(jq -r '.roles["reviewer-quality"].model' .agents/environment.json)
-herdr agent start reviewer-arch --kind $(jq -r '.roles["reviewer-arch"].harness' .agents/environment.json) --pane "$ARCH_PANE" -- --model $(jq -r '.roles["reviewer-arch"].model' .agents/environment.json)
+# 1. 若目标专家尚未启动，则在当前 Workspace 的 review Tab 右侧切分新窗格并启动（若已常驻则直接复用）：
+if ! herdr agent get reviewer-quality >/dev/null 2>&1; then
+  QUAL_PANE=$(herdr pane split --target review:p1 --direction right -q)
+  herdr agent start reviewer-quality --kind $(jq -r '.roles["reviewer-quality"].harness' .agents/environment.json) --pane "$QUAL_PANE" -- --model $(jq -r '.roles["reviewer-quality"].model' .agents/environment.json)
+fi
+if ! herdr agent get reviewer-arch >/dev/null 2>&1; then
+  ARCH_PANE=$(herdr pane split --target review:p1 --direction down -q)
+  herdr agent start reviewer-arch --kind $(jq -r '.roles["reviewer-arch"].harness' .agents/environment.json) --pane "$ARCH_PANE" -- --model $(jq -r '.roles["reviewer-arch"].model' .agents/environment.json)
+fi
 
 # 2. 并发派发任务并依次 wait 回收：
 herdr agent prompt reviewer-quality "请执行静态健康度扫描与全量测试回归，输出 <=15 行简报"
@@ -271,11 +285,9 @@ herdr agent prompt reviewer-arch "请结合 changes/001-auth/spec.md 审查架�
 herdr agent wait reviewer-quality --timeout 120000
 herdr agent wait reviewer-arch --timeout 120000
 
-# 3. 提取专家简报后立即关闭专家窗格释放资源：
+# 3. 提取专家简报（standard 模式下保持窗格常驻，待整个 Feature 结项 DONE 后再对 arch 执行 /compact、对 quality 执行 /clear）：
 QUAL_REPORT=$(herdr agent read reviewer-quality --source recent-unwrapped --lines 30)
 ARCH_REPORT=$(herdr agent read reviewer-arch --source recent-unwrapped --lines 45)
-herdr pane close "$QUAL_PANE"
-herdr pane close "$ARCH_PANE"
 ```
 
 ### 7.4 会话快照与跨天秒级复活 (`.agents/session.json`)

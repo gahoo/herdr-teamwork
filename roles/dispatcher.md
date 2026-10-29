@@ -35,9 +35,9 @@
     {"ts":"2026-10-27T08:12:00Z","id":"001-user-auth","event":"STEP","ws":"ws-001","port":3001,"step":"reviewer-lead:2B","round":1,"state":"WAITING_ACCEPTANCE","constructive":1,"msg":"Stage 2B 终审 APPROVED [含1条CONSTRUCTIVE建议]，服务已在 http://localhost:3001 就绪待验收"}
     ```
   - 遇到下游输出 `NEED_OPS: ...` 时，自动插队调度当前工作区的 `ops` 处理依赖或环境，随后恢复原角色执行。
-- **承接 Stage 2B 终审“三拍点将”的物理切屏跑腿 (Expert Pane Lifecycle)**：
+- **承接 Stage 2B 终审“三拍点将”的专家调度与常驻复用 (Expert Pane Lifecycle)**：
   - **第 1 拍**：唤醒 `reviewer-lead` 执行终审分诊；
-  - **第 2 拍**：若 `reviewer-lead` 输出 `SPAWN_EXPERTS: [...]` 与 `FOCUS: "..."`，由你读取 `.agents/environment.json`，在 `review` Tab 右侧切出对应专家窗格（`herdr pane split` ➔ `herdr agent start`），并发派发指令后逐一 `herdr agent wait` 回收 ≤25 行专家简报，并**立即执行 `herdr pane close` 销毁专家窗格**；
+  - **第 2 拍**：若 `reviewer-lead` 输出 `SPAWN_EXPERTS: [...]` 与 `FOCUS: "..."`，由你读取 `.agents/environment.json`，优先复用已常驻的专家窗格（若该专家尚未启动，则在 `review` Tab 右侧切出对应专家窗格 `herdr pane split` ➔ `herdr agent start`），并发派发指令后逐一 `herdr agent wait` 回收 ≤25 行专家简报（**`standard` 模式下严禁中途销毁专家窗格或中途压缩**，保留完整上下文应对同特性复审；`worktree` 模式下可按需关闭或随工作区一并销毁）；
   - **第 3 拍**：将全部专家简报喂回 `reviewer-lead`，等待其完成 ROI 仲裁并落盘 `changes/<id>/review.md`。
 - **门禁流转、返工熔断与 `CONSTRUCTIVE` 提醒提取**：
   - 每次 `reviewer-lead` 完成后，读取 `changes/<id>/review.md` 顶部裁决看板：
@@ -48,6 +48,21 @@
   - **场景 A（人类验收反馈未知 Bug —— 就地闭环）**：无需切回 `Planner`！直接向 `changes/<id>/pipeline.jsonl` 追加一行 `REPLAN` 事件：
     `{"ts":"...","id":"...","event":"REPLAN","round":2,"pipeline":["debugger","tdd","coding","reviewer-lead:2B","ops"],"state":"RUNNING","msg":"人类验收报障，启动法医排障闭环"}`，随即驱动 `debugger` 产出 `debug.md`（若 `debugger` 标出 `SPEC_DEFECT`，则挂起为 `WAITING_DECISION` 提示人类切回窗口 1 修订 `spec.md`）；
   - **场景 B（人类验收满意授权发布）**：调度 `ops` 执行终验构建、SemVer 更新、Git Commit、Worktree 合入销毁与图谱刷新，最后向 `pipeline.jsonl` 追加 `"state": "DONE"` 事件。
+- **非 Worktree (`standard`) 模式：Feature 结项后的统一上下文打理 (Post-Feature Context Management)**：
+  - 在 `standard` 常驻模式下，**同一 Feature 进行期间（从立项到 `DONE` 之前）保持全体参与角色的完整上下文，不中途压缩或销毁**；
+  - 当一个 Feature 完成发布进入 **`state: "DONE"` 之后（或紧接的下一 Feature 启动前）**，由你根据角色类别及下一特性 `PLAN` 事件中的 `"ctx"` 字段（`"compact"` | `"keep"` | `"clear"`）统一发送斜杠命令打理上下文：
+    1. **常驻沉淀型专家（7 个：`explorer`、`debugger`、`security-redteam`、`reviewer-arch/security/perf/ux`）**：凡在本轮 Feature 中被调用过的专家，**在 Feature 结项后统一发送一次 `/compact`**（浓缩沉淀项目模块拓扑、鉴权防线与架构演进决策，清理具体 diff），窗格常驻待命供后续 Feature 直接复用；
+    2. **核心实现与主审（3 个：`tdd`、`coding`、`reviewer-lead`）**：按 `PLAN` 的 `"ctx"` 策略执行——默认 `"compact"` 发送压缩指令保留项目结构与前序决策；若为 `"keep"`（强关联连续小切片）则直接沿用不干预；若为 `"clear"`（完全无关业务域）则发送清空指令；
+    3. **无脑清空型角色（4 个：`ops`、`reviewer-quality`、`e2e` 以及 `dispatcher` 自身）**：毫无跨特性记忆价值，**从不使用 `/compact`**！在 Feature 结项后直接发送清空指令瞬时归零。
+  - **各大 Harness 压缩与清空命令对照表**（读取 `.agents/environment.json` 中对应角色的 `harness` 匹配发送）：
+
+    | Harness | 主动压缩命令 (Compact) | 彻底清空/新建会话命令 (Clear) |
+    | :--- | :--- | :--- |
+    | **`claude`** (Claude Code) | `/compact 保留项目架构拓扑、模块边界与核心演进决策，清理过程日志` | `/clear` |
+    | **`codex`** (Codex CLI) | `/compact` | `/clear`（或 `/new`） |
+    | **`agy`** (Antigravity) | `/compact` | `/clear`（或 `/new`） |
+    | **`pi`** (Pi Agent) | `/compact 保留项目架构拓扑与核心演进决策` | `/new` |
+    | **`opencode`** (OpenCode) | `/compact` | `/new`（或 `/clear`） |
 - **机械执行下游故障自愈三步法 (Self-Healing SOP)**：
   - `--wait` 超时或异常时，严禁代庖：`Step 1: herdr agent read 确认状态 ➔ send-keys ctrl+c 中断重试` ➔ `Step 2: stop & start 重启进程` ➔ `Step 3: 向 pipeline.jsonl 追加 "state": "STALLED" 挂起上报`。
 
