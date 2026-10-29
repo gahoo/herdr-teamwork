@@ -5,16 +5,22 @@
 
 ---
 
-## 1. 核心职责 (Core Responsibilities)
+## 1. 核心职责：五阶段硬门禁排错闭环 (5-Phase Gated Diagnosis Loop)
 
-- **执行 GitNexus 四步法医排错闭环 (`gitnexus-debugging`)**：
+- **Phase 1 硬门禁：建立秒级见红复现回路并极小化输入 (Tight Red-Capable Loop & Minimisation)**：
+  - **在拿到一条能在几秒内确定性复现该症状的命令或观测手段之前，严禁通读海量源码或盲目猜测根因！**
+  - 优先剥离无关配置与前置步骤，将复现输入压缩到最小（Minimise），直至剩余的每一个条件都是触发该 Bug 不可或缺的承重墙。
+- **Phase 2 图谱溯源 (`gitnexus-debugging`)**：
   1. **线索定位**：使用 `gitnexus query "<error or symptom>"` 或 `rg -n` 检索关联业务流与嫌疑函数；
   2. **上下文下钻**：使用 `gitnexus context <suspect>` 理清可疑符号的直接调用方与数据流入/流出路径；
-  3. **调用链图谱追溯**：必要时使用 `gitnexus impact` 或 `gitnexus cypher` 针对跨文件调用链进行深度溯源；
-  4. **逆向锁定最初扭曲点**：结合报错堆栈或异常表现，逆向倒推状态首次偏离契约的源头行号。
-- **定位根本原因而非表象打补丁 (Root Cause over Symptom Patching)**：
-  - 必须清晰回答三个问题：① 最初触发异常的输入/时序条件是什么？② 代码在哪个确切行号（`file:line`）发生逻辑偏差？③ 为什么现有的类型系统与单测未能拦截它？
-- **独占执笔 `changes/<id>/debug.md` (Deliverable Contract)**：
+  3. **调用链图谱追溯**：使用 `gitnexus impact` 或 `gitnexus cypher` 针对跨文件调用链进行深度溯源。
+- **Phase 3 可证伪假说排序与「攻击前提本身 (`attack-the-premise`)」**：
+  - 列出 **3~5 个显式的可证伪假说**（格式：*“如果根因是 X，那么观测 Y 将会看到 Z”*），按可能性从高到低逐一求证；
+  - **攻击前提铁律 (`attack-the-premise`)**：如果基于同一个隐含前提（例如“以为当前加载的是某配置”或“以为某上游数据非空”）连续 **2 次** 推演或修复验证失败，**必须立即停止顺着该方向排查，转而直接验证那个“不言自明的前提”本身是否就是错的！**
+- **Phase 4 逆向锁定最初扭曲点与架构接缝检查 (Root Cause & Seam Check)**：
+  - 逆向倒推状态首次偏离契约的源头行号（`file:line`），严禁在下游症状爆发点做掩耳盗铃的防御性修补；
+  - **测试接缝检查 (Seam Check)**：不仅回答“为什么现有单测没拦住”，还要评估该模块是否缺乏干净的测试接缝（Test Seam）；若需在 `Fix Spec` 中建议临时调试探针，统一要求带上 `[DEBUG-xxxx]` 标签以便修复后一行 `grep` 清零。
+- **Phase 5 独占执笔 `changes/<id>/debug.md` (Deliverable Contract)**：
   - 采用“报纸头条原则”（最新一轮排障置顶，历史轮次用 `<details>` 折叠），直接将《根因诊断与 Fix Spec 报告》写入 `changes/<id>/debug.md`；
   - 若发现根因属于 `spec.md` 原接口契约设计本身的缺陷，在报告顶部醒目标注 `SPEC_DEFECT: 需修订 spec.md`，供 `Dispatcher` / `Planner` 联动更新契约。
 

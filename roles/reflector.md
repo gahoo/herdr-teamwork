@@ -33,20 +33,29 @@
 ### 2.2 第二步：项目级经验教训与探索课题落盘 (`reflections/<domain>.md`)
 若发现的问题属于**当前业务项目特有**的代码耦合、隐性技术债、环境暗坑或架构瓶颈，按领域归类写入项目根目录下的 **`reflections/<domain>.md`**（如 `reflections/auth.md`、`reflections/database.md`、`reflections/build-env.md`）：
 - **去重与频次累加**：写入前先读取目标文件；若同类问题已存在，直接在原条目上递增命中计数（如 `[命中 2 次: 001-auth, 004-login]`）并提升优先级，严禁机械追加重复流水账。
+- **「四级防错强化阶梯 (`/correct` 4-Level Enforcement Hierarchy)」—— 拒绝无脑堆砌文档规则**：
+  > ⚠️ **核心洞察**：当 Agent 重复犯某类错误时，往文档里加一句“禁止做 X”往往是最低效的（第 4 级）。你必须优先评估能否在更高层级从结构上彻底消灭该类错误，并在条目中指明建议的强化层级：
+  1. **Level 1：用架构消除错误可能 (Eliminate with Architecture)** —— 能否收敛为单一状态所有者？能否直接删掉容易被 Agent 照抄的旧 API/旧写法？能否把内部私有实现设为不可跨包导入？（若需重构，立为 `🔬 SPIKE_CANDIDATE` 或抛出 `ARCH_AUDIT_NEEDED` 触发 [`playbooks/arch-audit.md`](../playbooks/arch-audit.md)）；
+  2. **Level 2：用类型系统或自定义 Lint/CI 机械拦截 (Enforce with Types / Lint)** —— 能否修改类型签名使非法状态无法编译？能否加一条轻量 Lint/脚本检查，且**报错信息直接写明应该改用哪个替代函数/文件**？
+  3. **Level 3：用行为测试锁死 (Lock with Behavior Test)** —— 能否补充一条针对该边界或不变式的回归测试？
+  4. **Level 4：最后才是写文档规则 (Write Docs Last)** —— 仅当前三级均无法机械拦截的主观判断，才沉淀为 `🎯 DETERMINISTIC_LESSON` 文档规则，并附带「规则 ➔ 靠什么机制/哪个角色守卫」的映射！
 - **双轨分类落地（确定性避坑 vs 待探索课题）**：
   1. **🎯 `[DETERMINISTIC_LESSON / 确定性避坑指南]`**：
-     - **适用**：根因清晰、规避动作明确的经验（如“修改 X 模块接口必须同步更新 Y 映射表”、“本地跑某集成测试需预置 Z 参数”）。
-     - **格式**：简明列出 `【现象与根因】` + `【强制避坑守则】`（高频通用的守则可标注建议晋升写入项目根目录 `AGENTS.md`）。
+     - **适用**：根因清晰、规避动作明确的经验（优先标明建议转化为 Level 1~3 机械防线的具体位置，或 Level 4 强制守则）。
+     - **格式**：简明列出 `【现象与根因】` + `【强化层级 (Level 1~4) 与强制避坑守则】`。
   2. **🔬 `[SPIKE_CANDIDATE / 待立项探索验证课题]`**：
-     - **适用**：发现了深层架构耦合、性能瓶颈或脆弱机制，但**无法仅靠一句口头规则解决，需要专门做技术预研、原型实验或基准测试对比才能确定最佳重构方案**。
-     - **格式与闭环**：明确记录 `【痛点现象】`、`【候选改进假设】` 与 `【建议验证指标】`，并在完成后向 `Dispatcher` 输出提醒，由人类确认后交由窗口 1 **`Planner` 在 `changes/KANBAN.md` 中安排专门的探索/重构变更集（`changes/<spike-id>/`）** 实施验证！
+     - **适用**：发现了深层架构耦合、性能瓶颈或脆弱机制，但**无法仅靠一句口头规则解决，需要专门做技术预研、原型实验（[`playbooks/prototype-spike.md`](../playbooks/prototype-spike.md)）或全库架构深度巡检（[`playbooks/arch-audit.md`](../playbooks/arch-audit.md)）才能确定最佳重构方案**。
+     - **格式与闭环**：明确记录 `【痛点现象】`、`【候选改进假设】` 与 `【建议验证方式 (Spike / Arch-Audit / Hillclimb)】`，并在完成后向 `Dispatcher` 输出提醒，由人类确认后交由窗口 1 **`Planner` 在 `changes/KANBAN.md` 中安排专门的探索/重构变更集** 实施验证！
 
 ### 2.3 第三步：Skill 级流程与契约反馈落盘 (`.agents/skills/herdr-teamwork/.reflections/<id>.md`)
 若发现的问题暴露了 **`herdr-teamwork` 技能规范本身** 的不足（如某角色契约边界模糊、Prompt 存在歧义、某类预设通道缺少必要环节、门禁过严或过松），生成独立反馈文件 **`.agents/skills/herdr-teamwork/.reflections/<id>.md`**：
-- 供 `herdr-teamwork` 仓库直接消化吸收；
+- **面向 Agent 写作规范 (`writing-for-agents` Discipline)**：在拟定条文修改建议（Proposed Diff）时，必须遵循：
+  1. **正向引导优于否定禁令 (Positive Steering over Negation)**：避免仅写“不要做 X”（否定词反而会激活模型对错误模式的注意力），必须直接写明**“当遇到场景 X 时，执行标准动作 Y”**；
+  2. **渐进式披露 (Progressive Disclosure)**：高频底线写入 `roles/<role>.md`，低频复杂规程下沉至 `playbooks/*.md` 并通过路由表按需挂载，严禁将主契约文件撑成臃肿巨石；
+  3. **剔除无效空话 (Hunt No-Ops)**：删掉一切模型本来就会做或无法验证的修饰性废话。
 - 明确列出：
   1. **触发变更集与摩擦现象**（引述 `pipeline.jsonl` 中的具体事件行）；
-  2. **暴露的 Skill 规范缺陷定位**（精确指向 `SKILL.md` 或 `roles/<role>.md` 的具体章节）；
+  2. **暴露的 Skill 规范缺陷定位**（精确指向 `SKILL.md`、`roles/<role>.md` 或 `playbooks/<name>.md` 的具体章节）；
   3. **具体条文修改建议 (Proposed Diff)**。
 
 > 💡 **如有才写，拒绝凑数**：若某次波折纯属项目代码问题而与 Skill 流程无关，则只写 `reflections/<domain>.md`，无需创建 `.reflections/<id>.md`（反之亦然）。

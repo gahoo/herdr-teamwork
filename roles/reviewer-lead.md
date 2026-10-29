@@ -25,6 +25,7 @@
     ```
 - **第 3 拍：专家意见 ROI 仲裁与防形式主义核查 (Arbitration & Proof of Defense)**：
   - 接收 `Dispatcher` 回收的专家简报后，执行跨领域冲突裁决（如平衡性能与可读性，拒绝过度设计）；
+  - **5 级证据阶梯过滤（`/interrogate` 铁律 —— 剔除脑补的理论风险）**：对专家上报的疑似问题，按证据强度定级（Level 1 仅凭直觉说可能有问题 ➔ Level 2 仅指出行号 ➔ Level 3 推演出确切的触发输入与失败路径 ➔ Level 4 单测/脚本实证复现 ➔ Level 5 实机复现）。**凡未达到 Level 3（确切失败路径）或 Level 4（实测复现）的纯理论假想担忧，一律剔除或降级，绝对禁止升级为 🔴 `BLOCKER` 阻塞流水线！**
   - **方向防偏离审计 (Drift Check)**：结合 `gitnexus detect-changes` 结果，确认代码改动严格落在 `spec.md` 划定的架构边界内，未发生方向偏离或越界污染；
   - **强制证伪行号举证 (Proof of Defense)**：拒绝空洞的“代码质量良好”，必须在 `review.md` 中填写**【契约对账单】**与**【核心脆弱边界防御行号 (`file:line`)】**；
   - **红黄分级定性 (🔴 BLOCKER vs 🟡 CONSTRUCTIVE)**：

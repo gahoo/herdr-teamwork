@@ -3,7 +3,7 @@ name: herdr-teamwork
 description: Multi-agent spec implementation orchestrated via Herdr terminal panes, workspaces, and optional Git Worktrees (Planner, Explorer, Dispatcher, TDD, Coding, Reviewer Ensemble, Ops, Debugger, RedTeam, E2E, Reflector). Use when initiating multi-agent spec implementation, parallel feature development, or complex engineering workflows.
 ---
 
-# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.1)
+# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.2)
 
 本技能通过 Herdr 终端工作区管理工具构建**“双控台分治（窗口 1 规划 / 窗口 2 交付）、内外双驱（内部 `--wait` 同步 + 跨任务 `tail -f` 监听）、事件溯源（`pipeline.jsonl`）”**的多 Agent 物理隔离与协作体系。
 遵循 **OpenSpec 活文档标准**，实现规划与交付彻底物理绝缘、宏微观契约正交、职责绝对边界化与证伪式分形审查。
@@ -16,6 +16,9 @@ description: Multi-agent spec implementation orchestrated via Herdr terminal pan
 
 ```text
 project-root/                        # 【主工作区 (Workspace: main)】：窗口1 Planner + 窗口2 Dispatcher
+├── GLOSSARY.md                      # 项目级统一领域语言词典 (Planner 维护，全角色共享词汇表，零实现细节)
+├── E2E_PLAYBOOK.md                  # 端到端验证路由与交互剧本 (启用 e2e 角色时按需创建，由 E2E 增量维护)
+├── docs/adr/                        # 架构决策记录 (仅当满足 3 条件门禁时由 Planner 创建)
 ├── changes/                         # 第一类业务数据资产 (First-Class Artifacts，纳入 Git 版本管理)
 │   ├── KANBAN.md                    # 全局大盘总看板 (Planner 100% 独占维护，含 Inbox 占位池)
 │   └── <id>/                        # 具体特性变更集目录 (如 001-user-auth/)
@@ -33,8 +36,9 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 │   ├── environment.json             # 宿主机器 Harness 画像、并发模式与 16 角色动态配置
 │   ├── session.json                 # Herdr 会话状态快照与跨天秒级复活配置
 │   └── skills/herdr-teamwork/       # 本技能规范库
-│       ├── roles/                   # 16 个正交角色的专属契约库
-│       ├── scripts/                 # 跨项目通用 Worktree 建场与销毁脚本 (worktree-up.sh / worktree-down.sh)
+│       ├── roles/                   # 【Who】16 个正交角色的常驻本职契约库
+│       ├── playbooks/               # 【How】8 个按需触发的专项战术剧本 (渐进式按需读取，跨角色共享)
+│       ├── scripts/                 # 【Tools】跨项目通用 Worktree 建场与销毁脚本 (worktree-up.sh / worktree-down.sh)
 │       └── .reflections/            # Skill 级流程与契约改进反馈 (<id>.md，供 herdr-teamwork 消化吸收)
 └── .worktrees/                      # 【并行执行隔离区】(worktree 模式下由 Ops 建场管理，纳入 .gitignore)
     └── <id>/                        # 绑定独立 Herdr Workspace (ws-<id>) + 独立分支 + 按需端口
@@ -53,6 +57,9 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 
 | 文档路径 | 唯一写入人 (Writer) | 定位与维护机制 | 格式范式与流转准则 |
 | :--- | :--- | :--- | :--- |
+| **`GLOSSARY.md`** | **`Planner`** | **项目级统一领域语言 (Ubiquitous Language)**：<br>全项目常驻标准工件，消除 16 个 Agent 间的概念命名漂移。 | 只定义核心业务概念边界与禁用同义词表；**严禁混入类名、文件路径或数据库表名等实现细节**。 |
+| **`E2E_PLAYBOOK.md`** | **`E2E Agent`**<br>(`Planner` 初始化) | **端到端验证路由与交互剧本 (按需工件)**：<br>仅在项目启用 `e2e` 角色时创建，免去每次测试重新摸索 DOM 与路由。 | 记录各核心功能的访问路由、前置状态、触发方式、关键成功信号与已知测试坑点（Gotchas），每次验收通过后增量更新。 |
+| **`docs/adr/<id>.md`** | **`Planner`** | **架构决策记录 (Selective ADRs)**：<br>记录深远架构取舍，防止后续 Agent 因不解背景而回退设计。 | **严格 3 条件门禁**（同时满足才写）：① 难以逆转；② 缺乏背景看代码会感到惊讶；③ 存在真实的方案权衡（Trade-off）。 |
 | **`changes/KANBAN.md`** | **`Planner` 独占** | **全局大盘单文件内聚**：<br>严禁私建碎片化 `Inbox.md`；未开展需求第一时间入池占位；结项与 `CONSTRUCTIVE` 建议仅在人类确认后由 `Planner` 录入。 | **需求未启，看板先行**：<br>- 状态流转：`📥 占位池 (Inbox/Backlog)` ➔ `🚀 进行中 (In Progress)` ➔ `✅ 已完成 (Done)`。 |
 | **`changes/<id>/prd.md`** | **`Planner`** | **产品诉求 (Why & What)**：需求调整直接在原文就地演进。 | 文末附 2~3 行简明 `## 变更备忘录 (Changelog)` 记录妥协或调整原因。 |
 | **`changes/<id>/spec.md`** | **`Planner`**<br>(可咨询 `Arch`/`Sec`) | **活契约原则 (Living Truth)**：反映当前生效的最新接口与数据结构。 | 原地更新，不留弃用字段，历史交由 Git 追溯；含明确的验收条件编号 (`AC-1, AC-2...`)。 |
@@ -163,11 +170,14 @@ flowchart TD
     Master ==>|验收通过: 授权发布| Release[ops 构建/Commit/合入 ➔ 异常信号按需调 reflector 复盘 ➔ 销毁/清理收尾并追加 DONE]
 ```
 
-### 5.1 动态可调流水线预设模板 (Customizable Pipeline Presets)
-4 个通道仅作为**基础预设起点**，`Planner` 在【法定节点 1】必须展示拟启用的具体角色数组 `pipeline`，支持人类按需动态增删插件化调节：
+### 5.1 动态可调流水线预设模板与专项战术剧本 (Customizable Pipeline Presets & Tactical Playbooks)
+通道仅作为**基础预设起点**，`Planner` 在【法定节点 1】必须展示拟启用的具体角色数组 `pipeline`，支持人类按需动态增删插件化调节：
 - **微型轻量预设 (`Quick-Fix`)**（<20 行 / 纯文案 / 纯样式 / 简单配置）：`["coding", "reviewer-lead:2B", "ops"]`
 - **标准功能预设 (`Standard`)**（20~150 行 / 局部新特性 / 常规组件）：`["tdd", "reviewer-lead:2A", "coding", "reviewer-lead:2B", "ops"]`（可按需插拔 `"e2e"`）
 - **全量高危预设 (`Full-Rigor`)**（核心架构 / 鉴权计费 / 数据库迁移）：`Stage 1 预审` + `["tdd", "reviewer-lead:2A", "coding", "security-redteam", "tdd", "coding", "reviewer-lead:2B", "e2e", "ops"]`
+- **探索性原型刺探预设 (`[SPIKE]`)**（UI/交互方案对比或技术可行性刺探，用完即焚）：`["coding", "ops"]`（跳过 `tdd` 与代码规范审查，详见 [`playbooks/prototype-spike.md`](playbooks/prototype-spike.md)，拍板后销毁临时分支）
+- **单一指标科学爬山预设 (`[HILLCLIMB]`)**（针对耗时/内存/吞吐量等单一量化指标执行“测基线-改代码-退步即回滚”循环）：`["coding", "reviewer-perf", "ops"]`（详见 [`playbooks/hillclimb.md`](playbooks/hillclimb.md)）
+- **阶段性全库架构深度巡检 (`Arch-Audit`)**（每完成 3~5 个特性扫描浅模块并产出 HTML 体检报告）：`["reviewer-arch"]`（必要时协同 `"explorer"`，详见 [`playbooks/arch-audit.md`](playbooks/arch-audit.md)）
 - **排障重排序列 (`REPLAN: Bugfix`)**（窗口 2 验收报障 / `e2e` 崩溃 / 终审回归失败时由 `Dispatcher` 追加）：`["debugger", "tdd", "coding", "reviewer-lead:2B", "ops"]`
 
 ### 5.2 `changes/<id>/pipeline.jsonl` 事件流规范 (8+ 字段扁平自包含快照)

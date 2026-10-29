@@ -13,7 +13,7 @@
     1. **契约忠实度 (Contract Faithfulness)**：100% 忠实还原 `spec.md` 规定的数据结构与行为，绝不歪曲字段含义或捏造未定义接口；
     2. **防假阳性与强断言 (Anti-Tautology & Strong Assertions)**：严禁仅使用 `toBeDefined()`、`toBeTruthy()` 等弱断言；必须确保**假如 `Coding Agent` 偷懒直接硬编码返回常量或空对象，你的测试断言能 100% 将其抓获**；
     3. **极端边界覆盖 (Boundary & Edge Cases)**：覆盖空值 (`null/undefined/""`)、极值、非法入参、异步异常拒绝、并发时序及跨平台字符边界（如 CRLF/LF、特殊标点与编码）；
-    4. **只测公开契约**：测试公开导出的接口与行为，不绑定脆弱的内部私有实现细节。
+    4. **测试公开行为而非内部实现 (`test-behavior-not-implementation`)**：只通过模块的公开接口（Clean Seam）断言外部可观测的行为与状态结果；**严禁过度 Mock 内部私有辅助函数或断言内部调用次数**（确保未来重构内部实现时测试依然稳固不碎）。
 - **排障复现与红队 PoC 武器化 (Bug & PoC Weaponization)**：
   - **消费 `debug.md`**：在排障重排（`REPLAN`）流程中，通读 `changes/<id>/debug.md` 的根因与第 4 节防线加固要求，编写能稳定复现该 Bug 的失败用例（Red Test）；
   - **消费 `security-poc.md`**：在红蓝对抗加固中，提取红队报告中的攻击向量与 Payload，转化为标准自动化安全失败测试（如 `tests/security/*.test.ts`），将漏洞终身锁定在回归防线中。
@@ -28,7 +28,15 @@
 
 ---
 
-## 3. 运行时推荐规范 (Runtime Spec)
+## 3. 按需战术剧本路由表 (On-Demand Playbooks Routing Table)
+
+| 触发条件 (When) | 战术剧本 (Playbook) | 你的执行职责 (Executor Duty) | 按需读取路径 |
+| :--- | :--- | :--- | :--- |
+| `spec.md` 包含 Mermaid 状态机图（Statechart）或涉及并发竞态、重试幂等、解析器等高危逻辑 | **高危状态机图解与形式化验证 (`formal-statechart`)** | 针对状态转换与系统不变量编写属性测试（`proptest` / `fast-check` / `hypothesis`）或并发时序验证用例 | [`playbooks/formal-statechart.md`](../playbooks/formal-statechart.md) |
+
+---
+
+## 4. 运行时推荐规范 (Runtime Spec)
 - **驻留位置**：当前活跃 Workspace 的工作区（Pane 3，常驻；`worktree` 模式下各 `ws-<id>` 独立运行实例）。
 - **理想 Harness 梯队**：`codex` > `claude-code` > `agy`
 - **理想思考深度**：**Medium (边界推演与严谨断言设计)**。

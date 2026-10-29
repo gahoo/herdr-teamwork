@@ -34,7 +34,11 @@
     ```json
     {"ts":"2026-10-27T08:12:00Z","id":"001-user-auth","event":"STEP","ws":"ws-001","port":3001,"step":"reviewer-lead:2B","round":1,"state":"WAITING_ACCEPTANCE","constructive":1,"msg":"Stage 2B 终审 APPROVED [含1条CONSTRUCTIVE建议]，服务已在 http://localhost:3001 就绪待验收"}
     ```
-  - 遇到下游输出 `NEED_OPS: ...` 时，自动插队调度当前工作区的 `ops` 处理依赖或环境，随后恢复原角色执行。
+  - 遇到下游输出 `NEED_OPS: ...` 时，自动插队调度当前工作区的 `ops` 处理依赖或环境（若 `ops` 因缺失人类专属密钥/凭证触发 `OPS_BLOCKED` 并生成了 `scripts/setup-wizard.sh`，立即在窗口 2 提示人类运行该向导脚本），随后恢复原角色执行；
+  - **支持专项战术剧本 (`Playbooks`) 的特种工序调度**：
+    - **`[SPIKE]` 原型刺探流**：跳过 `tdd` 与代码规范审查，直接调度 `coding`（及 `ops`）构建原型；待人类与 `Planner` 拍板固化结论后，调度 `ops` **销毁/清空 Spike 临时分支（用完即焚）**；
+    - **`[HILLCLIMB]` 科学爬山流**：调度 `coding` 执行量化爬山循环并落盘实验表，完成后调度 `reviewer-perf` 核验指标真实性；
+    - **`Arch-Audit` 全库架构深度巡检**：直接调度常驻的 `reviewer-arch`（必要时协同 `explorer`）执行全库浅模块扫描并产出 `arch-report.html`。
 - **承接 Stage 2B 终审“三拍点将”的专家调度与常驻复用 (Expert Pane Lifecycle)**：
   - **第 1 拍**：唤醒 `reviewer-lead` 执行终审分诊；
   - **第 2 拍**：若 `reviewer-lead` 输出 `SPAWN_EXPERTS: [...]` 与 `FOCUS: "..."`，由你读取 `.agents/environment.json`，优先复用已常驻的专家窗格（若该专家尚未启动，则在 `review` Tab 右侧切出对应专家窗格 `herdr pane split` ➔ `herdr agent start`），并发派发指令后逐一 `herdr agent wait` 回收 ≤25 行专家简报（**`standard` 模式下严禁中途销毁专家窗格或中途压缩**，保留完整上下文应对同特性复审；`worktree` 模式下可按需关闭或随工作区一并销毁）；

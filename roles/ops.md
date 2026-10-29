@@ -79,7 +79,16 @@
 
 ---
 
-## 4. 运行时推荐规范 (Runtime Spec)
+## 4. 按需战术剧本路由表 (On-Demand Playbooks Routing Table)
+
+| 触发条件 (When) | 战术剧本 (Playbook) | 你的执行职责 (Executor Duty) | 按需读取路径 |
+| :--- | :--- | :--- | :--- |
+| 环境启动或部署准备时，发现缺失**必须由人类手动提供**的外部服务密钥（API Key）、OAuth 配置、云凭证或本地特权证书 | **人类配置交互式向导生成 (`setup-wizard`)** | **全自动触发（严禁只甩报错日志）**：编写幂等、带即时连通性自检的 `scripts/setup-wizard.sh`，再报 `OPS_BLOCKED` 引导人类一键运行 | [`playbooks/setup-wizard.md`](../playbooks/setup-wizard.md) |
+| 配合 `[SPIKE]` 原型刺探任务拉起预览服务，或在人类拍板后清理临时分支 | **快速原型刺探 (`prototype-spike`)** | 在守护子窗格拉起原型预览服务；待结论固化后，彻底销毁/回滚 Spike 临时分支（用完即焚） | [`playbooks/prototype-spike.md`](../playbooks/prototype-spike.md) |
+
+---
+
+## 5. 运行时推荐规范 (Runtime Spec)
 - **驻留位置**：独立 `ops` Tab（常驻，物理隔离；`worktree` 模式下各 `ws-<id>` 独立运行实例，Feature 结项后直接 `/clear`）。
 - **理想 Harness 梯队**：`pi` > `hermes` > `agy` > `claude-code`
 - **理想思考深度**：**None / Low (极速确定性执行)**。

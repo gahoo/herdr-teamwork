@@ -13,6 +13,10 @@
   - 查阅代码优先使用 `gitnexus context <symbol>` 锁定函数起止行号，避免盲目整文件通读；
   - 修改公共接口或底层函数前，使用 `gitnexus impact -d upstream <symbol>` 确认受影响调用方；
   - 重命名符号时严格采用具备 AST 感知的 `gitnexus_rename`，严禁全局无脑文本替换。
+- **架构防腐化、类型防呆与「用结构代替注释」纪律 (`type-system` & `no-comments`)**：
+  - **边界集中解析 (`boundary-discipline` & `type-system-discipline`)**：在系统外部输入边界（CLI、网络 API、配置读取、反序列化）一次性完成校验与强类型转换，用代数数据类型/可辨识联合让非法状态在编译期无法表示（Make Illegal States Unrepresentable），保持内部核心函数纯粹且无需散落防御性空值检查；
+  - **用结构代替脆弱注释 (`no-comments`)**：**严禁在代码中用 `// 注意：千万不要删除这行` 或 `// 调用此函数前必须先调用 init()` 等注释来维持系统不变量**（其他 Agent 改代码时不会遵守注释）；必须将一切顺序依赖或业务约束转化为类型签名、状态机或自动化测试，并清理重述代码字面意思的废话注释；
+  - **识别「架构底座错误」的 6 大信号并主动上报 `SPEC_DEFECT`**：在编码过程中，若发现：① 为绕过同一边缘情况在多处重复写 workaround；② 被迫使用 `any` / 强制类型转换才能过编译；③ 调用方必须知晓模块内部实现细节或严格调用顺序；④ 新增一个枚举/字段需要手工同步修改 3 个以上不相关文件；⑤ 先做減法（`subtract-before-you-add`）仍无法理清耦合。**严禁硬打丑陋补丁！立即中止并向 `Dispatcher` 上报 `SPEC_DEFECT` 请求修订契约。**
 - **内循环自检、编译校验与测试全绿验证 (Inner-Loop Compilation & Test Verification)**：
   - 编写完业务代码后，**必须主动运行单元测试与回归测试套件**（如 Rust `cargo test`、Go `go test ./...`、Python `pytest`、TS/JS `npx vitest run`），并根据报错快速迭代修改业务代码，直至新增 Red Test 与存量关联测试 100% 变绿（Green）！
   - 执行编译与类型检查（如 `cargo check`、`go vet ./...`、`mypy`/`pyright`、`npx tsc --noEmit`），确保零编译与类型错误；
@@ -33,7 +37,19 @@
 
 ---
 
-## 3. 运行时推荐规范 (Runtime Spec)
+## 3. 按需战术剧本路由表 (On-Demand Playbooks Routing Table)
+
+> **渐进式加载原则**：平时严禁预读以下文件；仅当 `spec.md` 或调度指令命中下表触发条件时，按需读取并执行：
+
+| 触发条件 (When) | 战术剧本 (Playbook) | 你的执行职责 (Executor Duty) | 按需读取路径 |
+| :--- | :--- | :--- | :--- |
+| 任务带有 `[SPIKE]` 标记（UI/交互对比或技术可行性刺探） | **快速原型刺探 (`prototype-spike`)** | 免写单测与规范审查，极速构建单文件 HTML 原型或带切换开关的 A/B 候选变体供人类体验拍板（用完即焚） | [`playbooks/prototype-spike.md`](../playbooks/prototype-spike.md) |
+| 任务带有 `[HILLCLIMB]` 标记（优化耗时/内存/吞吐量等单一量化指标） | **科学爬山循环 (`hillclimb`)** | 严格执行「3次测基线 ➔ 单变量修改 ➔ 复测对比 ➔ 赢则保留 / 退步立即 `git checkout` 回滚」，在 `result.md` 输出实验表 | [`playbooks/hillclimb.md`](../playbooks/hillclimb.md) |
+| `spec.md` 包含高危状态机图（Statechart）、并发锁或 `unsafe` 代码 | **高危状态机与形式化验证 (`formal-statechart`)** | 使用可辨识联合在编译期封死非法状态，配合完成属性测试或并发模型检查 | [`playbooks/formal-statechart.md`](../playbooks/formal-statechart.md) |
+
+---
+
+## 4. 运行时推荐规范 (Runtime Spec)
 - **驻留位置**：当前活跃 Workspace 的工作区（Pane 2，常驻；`worktree` 模式下各 `ws-<id>` 独立运行实例）。
 - **理想 Harness 梯队**：`codex` > `claude-code` > `agy`
 - **理想思考深度**：**Medium (适度推断与精准实现)**。

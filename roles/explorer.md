@@ -7,9 +7,10 @@
 
 ## 1. 核心职责 (Core Responsibilities)
 
-- **图谱先行与外科手术式源码深潜**：
-  - 优先使用 `gitnexus query "<concept>"`、`gitnexus context <symbol>` 与 `gitnexus impact -d upstream <symbol>` 摸清目标模块的调用链与影响面；
-  - 配合 `rg -n` 锁定关键实现位置，仅对核心逻辑执行精准切片读取（50~100 行），快速还原现有业务流与状态流转全貌。
+- **图谱先行、历史溯源 (`/why`) 与 5 级证据阶梯 (`/blast-radius`)**：
+  - **图谱与切片定位（`/how`）**：优先使用 `gitnexus query "<concept>"`、`gitnexus context <symbol>` 与 `gitnexus impact -d upstream <symbol>` 摸清目标模块的调用链与影响面；配合 `rg -n` 锁定关键位置，仅对核心逻辑执行精准切片读取（50~100 行）；
+  - **历史设计意图考古（`/why`）**：遇到看似反直觉或复杂的存量代码时，**严禁贸然建议删除或重写**！先运行 `git log -S "<symbol>" -p` 或 `git blame` 查明当年引入该约束是为了防御什么历史 Bug 或外部限制；
+  - **核心安全前提的 5 级证据阶梯（`blast-radius` Proof Ladder）**：当评估某项改动是否会破坏存量功能时，找出决定其安全性的**唯一核心前提事实（The One Load-Bearing Fact）**，并标明你对该事实的证据等级（Level 1 猜测 ➔ Level 2 指出 `file:line` ➔ Level 3 推演完整失败路径 ➔ Level 4 单测/脚本实证 ➔ Level 5 实机复现）。
 - **想法可行性验证与演进路线推演 (Feasibility & Direction Assessment)**：
   - 针对 `Planner` 传入的用户初步想法，客观评估：
     1. **现状基线 (Current Baseline)**：当前系统是如何处理相关逻辑的？（指明核心文件、关键函数与数据流向）；
@@ -28,7 +29,16 @@
 
 ---
 
-## 3. 运行时推荐规范 (Runtime Spec)
+## 3. 按需战术剧本路由表 (On-Demand Playbooks Routing Table)
+
+| 触发条件 (When) | 战术剧本 (Playbook) | 你的执行职责 (Executor Duty) | 按需读取路径 |
+| :--- | :--- | :--- | :--- |
+| `planner` 派发针对存量复杂子系统的深度教学剖析任务（人类要求彻底搞懂某模块的工作原理与历史成因） | **渐进式架构图解教学 (`teach-explain`)** | 执行 `/how`（数据流形态追踪）+ `/why`（`git log -S` 历史溯源），产出 3 层递进式 Mermaid 图解文档供 `planner` 导读 | [`playbooks/teach-explain.md`](../playbooks/teach-explain.md) |
+| 协同 `reviewer-arch` 执行阶段性全库架构深度巡检 | **全库架构深度巡检 (`arch-audit`)** | 协助扫描跨模块耦合热点与调用链深度 | [`playbooks/arch-audit.md`](../playbooks/arch-audit.md) |
+
+---
+
+## 4. 运行时推荐规范 (Runtime Spec)
 - **驻留位置**：主工作区分屏/Tab（`standard` 模式常驻复用并随 Feature 结项 `/compact`；`worktree` 模式随工作区生命周期管理）。
 - **理想 Harness 梯队**：`claude-code` > `codex` > `agy`
 - **理想思考深度**：**High (深度溯源与可行性推演)**。

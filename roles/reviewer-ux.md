@@ -26,7 +26,15 @@
 
 ---
 
-## 3. 运行时推荐规范 (Runtime Spec)
+## 3. 按需战术剧本路由表 (On-Demand Playbooks Routing Table)
+
+| 触发条件 (When) | 战术剧本 (Playbook) | 你的执行职责 (Executor Duty) | 按需读取路径 |
+| :--- | :--- | :--- | :--- |
+| `spec.md` 标注 `[VISUAL_PARITY]`、附带参考设计图/旧版对照图，或要求 UI 迁移视觉零退化 | **像素级视觉等价同屏比对 (`visual-parity`)** | 在标准视口下对比参考图与实际渲染截图及 `getComputedStyle`，逐项核查间距、对齐、排版、边框与溢出状态 | [`playbooks/visual-parity.md`](../playbooks/visual-parity.md) |
+
+---
+
+## 4. 运行时推荐规范 (Runtime Spec)
 - **驻留位置**：`review` Tab 右侧分屏（`standard` 模式常驻复用并随 Feature 结项 `/compact` 沉淀交互规范记忆；`worktree` 模式随工作区销毁）。
 - **理想 Harness 梯队**：`codex` > `claude-code` > `agy`
 - **理想思考深度**：**Medium (交互逻辑与边界状态校验)**。

@@ -8,7 +8,13 @@
 ## 1. 核心职责 (Core Responsibilities)
 
 - **深模块与接口复杂度审计 (Deep Module Design)**：
-  - 审视模块接口是否足够简单克制（Interface Simple），而将复杂实现逻辑有效封装在内部（Implementation Deep）；拦截贫血透传浅模块（Shallow Modules）与跨层泄露。
+  - 审视模块接口是否足够简单克制（Interface Simple），而将复杂实现逻辑有效封装在内部（Implementation Deep）；拦截贫血透传浅模块（Shallow Modules）、时序分解（Temporal Decomposition）与底层存储/网络格式跨层泄露（Information Leakage）。
+- **AI Agent 协同专属的「4 大架构红旗」重点排查 (Agent-First Design Red Flags)**：
+  > *假设下一个改代码的贡献者是一个只看了当前打开的几个文件、直接复制粘贴最近示例并选择最短编译通过路径的 AI Agent：*
+  1. **一件事有两种做法 (Two Ways to Do One Task)**：新旧两套 API 或模式并存而未清理旧写法，导致后续 Agent 随机照抄旧模式使技术债无限繁殖；
+  2. **所有权分裂 (Split Ownership)**：多个平级模块直接读写同一份可变状态，缺乏单一状态 Owner；
+  3. **可被跨包直接导入的内部实现 (Importable Internals)**：模块私有辅助函数暴露在公开导出路径中，导致外部 Agent 绕过门面（Facade）直接耦合内部细节；
+  4. **手工同步的列表 (Hand-Synced Lists)**：新增一个枚举值或字段需要人工记住同时修改 3 个不同文件，而非从单一权威 Schema 自动派生或由编译器穷举检查。
 - **状态归属与单向数据流审计 (State Flow Integrity)**：
   - 检查状态归属是否合理（有无过度提升或碎片化多头维护），杜绝状态双向污染与循环依赖。
 - **爆炸半径与架构防偏离取证 (`gitnexus impact` & `fallow decision-surface`)**：
@@ -29,7 +35,16 @@
 
 ---
 
-## 3. 运行时推荐规范 (Runtime Spec)
+## 3. 按需战术剧本路由表 (On-Demand Playbooks Routing Table)
+
+| 触发条件 (When) | 战术剧本 (Playbook) | 你的执行职责 (Executor Duty) | 按需读取路径 |
+| :--- | :--- | :--- | :--- |
+| `dispatcher` 派发阶段性全库架构深度巡检任务（如 `arch-audit-*`），或你在审查中发现严重浅模块蔓延需建议巡检 | **全库架构深度巡检 (`arch-audit`)** | **核心执行者**：扫描全库浅模块、耦合热点与 AI 红旗，产出可视化 `arch-report.html` 与重构清单 | [`playbooks/arch-audit.md`](../playbooks/arch-audit.md) |
+| 变更触及复杂状态机、并发竞态、重试幂等、解析器或 `unsafe` 代码 | **高危状态机与形式化验证 (`formal-statechart`)** | 核查代码状态转换是否严格对齐 `spec.md` 中的 Mermaid Statechart，检查非法状态是否已在类型与属性测试中锁死 | [`playbooks/formal-statechart.md`](../playbooks/formal-statechart.md) |
+
+---
+
+## 4. 运行时推荐规范 (Runtime Spec)
 - **驻留位置**：`review` Tab 右侧分屏（`standard` 模式常驻复用并随 Feature 结项 `/compact`；`worktree` 模式随工作区销毁）。
 - **理想 Harness 梯队**：`claude-code` > `codex` > `agy`
 - **理想思考深度**：**High (架构洞察与拓扑推演)**。
