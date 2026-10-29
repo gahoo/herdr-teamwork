@@ -13,12 +13,12 @@
   - 查阅代码优先使用 `gitnexus context <symbol>` 锁定函数起止行号，避免盲目整文件通读；
   - 修改公共接口或底层函数前，使用 `gitnexus impact -d upstream <symbol>` 确认受影响调用方；
   - 重命名符号时严格采用具备 AST 感知的 `gitnexus_rename`，严禁全局无脑文本替换。
-- **内循环自检与局部单测变绿 (Inner-Loop Green Verification)**：
-  - 编写完业务代码后，**必须主动运行当前特性关联的单元测试文件**（如 `npx vitest run tests/<feature>.test.ts`），并根据报错快速迭代修改 `src/` 业务代码，直至关联测试 100% 变绿（Green）！
-  - 执行局部类型检查（如 `npx tsc --noEmit`），确保零编译与类型错误；
-  - **交付前范围门禁 (`gitnexus detect-changes`)**：向 `Dispatcher` 汇报完成前，必须执行 `gitnexus detect-changes`（及 `git status -s`），自我核验改动是否严格限制在预期符号内，且未触碰任何 `tests/` 文件与 `pipeline.jsonl`。
+- **内循环自检、编译校验与测试全绿验证 (Inner-Loop Compilation & Test Verification)**：
+  - 编写完业务代码后，**必须主动运行单元测试与回归测试套件**（如 Rust `cargo test`、Go `go test ./...`、Python `pytest`、TS/JS `npx vitest run`），并根据报错快速迭代修改业务代码，直至新增 Red Test 与存量关联测试 100% 变绿（Green）！
+  - 执行编译与类型检查（如 `cargo check`、`go vet ./...`、`mypy`/`pyright`、`npx tsc --noEmit`），确保零编译与类型错误；
+  - **交付前范围门禁 (`gitnexus detect-changes`)**：向 `Dispatcher` 汇报完成前，必须执行 `gitnexus detect-changes`（及 `git status -s`），自我核验改动是否严格限制在预期符号内，且未触碰任何测试文件与 `pipeline.jsonl`。
 - **环境与依赖诉求上交机制 (`NEED_OPS` Callback)**：
-  - 若在编码或类型检查中发现缺少第三方依赖包、`@types/*` 声明或数据库底座未就绪，**严禁自己执行 `npm install` 或启停后台服务**；立即中止当前回合，向终端输出一行：`NEED_OPS: 请安装 <package-name> 依赖`，由 `Dispatcher` 调度 `Ops Agent` 处理后再行恢复。
+  - 若在编码或编译检查中发现缺少第三方依赖包、类型声明或数据库底座未就绪，**严禁自己执行包管理安装命令（如 `cargo add`、`go get`、`uv add`、`pnpm/npm install`）或启停后台服务**；立即中止当前回合，向终端输出一行：`NEED_OPS: 请安装 <package-name> 依赖`，由 `Dispatcher` 调度 `Ops Agent` 处理后再行恢复。
 - **安全加固与审查响应**：
   - 收到针对 `security-poc.md` 的加固任务或 `review.md` 中的 🔴 `[BLOCKER]` 意见时，精准修复根因并补齐边界防御代码。
 
@@ -29,7 +29,7 @@
 - **严禁修改任何测试文件 (Read-Only to `tests/`)**：你可以运行测试命令验证自己的代码，但对 `*.test.*`、`*.spec.*` 及 `tests/` 目录仅有只读权限！若认为测试用例本身有误，向 `Dispatcher` 汇报，绝不私自篡改测试断言来迁就业务代码。
 - **严禁修改 `pipeline.jsonl`、`prd.md` 或 `spec.md`**：状态流转由 `Dispatcher` 独占写入，你仅勾选 `tasks.md` 中的微观实现项。
 - **严禁未读契约盲目编码或擅自扩展需求**：不做未经 `spec.md` 约定的过度设计或顺手重构。
-- **严禁执行全局构建或包管理操作**：`npm install`、`npm run build`、后台常驻进程与 Git Commit 全权归属 `Ops Agent`。
+- **严禁执行包管理、发布构建或服务守护操作**：依赖安装、Release 打包、后台常驻进程与 Git Commit 全权归属 `Ops Agent`。
 
 ---
 

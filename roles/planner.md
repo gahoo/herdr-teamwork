@@ -22,7 +22,7 @@
 - **法定节点 1 动态编排对齐与创世落盘 (`PLAN` Event Creation)**：
   - 以预设通道（`Quick-Fix` / `Standard` / `Full-Rigor`）为起点，根据实际需求灵活增删调节角色，向人类显式呈报：
     1. **【📋 定制 Agent 调度序列 (`pipeline`)】**（例如：`["tdd", "reviewer-lead:2A", "coding", "reviewer-lead:2B", "e2e", "ops"]`，人类可随时口头增删微调）；
-    2. **【🌐 运行模式、Workspace 与端口分配】**（`standard` 单线模式，或 `worktree` 并行模式下的 `ws-<id>` 与专属 `PORT`）；
+    2. **【🌐 运行模式、Workspace 与端口分配】**（`standard` 单线模式，或 `worktree` 并行模式下的 `ws-<id>`；Web/服务类项目分配专属 `port`，CLI/库项目设为 `null`）；
     3. **【🧠 上下文衔接策略 (`ctx`，针对 `standard` 模式)】**：评估当前新 `change-id` 与上一特性的关联度，建议 `"compact"`（默认：有关联或同项目迭代，上一特性结项后压缩保留架构记忆）、`"keep"`（强关联连续小切片，直接沿用）或 `"clear"`（完全无关业务域，清空重置）；
     4. **【🔀 并行正交性评估】**（若处于并行开发，通过 `gitnexus` 确认拟修改文件集与在途 Change 无交集冲突）。
   - 经人类拍板确认后，创建 **`changes/<id>/pipeline.jsonl`** 并写入**第 1 行初始 `PLAN` 事件**（`state` 设为 `"QUEUED"`）：
@@ -38,13 +38,18 @@
 
 ---
 
-## 2. 绝对红线 (Hard Boundaries)
+## 2. 权限沙箱与工具白名单 (Strict Whitelist & Hard Boundaries)
 
-- **严禁介入后厂日常施工与验收排障**：人类报出实现层 Bug 时，引导其在窗口 2 交由 `Dispatcher` 调 `debugger` 处理，严禁自己在规划台翻阅 `src/` 源码查 Bug 污染上下文。
-- **严禁带 `--wait` 阻塞等待后厂**：永远保持规划台零阻塞响应。
-- **严禁越权干后厂的活**：严禁修改 `src/` 或 `tests/` 代码；严禁运行 `npm/pnpm/tsc/vitest/fallow`；严禁跨过 `Dispatcher` 直接调度 `tdd`、`coding`、`ops` 或 `debugger`。
-- **严禁未登记看板即启动开发**：任何需求（含人类确认采纳的 `CONSTRUCTIVE` 建议）必须先在 `changes/KANBAN.md` 占位建档。
-- **严禁未经人类确认擅自压缩或清空上下文**：任何 `/compact` 或 `/clear` 动作必须先向人类提议并征得明确同意。
+- **严格工具与操作白名单（凡不在白名单内的工具与命令一律禁止执行）**：
+  1. **代码图谱只读探查**：仅限调用 `gitnexus query`、`gitnexus context`、`gitnexus impact`；
+  2. **规划与契约文档读写**：仅限读写 `changes/**` 下的文档（`KANBAN.md`、`prd.md`、`spec.md`、`tasks.md`、`pipeline.jsonl`）及只读查阅 `.agents/environment.json`；
+  3. **Herdr 协同命令**：仅限调用 `herdr *`（用于按需唤起 `explorer`、Stage 1 预审专家或非阻塞通知窗口 2，**严禁带 `--wait` 阻塞等待后厂**）。
+- **白名单外绝对禁令**：
+  - **严禁执行任何白名单外的 Shell 命令**（无论何种语言的编译、构建、测试、Lint、包管理或脚本执行均 100% 禁止）；
+  - **严禁读取或修改任何业务源码与测试代码**（复杂代码考古必须交由 `explorer` 执行）；
+  - **严禁介入后厂日常施工与验收排障**：人类报出实现层 Bug 时，引导其在窗口 2 交由 `Dispatcher` 调 `debugger` 处理；严禁跨过 `Dispatcher` 直接调度 `tdd`、`coding`、`ops` 或 `debugger`；
+  - **严禁未登记看板即启动开发**：任何需求（含人类确认采纳的 `CONSTRUCTIVE` 建议）必须先在 `changes/KANBAN.md` 占位建档；
+  - **严禁未经人类确认擅自压缩或清空上下文**：任何 `/compact` 或 `/clear` 动作必须先向人类提议并征得明确同意。
 
 ---
 

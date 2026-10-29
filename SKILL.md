@@ -30,12 +30,14 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 ├── .agents/                         # Agent 运行时支撑基建 (Infrastructure Surface)
 │   ├── environment.json             # 宿主机器 Harness 画像、并发模式与 15 角色动态配置
 │   ├── session.json                 # Herdr 会话状态快照与跨天秒级复活配置
-│   └── skills/herdr-teamwork/roles/ # 15 个正交角色的专属契约库
+│   └── skills/herdr-teamwork/       # 本技能规范库
+│       ├── roles/                   # 15 个正交角色的专属契约库
+│       └── scripts/                 # 跨项目通用 Worktree 建场与销毁脚本 (worktree-up.sh / worktree-down.sh)
 └── .worktrees/                      # 【并行执行隔离区】(worktree 模式下由 Ops 建场管理，纳入 .gitignore)
-    └── <id>/                        # 绑定独立 Herdr Workspace (ws-<id>) + 独立分支 + 独立端口
+    └── <id>/                        # 绑定独立 Herdr Workspace (ws-<id>) + 独立分支 + 按需端口
         ├── changes -> ../../changes             # 🔗 软链接共享主工作区 changes/，契约与事件流 0 延迟互通
         ├── .agents -> ../../.agents             # 🔗 软链接共享主工作区 .agents/，复用全局环境配置
-        ├── node_modules -> ../../node_modules   # 🔗 默认软链接秒级复用依赖；装新包时由 Ops 执行“写时解链”
+        ├── node_modules / .venv -> ../../...    # 🔗 按技术栈自动软链共享依赖；装新包时由 Ops 执行“写时解链”
         ├── src/                                 # 当前特性独立修改的业务源码
         └── tests/                               # 当前特性独立修改的测试代码
 ```
@@ -66,17 +68,17 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 
 | 集群 | 角色 ID (全局统一) | 契约文件 | 核心职责 | 绝对红线 (Hard Boundaries) |
 | :--- | :--- | :--- | :--- | :--- |
-| **前店<br>规划层** | **`planner`** | [`roles/planner.md`](roles/planner.md) | **产品与架构规划师（窗口 1）**：直面人类聊需求、独占维护 `KANBAN.md`、撰写 `prd/spec/tasks`、动态定制工序并创建 `pipeline.jsonl` 首行 `PLAN`（含上下文策略 `ctx`）。 | **严禁介入后厂日常验收排障**；严禁未经人类确认擅自压缩或清空上下文；严禁通读海量源码；严禁改代码或直接调后厂工人。 |
+| **前店<br>规划层** | **`planner`** | [`roles/planner.md`](roles/planner.md) | **产品与架构规划师（窗口 1）**：直面人类聊需求、独占维护 `KANBAN.md`、撰写 `prd/spec/tasks`、动态定制工序并创建 `pipeline.jsonl` 首行 `PLAN`（含上下文策略 `ctx`）。 | **严格工具白名单（仅限 `gitnexus query/context/impact`、读写 `changes/**`、`herdr *`）**；严禁介入后厂排障；严禁未经人类确认擅自压缩或清空上下文。 |
 | **前店<br>规划层** | **`explorer`**<br>(项目记忆沉淀) | [`roles/explorer.md`](roles/explorer.md) | **代码探路与可行性预研员**：深入复杂历史源码验证用户想法的现实可行性，输出 `explore.md` 简报并沉淀项目演进心智模型。 | **严格只读权限**；严禁倒灌大段原始源码；`standard` 模式常驻复用（Feature 结项后 `/compact`），`worktree` 模式随工作区销毁。 |
-| **后厂<br>执行层** | **`dispatcher`** | [`roles/dispatcher.md`](roles/dispatcher.md) | **交付总控与状态机调度员（窗口 2 总控 / `ws-<id>` 执行机）**：后台 `tail -f` 监听多任务、内部 `--wait` 阻塞调度、独占续写 `pipeline.jsonl`、替主审拉起/复用专家、在 Feature 结项后统一打理各角色上下文。 | **物理蒙眼：禁读 `src/` 与 `tests/`**；**仅允许追加写入 `pipeline.jsonl`**（对所有 `.md` 只读）；严禁执行建场/构建/装包/Git 写命令（全归 `ops`）。 |
+| **后厂<br>执行层** | **`dispatcher`** | [`roles/dispatcher.md`](roles/dispatcher.md) | **交付总控与状态机调度员（窗口 2 总控 / `ws-<id>` 执行机）**：后台 `tail -f` 监听多任务、内部 `--wait` 阻塞调度、独占续写 `pipeline.jsonl`、替主审拉起/复用专家、在 Feature 结项后统一打理各角色上下文。 | **严格工具白名单（仅限 `herdr *`、只读契约文件、追加 `pipeline.jsonl`、`git status/diff`）**；**物理蒙眼禁读源码**；一切建场/构建/装包/Git 写操作全归 `ops`。 |
 | **后厂<br>执行层** | **`tdd`** | [`roles/tdd.md`](roles/tdd.md) | **测试驱动开发工程师**：在业务编码前依据 `spec.md`、`tasks.md`、`debug.md` 或 `security-poc.md` 编写高严谨度失败用例 (Red Test) 并勾选 `tasks.md`。 | **严禁修改业务代码 (`src/`) 或 `pipeline.jsonl`**；严禁为迎合变绿而弱化断言或编写同语反复假阳性测试。 |
-| **后厂<br>执行层** | **`coding`** | [`roles/coding.md`](roles/coding.md) | **业务代码实现者**：依据 `spec.md` / `tasks.md` / `debug.md` 编写业务代码并勾选 `tasks.md`，**运行关联单测迭代至 Green**，执行 `tsc --noEmit` 与 `gitnexus detect-changes`。 | **严禁修改任何测试文件 (`tests/`) 或 `pipeline.jsonl`**；严禁私自装包或启停服务（缺包输出 `NEED_OPS`）。 |
-| **后厂<br>执行层** | **`ops`** | [`roles/ops.md`](roles/ops.md) | **环境、Worktree 与发布守护者**：全权负责 Worktree 物理建场与销毁、`node_modules` 写时解链装包、**非阻塞**后台守护服务、数据库快照、构建与受控 Git 发布。 | **严禁前台阻塞自身终端主线程**；**严禁在软链上直接装包污染主目录**；严禁改源码/测试/看板；严禁未授权提前 commit。 |
+| **后厂<br>执行层** | **`coding`** | [`roles/coding.md`](roles/coding.md) | **业务代码实现者**：依据 `spec.md` / `tasks.md` / `debug.md` 编写业务代码并勾选 `tasks.md`，**主动运行单元与回归测试迭代至全绿 (Green)**，执行编译/类型检查与 `gitnexus detect-changes`。 | **严禁修改任何测试文件 (`tests/`) 或 `pipeline.jsonl`**；严禁私自装包或启停服务（缺包输出 `NEED_OPS`）。 |
+| **后厂<br>执行层** | **`ops`** | [`roles/ops.md`](roles/ops.md) | **跨语言环境、Worktree 与发布守护者**：遵循“原生命令优先 + 通用调 Skill 脚本 + 仅高频复合痛点按生态沉淀脚本”；负责 Worktree 生命周期、多语言依赖隔离、**切分专属子窗格透明运行守护服务**、环境快照与受控 Git 发布。 | **严禁在自身主窗格前台阻塞运行服务（必须切分子窗格运行）**；**严禁在软链上直接装包污染主目录**；严禁代跑代码审查或单元测试；严禁未授权提前 commit。 |
 | **后厂<br>执行层** | **`debugger`**<br>(项目记忆沉淀) | [`roles/debugger.md`](roles/debugger.md) | **法医式排错侦探**：窗口 2 验收报障、`e2e` 崩溃或终审回归失败时出马，利用 `gitnexus` 逆向溯源并输出 `changes/<id>/debug.md`。 | **严格只读权限，绝不亲自动手改代码**；严禁倒灌原始调试日志；`standard` 模式常驻并在 Feature 结项后 `/compact` 沉淀项目记忆。 |
 | **后厂<br>执行层** | **`security-redteam`**<br>(项目记忆沉淀) | [`roles/security-redteam.md`](roles/security-redteam.md) | **红队渗透测试领队**：STRIDE 威胁建模、白盒污点追踪、隔离沙箱动态渗透，产出 `security-poc.md`。 | **严禁攻击非授权或生产环境**；严禁修改业务代码与标准测试；`standard` 模式常驻并在 Feature 结项后 `/compact` 沉淀攻击面记忆。 |
 | **后厂<br>执行层** | **`e2e`**<br>(用完清空) | [`roles/e2e.md`](roles/e2e.md) | **端到端与冒烟测试专家**：双轨制走查（90% 小模型现场冒烟查白屏/Console红字/500错误；10% 黄金链路原子 JS 脚本化）。 | **严禁为日常易变切片制造脆弱脚本债务**；单动作自愈 ≤3 次、总步数 ≤15 步刚性熔断；Feature 结项后直接 `/clear` 清空过期 DOM 快照。 |
-| **分形<br>审查层** | **`reviewer-lead`** | [`roles/reviewer-lead.md`](roles/reviewer-lead.md) | **主审统筹与裁决官**：独立执行 **Stage 2A 测试快检**；在 **Stage 2B 终审**分诊输出 `SPAWN_EXPERTS` 点将令，回收简报后做 ROI 仲裁并独占签署 `review.md`。 | **严禁亲自运行 `fallow/tsc/vitest/impact/audit`**；严禁亲自敲 `herdr pane` 切屏命令；严禁无行号举证的无脑 `APPROVED`。 |
-| **分形<br>审查层** | **`reviewer-quality`**<br>(用完清空) | [`roles/reviewer-quality.md`](roles/reviewer-quality.md) | **代码健康与回归过滤官**：独占运行并消化 `fallow`、`tsc --noEmit` 与 **全量测试套件回归 (`vitest run`)** 原始日志，输出 ≤15 行健康简报。 | **严禁向主审倒灌原始终端日志**；严禁伪造 `delta: +0` 或回归通过率；只读权限；Feature 结项后直接 `/clear` 清空。 |
+| **分形<br>审查层** | **`reviewer-lead`** | [`roles/reviewer-lead.md`](roles/reviewer-lead.md) | **主审统筹与裁决官**：独立执行 **Stage 2A 测试快检**；在 **Stage 2B 终审**分诊输出 `SPAWN_EXPERTS` 点将令，回收简报后做 ROI 仲裁并独占签署 `review.md`。 | **严禁亲自运行静态分析/类型编译/测试/`impact`/安全审计**；严禁亲自敲 `herdr pane` 切屏命令；严禁无行号举证的无脑 `APPROVED`。 |
+| **分形<br>审查层** | **`reviewer-quality`**<br>(用完清空) | [`roles/reviewer-quality.md`](roles/reviewer-quality.md) | **静态代码质量与健康度过滤官**：独占运行并消化跨语言静态健康度与类型分析工具（TS `fallow+tsc` / Rust `clippy` / Go `golangci-lint` / Python `ruff+mypy`）原始日志，输出 ≤15 行健康简报。 | **严禁向主审倒灌原始终端日志**；**不越界重跑单元测试**；严禁伪造指标；只读权限；Feature 结项后直接 `/clear` 清空。 |
 | **分形<br>审查层** | **`reviewer-arch`**<br>(项目记忆沉淀) | [`roles/reviewer-arch.md`](roles/reviewer-arch.md) | **系统架构专家**：承接前店 **Stage 1 宏观预审** 与后厂 **Stage 2B 架构终审**；审查深模块设计、单向数据流与 `gitnexus impact` 爆炸半径。 | 必须附带工具取证清单与防线行号举证；只读权限；`standard` 模式常驻并在 Feature 结项后 `/compact` 沉淀架构演进记忆。 |
 | **分形<br>审查层** | **`reviewer-perf`**<br>(项目记忆沉淀) | [`roles/reviewer-perf.md`](roles/reviewer-perf.md) | **性能与并发专家**：审查无效重渲染、闭包内存泄漏、N+1 查询、全表扫描与缓存并发安全。 | 必须给出具体瓶颈行号与复杂度推导；只读权限；`standard` 模式常驻并在 Feature 结项后 `/compact` 沉淀性能基线记忆。 |
 | **分形<br>审查层** | **`reviewer-security`**<br>(项目记忆沉淀) | [`roles/reviewer-security.md`](roles/reviewer-security.md) | **蓝队安全合规专家**：承接前店安全预审与后厂安全终审；审查注入防御、RBAC/ABAC 越权、供应链 CVE，复核红队 PoC 闭环。 | 对高危漏洞拥有一票否决权；必须附带防御行号举证；只读权限；`standard` 模式常驻并在 Feature 结项后 `/compact` 沉淀安全防线记忆。 |
@@ -94,8 +96,8 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
    - **执行方式**：**略过 `reviewer-lead`**，由 `Planner` 直接按需唤醒或复用 **`reviewer-arch`** 或 **`reviewer-security`**，评估深模块合理性与 `gitnexus impact` 爆炸半径，将宏观修正直接融入 `spec.md` 并记录于 `review.md` Stage 1 章节（`standard` 模式下窗格常驻保留上下文至 Feature 结项）。
 2. **🔬 第二阶段：实施期测试与代码细节/防偏离终审 (Stage 2: Implementation & Drift Gate —— 后厂强制门禁)**
    - **子阶段 2A：测试代码前置快检 (Red Test Gate)**：在 `tdd` 写完 Red Test 后、`coding` 动手前，由 **`reviewer-lead` 独立执行**（仅在涉及红队 PoC 转化时点名 `reviewer-security` 协审）。严格按《4 维测试审查清单》与“硬编码证伪法”拦截弱断言与契约偏差。
-   - **子阶段 2B：业务实现与防偏离终审 (Code & Drift Gate)**：在 `coding` 跑通局部单测变绿后触发，实行**“主审开方点将 ➔ Dispatcher 抓药调度 ➔ 主审合议裁决”**三拍闭环：
-     - **第 1 拍（主审分诊点将）**：`reviewer-lead` 仅运行 `git diff --stat` 与 `gitnexus detect-changes`（**严禁自己跑 `fallow`/`tsc`/`vitest`/`impact`**）。若属 Tier 1（<20 行纯文档/文案/样式微调），直接签字放行；若属 Tier 2/3，立即向终端输出一行点将令并结束回合：
+   - **子阶段 2B：业务实现与防偏离终审 (Code & Drift Gate)**：在 `coding` 自证测试全绿后触发，实行**“主审开方点将 ➔ Dispatcher 抓药调度 ➔ 主审合议裁决”**三拍闭环：
+     - **第 1 拍（主审分诊点将）**：`reviewer-lead` 仅运行 `git diff --stat` 与 `gitnexus detect-changes`（**严禁自己跑静态质量分析、编译检查、测试或 `impact`**）。若属 Tier 1（<20 行纯文档/文案/样式微调），直接签字放行；若属 Tier 2/3，立即向终端输出一行点将令并结束回合：
        `TRIAGE_RESULT: Tier 2 | SPAWN_EXPERTS: [reviewer-quality, reviewer-perf] | FOCUS: "核查 xxx 模块"`
      - **第 2 拍（Dispatcher 并发代跑）**：`dispatcher` 解析点将令，复用已常驻的专家窗格（若首次调用则切出对应专家 Pane）、传入 `FOCUS` 指令并 `wait` 等待，收集 ≤25 行专家简报（`standard` 模式下保留专家窗格至当前 Feature 结项后统一打理上下文；`worktree` 模式下可即用即关或随工作区销毁）。
      - **第 3 拍（主审 ROI 仲裁与落盘）**：`dispatcher` 将全部专家简报喂回 `reviewer-lead`，由主审权衡冲突、剔除吹毛求疵，统一写入 `changes/<id>/review.md`。
@@ -105,9 +107,9 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 
 | 专家角色 ID | 具象触发条件（命中任一特征即必须点名唤起） |
 | :--- | :--- |
-| **`reviewer-quality`** | **凡改动包含任何业务源码 (`src/`) 或测试代码 (`tests/`)**（非纯文档/注释微调），100% 必调！负责跑 `fallow` 增量健康度、`tsc` 与 **全量测试套件回归**。 |
+| **`reviewer-quality`** | **凡改动包含任何业务源码 (`src/`) 或测试代码 (`tests/`)**（非纯文档/注释微调），100% 必调！负责跑跨语言对等静态代码健康度与类型分析（TS `fallow+tsc` / Rust `clippy` / Go `golangci-lint` / Python `ruff+mypy`）。 |
 | **`reviewer-arch`** | 1. `gitnexus detect-changes` 显示风险 `>= MEDIUM` 或波及业务流 `>= 2` 个；<br>2. 触及公共核心层、全局状态管理或数据库 Schema；<br>3. 跨 `>= 3` 个模块目录修改，或怀疑实现偏离了 `spec.md` 既定架构边界。 |
-| **`reviewer-security`** | 1. 触及认证鉴权、权限守卫、加密脱敏、资金/计费/敏感状态流转；<br>2. 含数据库查询、文件 I/O、系统命令执行、富文本渲染或新增外部 API；<br>3. 修改了 `package.json` 依赖，或当前变更集存在 `security-poc.md`。 |
+| **`reviewer-security`** | 1. 触及认证鉴权、权限守卫、加密脱敏、资金/计费/敏感状态流转；<br>2. 含数据库查询、文件 I/O、系统命令执行、富文本渲染或新增外部 API；<br>3. 修改了项目依赖清单（`Cargo.toml` / `go.mod` / `pyproject.toml` / `package.json`），或当前变更集存在 `security-poc.md`。 |
 | **`reviewer-perf`** | 1. 数据层涉及循环内查询、大表查询、索引/缓存策略或并发锁；<br>2. 视图层涉及高频事件监听、定时器、海量节点渲染或复杂闭包。 |
 | **`reviewer-ux`** | 1. 涉及前端交互组件、弹窗模态框、表单校验或布局样式；<br>2. 涉及键盘快捷键流、焦点捕获管理 (Focus Trap)、无障碍属性或用户提示文案。 |
 
@@ -115,7 +117,7 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 1. **🛡️ 核心防线证伪核查 (Proof of Defense —— 杜绝无脑 Approve)**：
    - 任何 Reviewer 在给予通过前，必须在报告中明确指出本次改动**最脆弱的边界/异常点**，并**贴出源码或测试中实施防御的确切文件名与行号 (`file:line`)**。拿不出确切防御行号，严禁给予 `APPROVED`。
 2. **🚦 审查意见三级定性 (Severity Triage —— 杜绝过度挑刺与看板污染)**：
-   - 🔴 **`[BLOCKER / 致命阻断]`**：违背 `spec.md` 契约、存在安全/崩溃/泄漏漏洞、测试假阳性、缺少核心边界防御或 `fallow` 退化 (`delta > 0`)。➔ **触发 `CHANGES_REQUESTED` 打回返工（最多允许 2 轮返工，超限挂起为 `WAITING_DECISION` 交人类裁决）**。
+   - 🔴 **`[BLOCKER / 致命阻断]`**：违背 `spec.md` 契约、存在安全/崩溃/泄漏漏洞、测试假阳性、缺少核心边界防御或静态质量退化（如 `fallow delta > 0` / `clippy` 报错 / `golangci-lint` 报错）。➔ **触发 `CHANGES_REQUESTED` 打回返工（最多允许 2 轮返工，超限挂起为 `WAITING_DECISION` 交人类裁决）**。
    - 🟡 **`[CONSTRUCTIVE / 建设性演进建议]`**：当前功能正确且安全，但存在中远期可优化的演进点。➔ **不阻断当前流水线（状态仍为 `APPROVED` 直接放行），由 `Dispatcher` 记录条数至 `pipeline.jsonl` 并在窗口 2 验收时提醒人类；人类确认采纳后再主动交窗口 1 `Planner` 记入 `KANBAN.md` Inbox**！
    - ⚪ **`[NITPICK / 主观风格吹毛求疵]`**：已被 Linter 覆盖的格式问题或个人命名偏好。➔ **绝对禁止输出**。
 
@@ -234,15 +236,11 @@ flowchart TD
 
 ### 7.1 Worktree 物理建场（`Ops` 执行）与多任务监听（`Master Dispatcher` 执行）
 ```bash
-# 1. 【worktree 模式前置建场】Master Dispatcher 阻塞调度主工作区 Ops 初始化目录与三大软链：
-herdr agent prompt ops "请为 changes/001-auth 执行 Worktree 建场：分支 feat/001-auth，目录 .worktrees/001-auth" --wait --timeout 30000
+# 1. 【worktree 模式前置建场】Master Dispatcher 阻塞调度主工作区 Ops 调用内置建场脚本：
+herdr agent prompt ops "请为 changes/001-auth 执行 Worktree 建场：分支 feat/001-auth" --wait --timeout 30000
 
-# Ops 内部执行的标准建场命令（含 node_modules 默认软链；后续若需装新包则先 rm .worktrees/001-auth/node_modules 解链）：
-mkdir -p .worktrees
-git worktree add -b "feat/001-auth" ".worktrees/001-auth"
-ln -sfn "../../changes" ".worktrees/001-auth/changes"
-ln -sfn "../../.agents" ".worktrees/001-auth/.agents"
-ln -sfn "../../node_modules" ".worktrees/001-auth/node_modules"
+# Ops 内部直接调用本 Skill 内置的跨语言通用建场脚本（自动完成 git worktree add、changes/.agents 软链及 node_modules/.venv 探测挂载）：
+.agents/skills/herdr-teamwork/scripts/worktree-up.sh "001-auth" "feat/001-auth"
 
 # 2. 【Master Dispatcher】创建独立 Herdr Workspace (ws-001) 并异步点火该工作区的 Worker Dispatcher：
 herdr workspace create ws-001 --cwd ".worktrees/001-auth"

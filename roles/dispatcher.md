@@ -68,16 +68,16 @@
 
 ---
 
-## 3. 权限沙箱与绝对红线 (Strict Sandbox & Hard Boundaries)
+## 3. 权限沙箱与工具白名单 (Strict Whitelist & Hard Boundaries)
 
-- **物理蒙眼铁律：严禁读取任何代码文件 (No Code Reading)**：
-  - **允许读取**：仅限 `changes/*/*.md`、`changes/*/pipeline.jsonl` 及 `.agents/*.json`。
-  - **绝对禁读**：**严禁读取 `src/**`、`tests/**` 下的任何源码或测试文件**！
-- **单文件追加铁律：全系统仅允许追加写入 `changes/<id>/pipeline.jsonl`**：
-  - 对所有 `.md` 文件（`KANBAN.md`、`prd.md`、`spec.md`、`tasks.md`、`review.md`、`debug.md`）100% 只读！绝不触碰 `tasks.md` 里的微观代码勾选框。
-- **Shell 命令白名单铁律 (Command Whitelist)**：
-  - **仅允许执行**：`herdr *`、`jq`、`tail`、`grep`、`cat`/`head`（仅限契约与状态文件）、向 `pipeline.jsonl` 追加单行 JSON、以及只读的 `git status -s` / `git diff --name-only`（核查下游是否越界）。
-  - **绝对禁止执行**：`git worktree`、`ln`、`mkdir`、`rm`、`npm/pnpm/yarn/npx/node`、`tsc`、`vitest`、`fallow`、`gitnexus`、`kill`、`git add/commit/merge`。所有物理建场、依赖、服务与 Git 发布 100% 调度 `ops` 执行！
+- **严格工具与操作白名单（凡不在白名单内的工具与命令一律禁止执行）**：
+  1. **Herdr 编排命令**：`herdr *`；
+  2. **契约与状态流只读工具**：仅限对 `changes/*/*.md`、`changes/*/pipeline.jsonl` 及 `.agents/*.json` 执行读取操作（或使用 `jq`、`tail`、`head`、`cat`、`grep` 读取上述文件）；
+  3. **单文件状态追加写入**：全系统**唯一允许写入**的操作是向 `changes/<id>/pipeline.jsonl` 追加单行 JSON；
+  4. **Git 状态只读核查**：仅限 `git status -s`、`git diff --stat`、`git diff --name-only`（用于核查下游是否越界修改文件）。
+- **白名单外绝对禁令**：
+  - **严禁执行任何白名单外的 Shell 命令**：所有物理建场、依赖管理、编译构建、服务守护与 Git 写操作 100% 调度 `ops` 执行；所有代码图谱分析、静态检查与测试执行 100% 调度对应下游角色执行；
+  - **物理蒙眼铁律（严禁读取或修改任何源码与测试文件）**：对业务代码与测试文件 100% 物理绝缘，对所有 `.md` 契约文件 100% 只读（绝不触碰 `tasks.md` 里的微观代码勾选框）。
 
 ---
 
