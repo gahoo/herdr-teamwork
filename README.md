@@ -121,7 +121,7 @@ project-root/
 
 - **[Matt Pocock (`@mattpocock`) — `mattpocock/skills`](https://github.com/mattpocock/skills)**：
   启发了本项目中面向多 Agent 共享的统一领域语言词典（`GLOSSARY.md`）与 3 条件 ADR 门禁（源自 `domain-modeling` & `grill-with-docs`）、五阶段硬门禁排障循环与临时探针标记（源自 `diagnosing-bugs`）、用完即焚的快速原型刺探（源自 `prototype`）、周期性深模块架构体检报告（源自 `improve-codebase-architecture`）、人类专属配置交互式向导脚本（源自 `wizard`）、单/双向门合入风险评估（源自 `pr`）以及渐进式披露与正向引导的 Agent 契约写作准则（源自 `writing-for-agents` & `retro`）。
-- **[Lauren Tan (`@poteto`) — `pstack`](https://x.com/poteto/article/2094457600259842065)**（参见 [*The Complete Guide to pstack Pt. 1*](https://x.com/poteto/article/2094457600259842065) & [*Pt. 2*](https://x.com/poteto/article/2097732320606507506)）：
+- **[Lauren Tan (`@poteto`) — `pstack`](https://github.com/cursor/plugins/tree/main/pstack)**：
   启发了本项目 `Reflector` 的「四级防错强化阶梯：架构消除 > 类型/Lint > 测试 > 文档兜底」（源自 `/correct`）、面向 AI Agent 协作的 4 大架构红旗与推倒重来信号（源自 `/architect` & `design-red-flags`）、5 级证据阶梯与实证过滤铁律（源自 `/blast-radius` & `/interrogate`）、单一量化指标科学爬山循环與数字真实性核查（源自 `hillclimb`、`benchmark-checklist` & `explain-the-number`）、高危状态机图解与形式化验证（源自 `/statechart` & `/create-formal-verification-skill`）、像素级视觉等价同屏比对（源自 `visual-parity`）、物化 E2E 路由与交互记忆的 `E2E_PLAYBOOK.md`（源自 `/create-verification-skill` 的 Feature Map 与 `build-the-lever`）、用结构代替脆弱注释（源自 `/no-comments`）以及人类回场全局简报与 `/how`+`/why` 递进图解教学（源自 `/ketchup` & `/teach`）。
 - **核心生态与基建工具**：
   感谢 **Herdr**（多窗格终端工作区与 Agent 编排底座）、**[GitNexus](https://github.com/abhigyanpatwari/GitNexus)**（AST 级代码知识图谱与爆炸半径分析）、**[Fallow](https://github.com/fallow-rs/fallow)**（极速静态死代码与架构健康度分析）以及 **OpenSpec** 活文档规范。
