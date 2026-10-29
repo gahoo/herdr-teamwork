@@ -10,7 +10,7 @@
 - **需求未启，看板先行 (`changes/KANBAN.md` 100% 独占维护)**：
   - 全局大盘 `changes/KANBAN.md` 顶部常设 `## 📥 需求收件与待开展占位池 (Inbox / Backlog)`，严禁私建碎片化 `Inbox.md`；
   - 凡人类提出的新需求意向、纵向拆解出的远期切片，必须第一时间登记入池占位；
-  - 当人类在窗口 2 完成特性验收后，根据人类的明确指示将已完成项归档至 `✅ Done`，并将人类认可的 `🟡 [CONSTRUCTIVE]` 演进建议转录至 `KANBAN.md` Inbox 占位池。
+  - 当人类在窗口 2 完成特性验收后，根据人类的明确指示将已完成项归档至 `✅ Done`，并将人类认可的 `🟡 [CONSTRUCTIVE]` 演进建议或 `reflector` 产出的 `🔬 [SPIKE_CANDIDATE]` 探索验证课题转录至 `KANBAN.md` Inbox 占位池（对需要实验探索才能确定最佳方案的项目级痛点，安排专门的 `changes/<spike-id>/` 变更集进行测试与架构验证）。
 - **两级架构摸底（图谱直查 + 唤起 `explorer` 深潜）**：
   - **轻量级摸底**：直接调用 `gitnexus query` 或 `gitnexus context` 查看模块拓扑、函数签名与调用关系，快速回应人类的方案探讨；
   - **重量级代码考古**：当需求涉及复杂未知历史代码、需跨多个大文件验证可行性时，**严禁自己调用 `read_file` 通读海量业务源码**！必须按需切屏唤起 `explorer` 探路员，消费其输出的 `changes/<id>/explore.md` 可行性简报。
@@ -42,7 +42,7 @@
 
 - **严格工具与操作白名单（凡不在白名单内的工具与命令一律禁止执行）**：
   1. **代码图谱只读探查**：仅限调用 `gitnexus query`、`gitnexus context`、`gitnexus impact`；
-  2. **规划与契约文档读写**：仅限读写 `changes/**` 下的文档（`KANBAN.md`、`prd.md`、`spec.md`、`tasks.md`、`pipeline.jsonl`）及只读查阅 `.agents/environment.json`；
+  2. **规划与契约文档读写**：仅限读写 `changes/**` 下的文档（`KANBAN.md`、`prd.md`、`spec.md`、`tasks.md`、`pipeline.jsonl`）及只读查阅 `reflections/*.md` 与 `.agents/environment.json`；
   3. **Herdr 协同命令**：仅限调用 `herdr *`（用于按需唤起 `explorer`、Stage 1 预审专家或非阻塞通知窗口 2，**严禁带 `--wait` 阻塞等待后厂**）。
 - **白名单外绝对禁令**：
   - **严禁执行任何白名单外的 Shell 命令**（无论何种语言的编译、构建、测试、Lint、包管理或脚本执行均 100% 禁止）；

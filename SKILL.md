@@ -1,6 +1,6 @@
 ---
 name: herdr-teamwork
-description: Multi-agent spec implementation orchestrated via Herdr terminal panes, workspaces, and optional Git Worktrees (Planner, Explorer, Dispatcher, TDD, Coding, Reviewer Ensemble, Ops, Debugger, RedTeam, E2E). Use when initiating multi-agent spec implementation, parallel feature development, or complex engineering workflows.
+description: Multi-agent spec implementation orchestrated via Herdr terminal panes, workspaces, and optional Git Worktrees (Planner, Explorer, Dispatcher, TDD, Coding, Reviewer Ensemble, Ops, Debugger, RedTeam, E2E, Reflector). Use when initiating multi-agent spec implementation, parallel feature development, or complex engineering workflows.
 ---
 
 # Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.1)
@@ -27,12 +27,15 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 │       ├── debug.md                 # 法医排错根因诊断与 Fix Spec 报告 (按需产出)
 │       ├── security-poc.md          # 红队渗透测试与 PoC 验证报告 (按需产出)
 │       └── explore.md               # 复杂历史代码可行性预研简报 (按需产出)
+├── reflections/                     # 项目级经验教训与待探索课题库 (Reflector 独占维护，纳入 Git 管理)
+│   └── <domain>.md                  # 按领域沉淀确定性避坑守则与 🔬 [SPIKE_CANDIDATE] 探索课题
 ├── .agents/                         # Agent 运行时支撑基建 (Infrastructure Surface)
-│   ├── environment.json             # 宿主机器 Harness 画像、并发模式与 15 角色动态配置
+│   ├── environment.json             # 宿主机器 Harness 画像、并发模式与 16 角色动态配置
 │   ├── session.json                 # Herdr 会话状态快照与跨天秒级复活配置
 │   └── skills/herdr-teamwork/       # 本技能规范库
-│       ├── roles/                   # 15 个正交角色的专属契约库
-│       └── scripts/                 # 跨项目通用 Worktree 建场与销毁脚本 (worktree-up.sh / worktree-down.sh)
+│       ├── roles/                   # 16 个正交角色的专属契约库
+│       ├── scripts/                 # 跨项目通用 Worktree 建场与销毁脚本 (worktree-up.sh / worktree-down.sh)
+│       └── .reflections/            # Skill 级流程与契约改进反馈 (<id>.md，供 herdr-teamwork 消化吸收)
 └── .worktrees/                      # 【并行执行隔离区】(worktree 模式下由 Ops 建场管理，纳入 .gitignore)
     └── <id>/                        # 绑定独立 Herdr Workspace (ws-<id>) + 独立分支 + 按需端口
         ├── changes -> ../../changes             # 🔗 软链接共享主工作区 changes/，契约与事件流 0 延迟互通
@@ -59,10 +62,12 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 | **`changes/<id>/debug.md`** | **`Debug Agent`** | **法医溯源与修复契约**：窗口 2 验收报障、`e2e` 崩溃或终审回归失败时产出。 | 最新一轮置顶：含异常现象、根因定位 (`file:line`)、供 `coding` 执行的《Fix Spec》与供 `tdd` 执行的必补断言。 |
 | **`changes/<id>/security-poc.md`** | **`Red Team Lead`** | **攻防演练产物**：高危特性触发，隔离沙箱动态渗透。 | 含 STRIDE 威胁类型、CVSS 定级、复现步骤、可直接转化的最小化 PoC 脚本与加固建议。 |
 | **`changes/<id>/explore.md`** | **`Explorer`** | **深度代码考古简报**：复杂历史代码摸底时按需产出。 | 浓缩现有模块拓扑、技术债约束与演进可行性评估，保护 `Planner` 上下文不被海量源码污染。 |
+| **`reflections/<domain>.md`** | **`Reflector`** | **项目级经验与探索课题库**：结项时由 `pipeline.jsonl` 异常信号触发。 | 按领域归并去重：区分 🎯 `DETERMINISTIC_LESSON`（确定性避坑指南）与 🔬 `SPIKE_CANDIDATE`（交 `Planner` 立项专项 `changes` 实验验证）。 |
+| **`.agents/skills/herdr-teamwork/.reflections/<id>.md`** | **`Reflector`** | **Skill 级演进反馈**：记录角色边界模糊、调度卡点或契约缺陷。 | 按 `<id>.md` 独立成文，定位 `SKILL.md` / `roles/*.md` 具体章节并给出修改建议，供本技能库消化吸收。 |
 
 ---
 
-## 3. 角色矩阵与职责正交契约 (15 Orthogonal Role Contracts)
+## 3. 角色矩阵与职责正交契约 (16 Orthogonal Role Contracts)
 
 全系统划分为**“前店规划层（窗口 1）”**、**“后厂交付与执行层（窗口 2 及各 Workspace）”**与**“分形审查层”**三大正交集群：
 
@@ -83,6 +88,7 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 | **分形<br>审查层** | **`reviewer-perf`**<br>(项目记忆沉淀) | [`roles/reviewer-perf.md`](roles/reviewer-perf.md) | **性能与并发专家**：审查无效重渲染、闭包内存泄漏、N+1 查询、全表扫描与缓存并发安全。 | 必须给出具体瓶颈行号与复杂度推导；只读权限；`standard` 模式常驻并在 Feature 结项后 `/compact` 沉淀性能基线记忆。 |
 | **分形<br>审查层** | **`reviewer-security`**<br>(项目记忆沉淀) | [`roles/reviewer-security.md`](roles/reviewer-security.md) | **蓝队安全合规专家**：承接前店安全预审与后厂安全终审；审查注入防御、RBAC/ABAC 越权、供应链 CVE，复核红队 PoC 闭环。 | 对高危漏洞拥有一票否决权；必须附带防御行号举证；只读权限；`standard` 模式常驻并在 Feature 结项后 `/compact` 沉淀安全防线记忆。 |
 | **分形<br>审查层** | **`reviewer-ux`**<br>(项目记忆沉淀) | [`roles/reviewer-ux.md`](roles/reviewer-ux.md) | **交互与无障碍专家**：审查快捷键冲突、输入法容错、焦点闭环 (Focus Trap)、ARIA 无障碍属性与界面文案。 | 只读权限；`standard` 模式常驻并在 Feature 结项后 `/compact` 沉淀交互规范记忆。 |
+| **反思<br>演进层** | **`reflector`**<br>(全局唯一常驻) | [`roles/reflector.md`](roles/reflector.md) | **流程反思与持续演进官（主区全局单实例）**：当 `pipeline.jsonl` 含波折信号时，在销毁 Worktree/清理上下文前介入，按需跨窗格问询当事 Agent，落盘项目级 `reflections/<domain>.md` 与 Skill 级 `.reflections/<id>.md`。 | **无异常信号不空转**；严禁改源码或在途契约；完成复盘后执行 `/compact` 沉淀跨特性系统性认知。 |
 
 ---
 
@@ -154,7 +160,7 @@ flowchart TD
     end
 
     Master ==>|验收报障: 追加 REPLAN 事件| BugLoop[debugger 产出 debug.md ➔ tdd ➔ coding ➔ review]
-    Master ==>|验收通过: 授权发布| Release[ops 构建 / Commit / 合入并销毁 Worktree ➔ 追加 DONE]
+    Master ==>|验收通过: 授权发布| Release[ops 构建/Commit/合入 ➔ 异常信号按需调 reflector 复盘 ➔ 销毁/清理收尾并追加 DONE]
 ```
 
 ### 5.1 动态可调流水线预设模板 (Customizable Pipeline Presets)
@@ -187,18 +193,18 @@ flowchart TD
 | :--- | :--- | :--- |
 | **1. 人类确认型 (1 个)**<br>`planner` (窗口 1) | 保持完整规划上下文 | **严禁擅自压缩或清空**！立项落盘或长对话后向人类提议，**获人类明确确认后**再执行 `/compact`（同域演进）或 `/clear`（跨大域重置）。 |
 | **2. 关联度动态型 (3 个)**<br>`tdd`, `coding`, `reviewer-lead` | 同一 `change-id` 内（含多轮返工）100% 保留完整记忆（仅当超长时 `/compact`） | 由 `Dispatcher` 按 `PLAN` 事件中的 `"ctx"` 策略执行：<br>- `compact`（默认）：压缩保留项目拓扑与公共模块约定；<br>- `keep`：强关联连续小切片直接沿用；<br>- `clear`：跨完全无关业务域时清空。 |
-| **3. 方案甲：常驻沉淀型专家 (7 个)**<br>`explorer`, `debugger`, `security-redteam`, `reviewer-arch/security/perf/ux` | **窗格常驻不销毁**；同一 `change-id` 内（如 Stage 1 ➔ Stage 2B、多次排障）保持完整上下文，不中途压缩 | 若在该 Feature 中被调用过，在 **Feature 完成 (`DONE`) 后统一执行 `/compact`**，将模块演进、鉴权边界与历史架构决策沉淀为长期心智模型，避免下次重头通读源码。 |
+| **3. 方案甲：常驻沉淀型专家 (8 个)**<br>`reflector`, `explorer`, `debugger`, `security-redteam`, `reviewer-arch/security/perf/ux` | **窗格常驻不销毁**；同一 `change-id` 内（如 Stage 1 ➔ Stage 2B、多次排障）保持完整上下文，不中途压缩 | 若在该 Feature 中被调用过，在 **Feature 完成 (`DONE`) 后统一执行 `/compact`**，将模块演进、鉴权边界、架构决策与复盘经验沉淀为长期心智模型，避免下次重头通读源码。 |
 | **4. 无脑清空型工具人 (4 个)**<br>`dispatcher`, `ops`, `reviewer-quality`, `e2e` | 单特性内保持运行 | **毫无跨特性记忆价值，从不使用 `/compact`**！在 Feature 结项（`DONE`）后直接执行 `/clear`（或 `/new`）瞬时归零，彻底清除过期 DOM 快照与海量命令日志。 |
 
 ---
 
 ## 6. 异构 Agent 环境探针与全角色映射 (`.agents/environment.json`)
 
-初始化时探测本地已安装的 CLI (`claude`, `codex`, `agy`, `pi`, `hermes`)，根据 15 个角色的算力诉求生成 `.agents/environment.json`：
+初始化时探测本地已安装的 CLI (`claude`, `codex`, `agy`, `pi`, `hermes`)，根据 16 个角色的算力诉求生成 `.agents/environment.json`：
 
 | 角色集群与 ID | 核心算力诉求 | 优选 Harness 梯队 (由高到低) | 理想思考深度 (Thinking) |
 | :--- | :--- | :--- | :--- |
-| **`planner` / `explorer` / `debugger` / `security-redteam` / `reviewer-lead` / `reviewer-arch` / `reviewer-perf` / `reviewer-security`** | 高维架构抽象、法医式逆向溯源、攻防博弈与证伪裁决 | `claude-code` ➔ `codex` ➔ `agy` | **High** (深度推理) |
+| **`planner` / `reflector` / `explorer` / `debugger` / `security-redteam` / `reviewer-lead` / `reviewer-arch` / `reviewer-perf` / `reviewer-security`** | 高维架构抽象、元认知复盘、法医式逆向溯源、攻防博弈与证伪裁决 | `claude-code` ➔ `codex` ➔ `agy` | **High** (深度推理) |
 | **`coding` / `tdd` / `reviewer-ux`** | 严格契约遵从、边界用例推演、精准行级实现与交互审计 | `codex` ➔ `claude-code` ➔ `agy` | **Medium** (适度推断) |
 | **`e2e`** | 极速 DOM/A11y 树理解、页面语义自愈与冒烟走查 | `agy` ➔ `claude-code` ➔ `pi` | **Low ~ Medium** (极速自愈) |
 | **`dispatcher` / `ops` / `reviewer-quality`** | 毫秒级状态机流转、确定性建场发布、海量原始日志吞吐过滤 | `pi` ➔ `hermes` ➔ `agy` ➔ `claude-code` | **None / Low** (零延迟确定性) |
@@ -212,6 +218,7 @@ flowchart TD
   "detected_harnesses": ["claude", "codex", "agy", "pi"],
   "roles": {
     "planner": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
+    "reflector": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
     "explorer": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
     "dispatcher": { "harness": "pi", "model": "gemini-3.8-flash-low", "thinking": "none" },
     "tdd": { "harness": "codex", "model": "gpt-5-codex", "thinking": "medium" },

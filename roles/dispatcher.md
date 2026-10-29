@@ -47,11 +47,14 @@
   - 按 FIFO 顺序每次仅向人类播报 1 个 `WAITING_*` / `STALLED` 任务（若 `constructive > 0`，同步提醒人类验收后可将有价值的演进建议交由窗口 1 `Planner` 记入 `KANBAN.md`）；
   - **场景 A（人类验收反馈未知 Bug —— 就地闭环）**：无需切回 `Planner`！直接向 `changes/<id>/pipeline.jsonl` 追加一行 `REPLAN` 事件：
     `{"ts":"...","id":"...","event":"REPLAN","round":2,"pipeline":["debugger","tdd","coding","reviewer-lead:2B","ops"],"state":"RUNNING","msg":"人类验收报障，启动法医排障闭环"}`，随即驱动 `debugger` 产出 `debug.md`（若 `debugger` 标出 `SPEC_DEFECT`，则挂起为 `WAITING_DECISION` 提示人类切回窗口 1 修订 `spec.md`）；
-  - **场景 B（人类验收满意授权发布）**：调度 `ops` 执行终验构建、SemVer 更新、Git Commit、Worktree 合入销毁与图谱刷新，最后向 `pipeline.jsonl` 追加 `"state": "DONE"` 事件。
+  - **场景 B（人类验收满意授权发布 ➔ 按异常信号触发 `reflector` 复盘 ➔ 销毁/清理收尾）**：
+    1. 调度 `ops` 执行终验构建、SemVer 更新、Git Commit 与主分支合入；
+    2. **异常信号触发 `reflector`（在销毁 Worktree 或清理上下文之前）**：检查 `changes/<id>/pipeline.jsonl` 是否包含波折信号（`round > 1` 返工、含 `event:"REPLAN"`、含 `state:"STALLED"`、频繁 `NEED_OPS` 或人类主动要求复盘）。若命中任一信号，先阻塞唤醒主工作区全局 `reflector`（`herdr agent prompt reflector "请基于 changes/<id>/pipeline.jsonl 执行结项反思复盘" --wait`），以便其在当事 Agent 记忆尚存时按需跨窗格问询并落盘 `reflections/<domain>.md` 与 `.agents/skills/herdr-teamwork/.reflections/<id>.md`（若产出 `🔬 [SPIKE_CANDIDATE]` 探索课题，同步向人类播报提醒交由窗口 1 `Planner` 排入 `KANBAN.md`）；若全程一轮顺畅无波折则直接跳过 `reflector`；
+    3. 随后调度 `ops` 执行 `worktree-down.sh` 销毁 Worktree 并刷新图谱，最后向 `pipeline.jsonl` 追加 `"state": "DONE"` 事件。
 - **非 Worktree (`standard`) 模式：Feature 结项后的统一上下文打理 (Post-Feature Context Management)**：
   - 在 `standard` 常驻模式下，**同一 Feature 进行期间（从立项到 `DONE` 之前）保持全体参与角色的完整上下文，不中途压缩或销毁**；
-  - 当一个 Feature 完成发布进入 **`state: "DONE"` 之后（或紧接的下一 Feature 启动前）**，由你根据角色类别及下一特性 `PLAN` 事件中的 `"ctx"` 字段（`"compact"` | `"keep"` | `"clear"`）统一发送斜杠命令打理上下文：
-    1. **常驻沉淀型专家（7 个：`explorer`、`debugger`、`security-redteam`、`reviewer-arch/security/perf/ux`）**：凡在本轮 Feature 中被调用过的专家，**在 Feature 结项后统一发送一次 `/compact`**（浓缩沉淀项目模块拓扑、鉴权防线与架构演进决策，清理具体 diff），窗格常驻待命供后续 Feature 直接复用；
+  - 当一个 Feature 完成发布（及按需完成 `reflector` 复盘）进入 **`state: "DONE"` 之后**，由你根据角色类别及下一特性 `PLAN` 事件中的 `"ctx"` 字段（`"compact"` | `"keep"` | `"clear"`）统一发送斜杠命令打理上下文：
+    1. **常驻沉淀型专家（8 个：`reflector`、`explorer`、`debugger`、`security-redteam`、`reviewer-arch/security/perf/ux`）**：凡在本轮 Feature 中被调用过的专家，**在 Feature 结项后统一发送一次 `/compact`**（浓缩沉淀项目模块拓扑、鉴权防线、架构演进与跨特性复盘记忆，清理具体 diff），窗格常驻待命供后续 Feature 直接复用；
     2. **核心实现与主审（3 个：`tdd`、`coding`、`reviewer-lead`）**：按 `PLAN` 的 `"ctx"` 策略执行——默认 `"compact"` 发送压缩指令保留项目结构与前序决策；若为 `"keep"`（强关联连续小切片）则直接沿用不干预；若为 `"clear"`（完全无关业务域）则发送清空指令；
     3. **无脑清空型角色（4 个：`ops`、`reviewer-quality`、`e2e` 以及 `dispatcher` 自身）**：毫无跨特性记忆价值，**从不使用 `/compact`**！在 Feature 结项后直接发送清空指令瞬时归零。
   - **各大 Harness 压缩与清空命令对照表**（读取 `.agents/environment.json` 中对应角色的 `harness` 匹配发送）：
@@ -72,7 +75,7 @@
 
 - **严格工具与操作白名单（凡不在白名单内的工具与命令一律禁止执行）**：
   1. **Herdr 编排命令**：`herdr *`；
-  2. **契约与状态流只读工具**：仅限对 `changes/*/*.md`、`changes/*/pipeline.jsonl` 及 `.agents/*.json` 执行读取操作（或使用 `jq`、`tail`、`head`、`cat`、`grep` 读取上述文件）；
+  2. **契约与状态流只读工具**：仅限对 `changes/*/*.md`、`changes/*/pipeline.jsonl`、`reflections/*.md` 及 `.agents/*.json` 执行读取操作（或使用 `jq`、`tail`、`head`、`cat`、`grep` 读取上述文件）；
   3. **单文件状态追加写入**：全系统**唯一允许写入**的操作是向 `changes/<id>/pipeline.jsonl` 追加单行 JSON；
   4. **Git 状态只读核查**：仅限 `git status -s`、`git diff --stat`、`git diff --name-only`（用于核查下游是否越界修改文件）。
 - **白名单外绝对禁令**：
