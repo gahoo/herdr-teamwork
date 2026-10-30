@@ -1,11 +1,11 @@
-# Herdr Teamwork v2.2 ⚡
+# Herdr Teamwork v2.3 ⚡
 
 > **Multi-Agent Spec Implementation Framework Orchestrated via Herdr & Git Worktrees**
 >
 > 基于 **Herdr** 终端工作区管理工具构建的**“双控台分治、内外双驱、事件溯源、双层自演进”**多 Agent 协同工程规范。遵循 **OpenSpec 活文档标准**、**单流水线内同步等待 (`--wait`) + 跨流水线文件流监听 (`tail -f pipeline.jsonl`)**，通过 **`roles/`（常驻职责）+ `playbooks/`（按需战术剧本）+ `scripts/`（自动化基建）** 三元架构，无缝支持跨语言单线开发与多 Worktree / Workspace 高并发并行交付。
 
 [![Skill](https://img.shields.io/badge/Agent_Skill-herdr--teamwork-blue?style=flat-square)](https://skills.sh)
-[![Version](https://img.shields.io/badge/Version-v2.2-orange?style=flat-square)](SKILL.md)
+[![Version](https://img.shields.io/badge/Version-v2.3-orange?style=flat-square)](SKILL.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
 ---
@@ -24,7 +24,7 @@ npx skills add gahoo/herdr-teamwork -g
 
 ---
 
-## 🏛️ 核心架构亮点 (v2.2 Architecture Highlights)
+## 🏛️ 核心架构亮点 (v2.3 Architecture Highlights)
 
 1. **双主控台分治 + 严格工具白名单（规划与交付物理绝缘，90% 问题就地闭环）**：
    - **窗口 1：`Planner`（总规划台）**：常驻主工作区左窗格，受严格只读图谱与契约工具白名单约束。负责与人类探讨需求、维护统一领域语言 `GLOSSARY.md` 与 `changes/KANBAN.md`、唤起 `Explorer` 深潜摸底、按需直询 `Arch / Security` 专家进行 Stage 1 预审，落盘 `prd.md`、`spec.md`、`tasks.md` 并写入 `pipeline.jsonl` 首行 `PLAN` 事件，上下文 100% 纯净。
@@ -36,7 +36,7 @@ npx skills add gahoo/herdr-teamwork -g
    - **三拍点将**：`Lead Reviewer` 分诊输出 `SPAWN_EXPERTS` 点将令 ➔ `Dispatcher` 代为切屏并发拉起专家并回收简报 ➔ `Lead Reviewer` 基于 **5 级证据阶梯**（剔除无确定性触发路径的理论担忧）执行 ROI 仲裁。
    - **行号级证伪举证 (`Proof of Defense`) + 跨语言静态扫描**：`Quality Reviewer` 独占吞吐 TS (`fallow`+`tsc`) / Rust (`clippy`) / Go (`golangci-lint`) / Python (`ruff`+`mypy`) 原始日志；全体审查员强制贴出源码/测试防御行号 (`file:line`) 方可放行。
 4. **渐进式战术剧本（`playbooks/`）与领域知识物化（`GLOSSARY.md` + `E2E_PLAYBOOK.md`）**：
-   - **渐进式加载（Progressive Disclosure）**：16 个角色的常驻契约（`roles/`）保持极简底线，仅通过尾部路由表按需挂载 8 大专项战术剧本（`playbooks/`），平时零 Token 负担，命中条件时跨角色协同执行 **`[SPIKE]` 快速原型刺探**、**`[HILLCLIMB]` 科学爬山**、**全库架构深度巡检**、**形式化状态机验证**、**像素级视觉比对**与**交互式配置向导生成**。
+   - **渐进式加载（Progressive Disclosure）**：16 个角色的常驻契约（`roles/`）保持极简底线，仅通过尾部路由表按需挂载 9 大专项战术剧本（`playbooks/`），平时零 Token 负担，命中条件时跨角色协同执行 **`[SPIKE]` 快速原型刺探**、**`[HILLCLIMB]` 科学爬山**、**全库架构深度巡检**、**重大架构圆桌辩论**、**形式化状态机验证**、**像素级视觉比对**与**交互式配置向导生成**。
    - **物化导航与领域词典**：通过 `GLOSSARY.md` 消除多 Agent 命名漂移；通过 `E2E_PLAYBOOK.md` 物化页面路由与交互记忆，让 `e2e` 告别每次从零盲目摸索 DOM。
 5. **全局 `Reflector` 双层反思闭环与「四级防错强化阶梯」**：
    - 当 `pipeline.jsonl` 出现返工、重排或受阻信号时，在销毁工作区前唤醒全局 `Reflector`，按需跨窗格问询当事 Agent，并严格遵循 **「Level 1 架构消除 > Level 2 类型/Lint 机械拦截 > Level 3 行为测试锁死 > Level 4 文档规则兜底」** 阶梯，同步沉淀项目级 `reflections/<domain>.md`（含 `🔬 SPIKE_CANDIDATE` 立项闭环）与 Skill 级 `.reflections/<id>.md`。
@@ -100,11 +100,12 @@ project-root/
 | **分形审查层** | [`roles/reviewer-ux.md`](roles/reviewer-ux.md) | **交互与无障碍专家**：审查热键冲突、输入法容错、Focus Trap 焦点闭环、ARIA 无障碍与视觉一致性。 |
 | **反思演进层** | [`roles/reflector.md`](roles/reflector.md) | **全局流程反思官**：由异常信号触发，按四级防错强化阶梯沉淀项目级 `reflections/<domain>.md` 与 Skill 级 `.reflections/<id>.md`。 |
 
-### 3. 8 个按需触发战术剧本 (`playbooks/` —— How)
+### 3. 9 个按需触发战术剧本 (`playbooks/` —— How)
 
 | 战术剧本文件 | 触发场景 (When) | 发起者 ➔ 核心执行者 |
 | :--- | :--- | :--- |
 | [`playbooks/arch-audit.md`](playbooks/arch-audit.md) | 每累计完成 3~5 个特性，或连续出现浅模块耦合预警时 | `planner` 提议立项 ➔ **`reviewer-arch`** 全库扫描产出 `arch-report.html` |
+| [`playbooks/roundtable-debate.md`](playbooks/roundtable-debate.md) | 重大架构议题：单向门 + 跨 ≥2 维度显著权衡 + 2~3 套互斥方案时 | `planner` 立题并 Fork **临时主席分身** ➔ 专家背靠背亮牌 + 冲突方交锋 1 轮 ➔ 主席裁决 ➔ **人类点头** |
 | [`playbooks/prototype-spike.md`](playbooks/prototype-spike.md) | UI/技术方案吃不准，或验证 `reflector` 的 `🔬 SPIKE_CANDIDATE` 时 | `planner` 立项 `[SPIKE]` ➔ **`coding` + `ops`** 快速构建原型（拍板后用完即焚） |
 | [`playbooks/hillclimb.md`](playbooks/hillclimb.md) | 针对耗时、内存、吞吐量或准确率等单一量化指标持续逼近优化时 | `planner` 定基线 `[HILLCLIMB]` ➔ **`coding`** 实测爬山回滚循环 ➔ **`reviewer-perf`** 核验 |
 | [`playbooks/formal-statechart.md`](playbooks/formal-statechart.md) | 触及复杂状态机、并发竞态、分布式重试、解析器或 `unsafe` 代码时 | **`planner`** 画含禁止状态的 Statechart ➔ **`tdd` / `coding`** 写属性/模型测试 ➔ **`reviewer-arch`** 对账 |

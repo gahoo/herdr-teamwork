@@ -3,7 +3,7 @@ name: herdr-teamwork
 description: Multi-agent spec implementation orchestrated via Herdr terminal panes, workspaces, and optional Git Worktrees (Planner, Explorer, Dispatcher, TDD, Coding, Reviewer Ensemble, Ops, Debugger, RedTeam, E2E, Reflector). Use when initiating multi-agent spec implementation, parallel feature development, or complex engineering workflows.
 ---
 
-# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.2)
+# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.3)
 
 本技能通过 Herdr 终端工作区管理工具构建**“双控台分治（窗口 1 规划 / 窗口 2 交付）、内外双驱（内部 `--wait` 同步 + 跨任务 `tail -f` 监听）、事件溯源（`pipeline.jsonl`）”**的多 Agent 物理隔离与协作体系。
 遵循 **OpenSpec 活文档标准**，实现规划与交付彻底物理绝缘、宏微观契约正交、职责绝对边界化与证伪式分形审查。
@@ -29,7 +29,8 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 │       ├── review.md                # 审查裁决归档 (含对账单、防御行号举证、双清单与红黄分级)
 │       ├── debug.md                 # 法医排错根因诊断与 Fix Spec 报告 (按需产出)
 │       ├── security-poc.md          # 红队渗透测试与 PoC 验证报告 (按需产出)
-│       └── explore.md               # 复杂历史代码可行性预研简报 (按需产出)
+│       ├── explore.md               # 复杂历史代码可行性预研简报 (按需产出)
+│       └── roundtable.md            # 重大架构圆桌辩论纪要与主席裁决书 (圆桌主席分身按需产出)
 ├── reflections/                     # 项目级经验教训与待探索课题库 (Reflector 独占维护，纳入 Git 管理)
 │   └── <domain>.md                  # 按领域沉淀确定性避坑守则与 🔬 [SPIKE_CANDIDATE] 探索课题
 ├── .agents/                         # Agent 运行时支撑基建 (Infrastructure Surface)
@@ -37,7 +38,7 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 │   ├── session.json                 # Herdr 会话状态快照与跨天秒级复活配置
 │   └── skills/herdr-teamwork/       # 本技能规范库
 │       ├── roles/                   # 【Who】16 个正交角色的常驻本职契约库
-│       ├── playbooks/               # 【How】8 个按需触发的专项战术剧本 (渐进式按需读取，跨角色共享)
+│       ├── playbooks/               # 【How】9 个按需触发的专项战术剧本 (渐进式按需读取，跨角色共享)
 │       ├── scripts/                 # 【Tools】跨项目通用 Worktree 建场与销毁脚本 (worktree-up.sh / worktree-down.sh)
 │       └── .reflections/            # Skill 级流程与契约改进反馈 (<id>.md，供 herdr-teamwork 消化吸收)
 └── .worktrees/                      # 【并行执行隔离区】(worktree 模式下由 Ops 建场管理，纳入 .gitignore)
@@ -107,6 +108,7 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 1. **🏛️ 第一阶段：计划期宏观与架构预审 (Stage 1: Macro & Arch Consultation —— 窗口 1 按需触发)**
    - **触发时机**：`Planner` 起草完 `changes/<id>/spec.md` 后，若涉及跨模块架构重构、核心数据模型演进或高危安全机制，在呈交人类最终拍板前触发（常规轻量需求可跳过）。
    - **执行方式**：**略过 `reviewer-lead`**，由 `Planner` 直接按需唤醒或复用 **`reviewer-arch`** 或 **`reviewer-security`**，评估深模块合理性与 `gitnexus impact` 爆炸半径，将宏观修正直接融入 `spec.md` 并记录于 `review.md` Stage 1 章节（`standard` 模式下窗格常驻保留上下文至 Feature 结项）。
+    - **升级形态：圆桌辩论 (Roundtable Debate)**：当议题同时满足「单向门 + 跨 ≥2 个专业维度显著权衡 + 2~3 套互斥候选方案」时，`Planner` 立题并 Fork 一个**一次性圆桌主席分身**（非常驻角色，加载 [`playbooks/roundtable-debate.md`](playbooks/roundtable-debate.md)），由其组织 2~4 位专家「背靠背亮牌 ➔ 冲突方定向交锋(1 轮) ➔ 主席裁决」，落盘 `changes/<id>/roundtable.md` 后分身退出；`Planner` 向人类呈报裁决摘要，**人类点头后**方固化进 `spec.md` 与 `docs/adr/`。
 2. **🔬 第二阶段：实施期测试与代码细节/防偏离终审 (Stage 2: Implementation & Drift Gate —— 后厂强制门禁)**
    - **子阶段 2A：测试代码前置快检 (Red Test Gate)**：在 `tdd` 写完 Red Test 后、`coding` 动手前，由 **`reviewer-lead` 独立执行**（仅在涉及红队 PoC 转化时点名 `reviewer-security` 协审）。严格按《4 维测试审查清单》与“硬编码证伪法”拦截弱断言与契约偏差。
    - **子阶段 2B：业务实现与防偏离终审 (Code & Drift Gate)**：在 `coding` 自证测试全绿后触发，实行**“主审开方点将 ➔ Dispatcher 抓药调度 ➔ 主审合议裁决”**三拍闭环：

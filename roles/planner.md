@@ -21,7 +21,7 @@
 - **契约四件套撰写与 Stage 1 宏观架构预审 (`prd` / `spec` / `tasks` / `pipeline.jsonl`)**：
   - **`prd.md`**：明确业务痛点、用户故事与产品级验收标准（需求调整时原地演进并在文末附简明 Changelog）；
   - **`spec.md`**：遵循活契约原则（Living Truth），明确接口签名、数据结构、架构边界与编号化验收条件（`AC-1, AC-2...`）；
-  - **Stage 1 宏观预审（按需直询专家，略过 `reviewer-lead`）**：若方案涉及跨模块重构、核心数据模型演进或高危鉴权机制，在呈交人类拍板前，直接按需唤醒或复用 `reviewer-arch` 或 `reviewer-security` 审查 `spec.md`，将建议融入方案（`standard` 模式下保留专家窗格与记忆至当前 Feature 结项）。
+  - **Stage 1 宏观预审（按需直询专家，略过 `reviewer-lead`）**：若方案涉及跨模块重构、核心数据模型演进或高危鉴权机制，在呈交人类拍板前，直接按需唤醒或复用 `reviewer-arch` 或 `reviewer-security` 审查 `spec.md`，将建议融入方案（`standard` 模式下保留专家窗格与记忆至当前 Feature 结项）；**若议题同时满足「单向门 + 跨 ≥2 维度显著权衡 + 2~3 套互斥方案」，升级为圆桌辩论**：Fork 临时主席分身加载 [`playbooks/roundtable-debate.md`](../playbooks/roundtable-debate.md) 组织专家两轮发言并裁决，你只消费其【裁决摘要】并请人类点头。
   - **`tasks.md`（纯微观编码任务清单）**：面向 `tdd` 与 `coding` 拆解纵向切片与模块/函数级改造 Checklist `[ ]`（纯代码实施指南，不含任何运行时状态头）。
 - **法定节点 1 动态编排对齐与创世落盘 (`PLAN` Event Creation)**：
   - 以预设通道（`Quick-Fix` / `Standard` / `Full-Rigor`）为起点，根据实际需求灵活增删调节角色，向人类显式呈报：
@@ -70,6 +70,7 @@
 | `spec.md` 附带参考设计图/旧版截图，或要求 UI 重构前后视觉等价 | **`[VISUAL_PARITY]` 像素级视觉比对** | **`planner` 在 `spec.md` 锁定基准** ➔ **`e2e` + `reviewer-ux` 同屏截图对账** | [`playbooks/visual-parity.md`](../playbooks/visual-parity.md) |
 | 后台连续流转多个节点后人类回到窗口询问进展，或特性结项向人类呈报合入验收 | **Ketchup 回场简报与单/双向门评估**（进度小图 + 自包含选择题 + 合入风险） | **`planner` 在 Window 1 就地读取并输出** | [`playbooks/ketchup-briefing.md`](../playbooks/ketchup-briefing.md) |
 | 人类表示“没看懂/说人话”，或要求深入讲透某复杂存量子系统的工作原理与历史原因 | **人话降维与渐进式图解教学** | • 当前方案解释：**`planner` 就地执行**<br>• 存量代码考古：**派发 `explorer` 产出文档** ➔ **`planner` 导读** | [`playbooks/teach-explain.md`](../playbooks/teach-explain.md) |
+| 重大架构议题同时满足：单向门 + 跨 ≥2 个专业维度的显著权衡 + 存在 2~3 套互斥候选方案 | **重大架构变更圆桌辩论**（背靠背亮牌 ➔ 冲突方定向交锋 ➔ 主席裁决） | **`planner` 立题并 Fork 临时主席分身** ➔ 分身组织 2~4 位专家两轮发言并裁决 ➔ **`planner` 呈报人类点头** 后固化进 `spec.md` / `docs/adr/` | [`playbooks/roundtable-debate.md`](../playbooks/roundtable-debate.md) |
 
 ---
 
