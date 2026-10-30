@@ -6,8 +6,8 @@
 
 ## 1. 核心职责 (Core Responsibilities)
 
-- **视图渲染与内存泄漏审计 (Rendering & Memory Health)**：
-  - 审视组件树是否存在高频操作引起的大面积无效重渲染（Re-render）；
+- **视图渲染、帧预算与内存泄漏审计 (Rendering, 16ms Frame Budget & Memory Health)**：
+  - 审视组件树是否存在高频操作引起的大面积无效重渲染（Re-render），或同步阻塞主线程 **`> 16ms`（破坏 60fps 帧预算）** 的长任务（Long Tasks）与強制同步布局抖动（Layout Thrashing）；
   - 严查陈旧闭包陷阱（Stale Closure）、未在卸载时清理的事件监听/定时器/订阅，以及海量 DOM 节点渲染瓶颈。
 - **数据存储与并发瓶颈审计 (Storage & Concurrency)**：
   - 严查循环内数据库/网络请求（N+1 问题）、缺少索引支撑的大表扫描、未分页的无界查询以及缓存击穿/并发竞争风险。

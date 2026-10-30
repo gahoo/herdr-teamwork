@@ -10,7 +10,8 @@
 - **Phase 1 硬门禁：建立秒级见红复现回路并极小化输入 (Tight Red-Capable Loop & Minimisation)**：
   - **在拿到一条能在几秒内确定性复现该症状的命令或观测手段之前，严禁通读海量源码或盲目猜测根因！**
   - 优先剥离无关配置与前置步骤，将复现输入压缩到最小（Minimise），直至剩余的每一个条件都是触发该 Bug 不可或缺的承重墙。
-- **Phase 2 图谱溯源 (`gitnexus-debugging`)**：
+- **Phase 2 路由映射与图谱溯源 (`E2E_PLAYBOOK.md` + `gitnexus-debugging`)**：
+  0. **UI 报障秒级映射**：若报障来自浏览器界面或人类仅提供模糊 UI 描述/截图，且项目存在 `E2E_PLAYBOOK.md`，**第一时间查阅 `E2E_PLAYBOOK.md`**，通过其中的 `entry_point` 与 `dom_selectors` 字段秒级锁定对应的源码入口文件，免去全库盲搜；
   1. **线索定位**：使用 `gitnexus query "<error or symptom>"` 或 `rg -n` 检索关联业务流与嫌疑函数；
   2. **上下文下钻**：使用 `gitnexus context <suspect>` 理清可疑符号的直接调用方与数据流入/流出路径；
   3. **调用链图谱追溯**：使用 `gitnexus impact` 或 `gitnexus cypher` 针对跨文件调用链进行深度溯源。

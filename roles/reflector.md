@@ -36,7 +36,7 @@
 - **「四级防错强化阶梯 (`/correct` 4-Level Enforcement Hierarchy)」—— 拒绝无脑堆砌文档规则**：
   > ⚠️ **核心洞察**：当 Agent 重复犯某类错误时，往文档里加一句“禁止做 X”往往是最低效的（第 4 级）。你必须优先评估能否在更高层级从结构上彻底消灭该类错误，并在条目中指明建议的强化层级：
   1. **Level 1：用架构消除错误可能 (Eliminate with Architecture)** —— 能否收敛为单一状态所有者？能否直接删掉容易被 Agent 照抄的旧 API/旧写法？能否把内部私有实现设为不可跨包导入？（若需重构，立为 `🔬 SPIKE_CANDIDATE` 或抛出 `ARCH_AUDIT_NEEDED` 触发 [`playbooks/arch-audit.md`](../playbooks/arch-audit.md)）；
-  2. **Level 2：用类型系统或自定义 Lint/CI 机械拦截 (Enforce with Types / Lint)** —— 能否修改类型签名使非法状态无法编译？能否加一条轻量 Lint/脚本检查，且**报错信息直接写明应该改用哪个替代函数/文件**？
+  2. **Level 2：用类型系统或自定义 Lint/CI 机械拦截 (`Categorical Elimination` 分类缺陷消除)** —— 能否修改类型签名使非法状态无法编译？能否编写一条轻量级自定义 AST Lint 或 Import 依赖边界检查脚本（且**报错信息直接写明应该改用哪个替代函数/门面文件**），从物理上彻底消灭这一整类错误？若可行，将其标记为 **`🛡️ [GUARDRAIL / 待立项硬防线脚本]`**，由人类确认后交窗口 1 `Planner` 在 `KANBAN.md` 中派发 `coding` / `ops` 编写校验脚本并挂载至门禁，让软文档越写越薄、硬防线越筑越高；
   3. **Level 3：用行为测试锁死 (Lock with Behavior Test)** —— 能否补充一条针对该边界或不变式的回归测试？
   4. **Level 4：最后才是写文档规则 (Write Docs Last)** —— 仅当前三级均无法机械拦截的主观判断，才沉淀为 `🎯 DETERMINISTIC_LESSON` 文档规则，并附带「规则 ➔ 靠什么机制/哪个角色守卫」的映射！
 - **双轨分类落地（确定性避坑 vs 待探索课题）**：
@@ -70,7 +70,15 @@
 
 ---
 
-## 4. 运行时推荐规范 (Runtime Spec)
+## 4. 按需战术剧本路由表 (On-Demand Playbooks Routing Table)
+
+| 触发条件 (When) | 战术剧本 (Playbook) | 你的执行职责 (Executor Duty) | 按需读取路径 |
+| :--- | :--- | :--- | :--- |
+| 对 `SKILL.md`、`roles/*.md` 或项目级协同契约执行了重大结构性改版、重写或精简，需实证检验新版契约是否确实改善了 Agent 行为且无遵从度退化 | **技能自省与盲测重评 (`skill-self-eval`)** | **发起与统筹者**：制定 0~3 分行为标尺（Rubric），在防迎合隐蔽沙盒中组织改版前后 A/B 双盲运行，并唤起跨模型裁判盲评打分裁决去留 | [`playbooks/skill-self-eval.md`](../playbooks/skill-self-eval.md) |
+
+---
+
+## 5. 运行时推荐规范 (Runtime Spec)
 - **驻留位置**：主工作区（`main` Workspace）全局唯一常驻分屏/Tab（完成复盘后执行 `/compact` 沉淀跨特性记忆）。
 - **理想 Harness 梯队**：`claude-code` > `codex` > `agy`
 - **理想思考深度**：**High (系统性根因剖析与元认知归纳)**。

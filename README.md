@@ -1,11 +1,11 @@
-# Herdr Teamwork v2.5 ⚡
+# Herdr Teamwork v2.6 ⚡
 
 > **Multi-Agent Spec Implementation Framework Orchestrated via Herdr & Git Worktrees**
 >
 > 基于 **Herdr** 终端工作区管理工具构建的**“双控台分治、内外双驱、事件溯源、双层自演进”**多 Agent 协同工程规范。遵循 **OpenSpec 活文档标准**、**单流水线内同步等待 (`--wait`) + 跨流水线文件流监听 (`tail -f pipeline.jsonl`)**，通过 **`roles/`（常驻职责）+ `playbooks/`（按需战术剧本）+ `scripts/`（自动化基建）** 三元架构，无缝支持跨语言单线开发与多 Worktree / Workspace 高并发并行交付。
 
 [![Skill](https://img.shields.io/badge/Agent_Skill-herdr--teamwork-blue?style=flat-square)](https://skills.sh)
-[![Version](https://img.shields.io/badge/Version-v2.5-orange?style=flat-square)](SKILL.md)
+[![Version](https://img.shields.io/badge/Version-v2.6-orange?style=flat-square)](SKILL.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
 ---
@@ -24,7 +24,7 @@ npx skills add gahoo/herdr-teamwork -g
 
 ---
 
-## 🏛️ 核心架构亮点 (v2.5 Architecture Highlights)
+## 🏛️ 核心架构亮点 (v2.6 Architecture Highlights)
 
 1. **双主控台分治 + 严格工具白名单（规划与交付物理绝缘，90% 问题就地闭环）**：
    - **窗口 1：`Planner`（总规划台）**：常驻主工作区左窗格，受严格只读图谱与契约工具白名单约束。负责与人类探讨需求、维护统一领域语言 `GLOSSARY.md` 与 `changes/KANBAN.md`、唤起 `Explorer` 深潜摸底、按需直询 `Arch / Security` 专家进行 Stage 1 预审，落盘 `prd.md`、`spec.md`、`tasks.md` 并写入 `pipeline.jsonl` 首行 `PLAN` 事件，上下文 100% 纯净。
@@ -73,7 +73,7 @@ project-root/
 
 ---
 
-## 📖 规范全览：16 正交角色 × 8 战术剧本 × 2 基建脚本
+## 📖 规范全览：16 正交角色 × 10 战术剧本 × 2 基建脚本
 
 ### 1. 总纲与自动化脚本
 - **核心总纲**：[`SKILL.md`](SKILL.md) —— 完整工程规范、双控台交互协议、`pipeline.jsonl` 事件流标准、两阶段审查、上下文生命周期与 CLI 命令矩阵。
@@ -100,7 +100,7 @@ project-root/
 | **分形审查层** | [`roles/reviewer-ux.md`](roles/reviewer-ux.md) | **交互与无障碍专家**：审查热键冲突、输入法容错、Focus Trap 焦点闭环、ARIA 无障碍与视觉一致性。 |
 | **反思演进层** | [`roles/reflector.md`](roles/reflector.md) | **全局流程反思官**：由异常信号触发，按四级防错强化阶梯沉淀项目级 `reflections/<domain>.md` 与 Skill 级 `.reflections/<id>.md`。 |
 
-### 3. 9 个按需触发战术剧本 (`playbooks/` —— How)
+### 3. 10 个按需触发战术剧本 (`playbooks/` —— How)
 
 | 战术剧本文件 | 触发场景 (When) | 发起者 ➔ 核心执行者 |
 | :--- | :--- | :--- |
@@ -113,6 +113,7 @@ project-root/
 | [`playbooks/setup-wizard.md`](playbooks/setup-wizard.md) | 环境启动发现缺失必须由人类提供的外部 API 密钥、OAuth 或证书时 | **`ops`** 全自动编写幂等、带即时连通性自检的 `scripts/setup-wizard.sh` 引导人类一键运行 |
 | [`playbooks/ketchup-briefing.md`](playbooks/ketchup-briefing.md) | 后台连续流转后人类回到窗口询问进展，或特性结项呈报合入验收时 | **`planner`** 在 Window 1 输出可视化进度图、单/双向门风险定级与自包含选择题 |
 | [`playbooks/teach-explain.md`](playbooks/teach-explain.md) | 人类表示“没看懂/说人话”，或要求深入剖析存量复杂子系统原理时 | 当前方案由 **`planner`** 降维解释；存量代码由 **`explorer`** 执行 `/how`+`/why` 产出递进图解 |
+| [`playbooks/skill-self-eval.md`](playbooks/skill-self-eval.md) | 对 `SKILL.md` / `roles/*.md` 或项目级协同契约进行重大改版需检验实效时 | **`reflector`** 制定 0~3 分标尺（Rubric），在防迎合隐蔽沙盒中组织 A/B 双盲运行并由跨模型裁判打分 |
 
 ---
 

@@ -10,7 +10,7 @@
 - **需求未启，看板先行 (`changes/KANBAN.md` 100% 独占维护)**：
   - 全局大盘 `changes/KANBAN.md` 顶部常设 `## 📥 需求收件与待开展占位池 (Inbox / Backlog)`，严禁私建碎片化 `Inbox.md`；
   - 凡人类提出的新需求意向、纵向拆解出的远期切片，必须第一时间登记入池占位；当存在多个待开展特性时，必须为存在前后置依赖的条目显式标注 **`[Blocked by: <id>]` 阻塞边**（无阻塞或前置已 `Done` 的条目即构成可并发启动 Worktree 的 **可执行前沿 Ready Frontier**）；
-  - 当人类在窗口 2 完成特性验收后，根据人类的明确指示将已完成项归档至 `✅ Done`，并将人类认可的 `🟡 [CONSTRUCTIVE]` 演进建议或 `reflector` 产出的 `🔬 [SPIKE_CANDIDATE]` 探索验证课题转录至 `KANBAN.md` Inbox 占位池（对需要实验探索才能确定最佳方案的项目级痛点，安排专门的 `changes/<spike-id>/` 变更集进行测试与架构验证）。
+  - 当人类在窗口 2 完成特性验收后，根据人类的明确指示将已完成项归档至 `✅ Done`，并将人类认可的 `🟡 [CONSTRUCTIVE]` 演进建议，以及 `reflector` 产出的 `🔬 [SPIKE_CANDIDATE]` 探索验证课题或 **`🛡️ [GUARDRAIL]` 分类缺陷消除任务**（编写自定义 AST Lint / Import 架构边界阻断脚本）转录至 `KANBAN.md` Inbox 占位池，安排专门的变更集派发落地。
 - **两级架构摸底（图谱直查 + 唤起 `explorer` 内外深潜）**：
   - **轻量级摸底**：直接调用 `gitnexus query` 或 `gitnexus context` 查看模块拓扑、函数签名与调用关系，快速回应人类的方案探讨；
   - **重量级代码考古与外部权威文档调研**：当需求涉及复杂未知历史代码、需跨多个大文件验证可行性，或需调研外部第三方 SDK/API 官方文档时，**严禁自己调用 `read_file` 通读海量业务源码或长篇外部文档**！必须按需切屏唤起 `explorer` 探路员，消费其输出的 `changes/<id>/explore.md` 简报。
@@ -20,7 +20,9 @@
   - **3 条件 ADR 门禁 (`docs/adr/<id>.md`)**：仅当某项架构决策**同时满足**以下 3 个条件时，才在 `docs/adr/` 下创建简短 ADR 记录：① 难以逆转（单向门）；② 缺乏背景看代码会感到惊讶；③ 存在真实的方案取舍（Trade-off）。
 - **契约四件套撰写与 Stage 1 宏观架构预审 (`prd` / `spec` / `tasks` / `pipeline.jsonl`)**：
   - **`prd.md`**：明确业务痛点、用户故事与产品级验收标准（需求调整时原地演进并在文末附简明 Changelog）；
-  - **`spec.md`（含 Design It Twice 接口比选）**：遵循活契约原则（Living Truth），明确接口签名、数据结构、架构边界与编号化验收条件（`AC-1, AC-2...`）。**对于核心新增模块或重构接口，必须践行 `Design It Twice`（设计两次）纪律**：不要直接把脑中蹦出的第一个方案写死，先从不同约束视角（如“极致收敛仅暴露 1~2 个入口” vs “最常见调用方零配置”）构思至少两套截然不同的接口签名与调用方示例（Usage Sketch），对比其隐藏的内部复杂度（Depth）与局部性（Locality）后择优落盘；
+  - **`spec.md`（含 Design It Twice 接口比选与领域垂直内聚）**：遵循活契约原则（Living Truth），明确接口签名、数据结构、架构边界与编号化验收条件（`AC-1, AC-2...`）：
+    1. **`Design It Twice`（设计两次比选）**：对于核心新增模块或重构接口，不要直接把脑中蹦出的第一个方案写死，先从不同约束视角（如“极致收敛仅暴露 1~2 个入口” vs “最常见调用方零配置”）构思至少两套截然不同的接口签名与调用方示例（Usage Sketch），对比其隐藏的内部复杂度（Depth）与局部性（Locality）后择优落盘；
+    2. **领域垂直内聚与共同封闭原则 (`Domain Colocation & Common Closure`)**：在规划新项目或新子系统时，优先按**业务领域/有界上下文（Bounded Context，如 `auth/`、`billing/`、`parser/`）**垂直组织目录，而非按技术层次名词（顶层铺满 `controllers/`、`services/`、`models/`、`utils/`）将同一领域的逻辑水平切碎（存量项目若已有成熟框架约定则遵循既有拓扑）。确保因同一业务原因一起变化的代码与测试住在一起（80% 常规改动收敛于单领域目录内，最小化多 Worktree 并行冲突），每个领域目录仅通过单一门面入口（如 `index.ts` / `mod.rs` / `__init__.py` / Go 包导出）对外暴露公开契约，严禁向全局 `utils/` 垃圾桶倾倒领域专属代码；
   - **Stage 1 宏观预审（按需直询专家，略过 `reviewer-lead`）**：若方案涉及跨模块重构、核心数据模型演进或高危鉴权机制，在呈交人类拍板前，直接按需唤醒或复用 `reviewer-arch` 或 `reviewer-security` 审查 `spec.md`，将建议融入方案（`standard` 模式下保留专家窗格与记忆至当前 Feature 结项）；**若议题同时满足「单向门 + 跨 ≥2 维度显著权衡 + 2~3 套互斥方案」，升级为圆桌辩论**：Fork 临时主席分身加载 [`playbooks/roundtable-debate.md`](../playbooks/roundtable-debate.md) 组织专家两轮发言并裁决，你只消费其【裁决摘要】并请人类点头。
   - **`tasks.md`（纯微观编码任务清单）**：面向 `tdd` 与 `coding` 拆解纵向切片与模块/函数级改造 Checklist `[ ]`（纯代码实施指南，不含任何运行时状态头）。
 - **法定节点 1 动态编排对齐与创世落盘 (`PLAN` Event Creation)**：

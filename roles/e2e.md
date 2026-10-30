@@ -11,11 +11,18 @@
 - **前置读取导航记忆 (`E2E_PLAYBOOK.md`)**：若项目根目录存在 `E2E_PLAYBOOK.md`，在启动浏览器走查前**必须先读取该文件**，直接获取目标功能的入口路由、前置登录/数据准备方式、关键交互元素特征与已知坑点（Gotchas），彻底告别每次从零盲目摸索 DOM 树；
 - **执行方式**：直接调用 `chrome-devtools-mcp` 工具链（`navigate_page` ➔ `take_snapshot` ➔ `click` / `fill` ➔ `wait_for`）模拟真实用户走通 `spec.md` 描述的主流程；
 - **语义自愈**：遇到非预期的引导弹窗或遮罩时，凭借对 A11y 树（`take_snapshot`）的语义理解自动点击关闭并继续；
-- **聚焦三大灾难性指标**：
+- **聚焦四大实机健康指标**：
   1. **页面是否白屏或渲染崩溃？**
   2. **控制台 (`list_console_messages`) 是否有未捕获的红色 JS Error？**
   3. **网络面板 (`list_network_requests`) 是否有 500 / 502 / 404 关键接口崩溃？**
-- **增量回写 `E2E_PLAYBOOK.md`（物化导航记忆）**：当新功能走查通过后，将本次验证通畅的**「功能名称、入口 URL/路由、触发操作路径、核心成功信号及新发现的测试坑点」**以简洁条目创建或增量更新至项目根目录的 `E2E_PLAYBOOK.md`，让后续特性的回归走查实现“零摸索直达”；
+  4. **主线程帧预算 (`Frame Budget / Long Tasks`)**：在关键高频交互下（可按需配合 `performance_start_trace` / `performance_stop_trace`），是否存在阻塞主线程 **`> 16ms`（低于 60fps）** 的严重长任务（Long Tasks / 布局抖动 Layout Thrashing）？
+- **增量回写 `E2E_PLAYBOOK.md`（6 要素结构化导航与源码映射记忆）**：当新功能走查通过后，将本次验证通畅的功能按以下 **6 要素结构化字段** 创建或增量更新至项目根目录的 `E2E_PLAYBOOK.md`（使后续回归走查与 `debugger` 面对模糊截图/报错时能秒级定位源码与 DOM）：
+  1. **`feature_id`**：功能唯一标识与简述（如 `billing-invoice-export`）；
+  2. **`entry_point`**：对应的**前端/视图源码入口文件路径**（如 `src/billing/InvoicePanel.tsx`）；
+  3. **`user_route`**：访问 URL 或从首页到达该界面的最短前置点击序列；
+  4. **`dom_selectors`**：核心交互控件的稳定选择器或 A11y Role/Label；
+  5. **`keyboard_shortcuts`**：关联的快捷键或焦点交互方式（若无填 `N/A`）；
+  6. **`gotchas`**：前置状态依赖、异步等待信号及已知测试坑点。
 - **零脆弱脚本债务，结项清空**：走查完毕后直接输出 10 行以内的极简走查结论（PASS 或 FAIL + 报错堆栈/截图路径），**绝不为易变 UI 生成持久化的脆弱测试脚本**！若发现崩溃，由 `Dispatcher` 自动追加 `REPLAN` 事件唤起 `debugger` 溯源。
 
 ### 轨 2：沉淀轨（10% 系统核心生命线）—— 黄金路径原子脚本化 (Golden Path Scripting)

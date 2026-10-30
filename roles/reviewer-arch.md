@@ -26,6 +26,9 @@
   2. **所有权分裂 (Split Ownership)**：多个平级模块直接读写同一份可变状态，缺乏单一状态 Owner；
   3. **可被跨包直接导入的内部实现 (Importable Internals)**：模块私有辅助函数暴露在公开导出路径中，导致外部 Agent 绕过门面（Facade）直接耦合内部细节；
   4. **手工同步的列表 (Hand-Synced Lists)**：新增一个枚举值或字段需要人工记住同时修改 3 个不同文件，而非从单一权威 Schema 自动派生或由编译器穷举检查。
+- **领域垂直内聚与分类缺陷消除审计 (`Domain Colocation & Categorical Elimination`)**：
+  - **共同封闭与变更局部性（Common Closure & Locality）**：审视代码组织是否遵循“因同一业务原因一起变化的代码与测试住在一起”（按业务领域/有界上下文垂直内聚并通过单一门面导出），拦截向全局 `utils/`、`helpers/`、`common/` 大杂烩倾倒领域专属逻辑或跨领域直接 `import` 内部私有实现的行为；
+  - **分类缺陷消除提议（Categorical Elimination -> `🛡️ [GUARDRAIL]`）**：若在审查中发现某类架构违规（如跨领域私自导入内部文件、渲染层直接引入数据库模块、违规调用禁用 API）可通过 20 行以内的自定义 Lint 规则或架构边界检查脚本（`scripts/check-arch.*`）机械拦截，在 `CONSTRUCTIVE` 意见中显式标记 **`🛡️ [GUARDRAIL]`**，交由 `Planner` 立项将软规则铸造为 CI 硬防线。
 - **状态归属与单向数据流审计 (State Flow Integrity)**：
   - 检查状态归属是否合理（有无过度提升或碎片化多头维护），杜绝状态双向污染与循环依赖。
 - **爆炸半径与架构防偏离取证 (`gitnexus impact` & `fallow decision-surface`)**：
