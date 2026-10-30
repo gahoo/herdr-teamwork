@@ -1,11 +1,11 @@
-# Herdr Teamwork v2.3 ⚡
+# Herdr Teamwork v2.4 ⚡
 
 > **Multi-Agent Spec Implementation Framework Orchestrated via Herdr & Git Worktrees**
 >
 > 基于 **Herdr** 终端工作区管理工具构建的**“双控台分治、内外双驱、事件溯源、双层自演进”**多 Agent 协同工程规范。遵循 **OpenSpec 活文档标准**、**单流水线内同步等待 (`--wait`) + 跨流水线文件流监听 (`tail -f pipeline.jsonl`)**，通过 **`roles/`（常驻职责）+ `playbooks/`（按需战术剧本）+ `scripts/`（自动化基建）** 三元架构，无缝支持跨语言单线开发与多 Worktree / Workspace 高并发并行交付。
 
 [![Skill](https://img.shields.io/badge/Agent_Skill-herdr--teamwork-blue?style=flat-square)](https://skills.sh)
-[![Version](https://img.shields.io/badge/Version-v2.3-orange?style=flat-square)](SKILL.md)
+[![Version](https://img.shields.io/badge/Version-v2.4-orange?style=flat-square)](SKILL.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
 ---
@@ -24,7 +24,7 @@ npx skills add gahoo/herdr-teamwork -g
 
 ---
 
-## 🏛️ 核心架构亮点 (v2.3 Architecture Highlights)
+## 🏛️ 核心架构亮点 (v2.4 Architecture Highlights)
 
 1. **双主控台分治 + 严格工具白名单（规划与交付物理绝缘，90% 问题就地闭环）**：
    - **窗口 1：`Planner`（总规划台）**：常驻主工作区左窗格，受严格只读图谱与契约工具白名单约束。负责与人类探讨需求、维护统一领域语言 `GLOSSARY.md` 与 `changes/KANBAN.md`、唤起 `Explorer` 深潜摸底、按需直询 `Arch / Security` 专家进行 Stage 1 预审，落盘 `prd.md`、`spec.md`、`tasks.md` 并写入 `pipeline.jsonl` 首行 `PLAN` 事件，上下文 100% 纯净。

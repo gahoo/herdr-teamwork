@@ -3,7 +3,7 @@ name: herdr-teamwork
 description: Multi-agent spec implementation orchestrated via Herdr terminal panes, workspaces, and optional Git Worktrees (Planner, Explorer, Dispatcher, TDD, Coding, Reviewer Ensemble, Ops, Debugger, RedTeam, E2E, Reflector). Use when initiating multi-agent spec implementation, parallel feature development, or complex engineering workflows.
 ---
 
-# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.3)
+# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.4)
 
 本技能通过 Herdr 终端工作区管理工具构建**“双控台分治（窗口 1 规划 / 窗口 2 交付）、内外双驱（内部 `--wait` 同步 + 跨任务 `tail -f` 监听）、事件溯源（`pipeline.jsonl`）”**的多 Agent 物理隔离与协作体系。
 遵循 **OpenSpec 活文档标准**，实现规划与交付彻底物理绝缘、宏微观契约正交、职责绝对边界化与证伪式分形审查。
@@ -61,7 +61,7 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 | **`GLOSSARY.md`** | **`Planner`** | **项目级统一领域语言 (Ubiquitous Language)**：<br>全项目常驻标准工件，消除 16 个 Agent 间的概念命名漂移。 | 只定义核心业务概念边界与禁用同义词表；**严禁混入类名、文件路径或数据库表名等实现细节**。 |
 | **`E2E_PLAYBOOK.md`** | **`E2E Agent`**<br>(`Planner` 初始化) | **端到端验证路由与交互剧本 (按需工件)**：<br>仅在项目启用 `e2e` 角色时创建，免去每次测试重新摸索 DOM 与路由。 | 记录各核心功能的访问路由、前置状态、触发方式、关键成功信号与已知测试坑点（Gotchas），每次验收通过后增量更新。 |
 | **`docs/adr/<id>.md`** | **`Planner`** | **架构决策记录 (Selective ADRs)**：<br>记录深远架构取舍，防止后续 Agent 因不解背景而回退设计。 | **严格 3 条件门禁**（同时满足才写）：① 难以逆转；② 缺乏背景看代码会感到惊讶；③ 存在真实的方案权衡（Trade-off）。 |
-| **`changes/KANBAN.md`** | **`Planner` 独占** | **全局大盘单文件内聚**：<br>严禁私建碎片化 `Inbox.md`；未开展需求第一时间入池占位；结项与 `CONSTRUCTIVE` 建议仅在人类确认后由 `Planner` 录入。 | **需求未启，看板先行**：<br>- 状态流转：`📥 占位池 (Inbox/Backlog)` ➔ `🚀 进行中 (In Progress)` ➔ `✅ 已完成 (Done)`。 |
+| **`changes/KANBAN.md`** | **`Planner` 独占** | **全局大盘单文件内聚**：<br>严禁私建碎片化 `Inbox.md`；未开展需求第一时间入池占位；结项与 `CONSTRUCTIVE` 建议仅在人类确认后由 `Planner` 录入。 | **需求未启，看板先行**：<br>- 状态流转：`📥 占位池 (Inbox/Backlog)` ➔ `🚀 进行中 (In Progress)` ➔ `✅ 已完成 (Done)`；<br>- 依赖与并发前沿：多任务间显式标注 `[Blocked by: <id>]`，无未决阻塞项的即构成可并发启动 Worktree 的 **Ready Frontier**。 |
 | **`changes/<id>/prd.md`** | **`Planner`** | **产品诉求 (Why & What)**：需求调整直接在原文就地演进。 | 文末附 2~3 行简明 `## 变更备忘录 (Changelog)` 记录妥协或调整原因。 |
 | **`changes/<id>/spec.md`** | **`Planner`**<br>(可咨询 `Arch`/`Sec`) | **活契约原则 (Living Truth)**：反映当前生效的最新接口与数据结构。 | 原地更新，不留弃用字段，历史交由 Git 追溯；含明确的验收条件编号 (`AC-1, AC-2...`)。 |
 | **`changes/<id>/tasks.md`** | **`Planner`** (建档)<br>**`TDD` / `Coding`** (勾选) | **微观代码任务清单 (How & Checklist)**：<br>细化到源码模块、函数与测试文件的改造点清单（不含任何运行时状态头，`Dispatcher` 不触碰此文件）。 | 按纵向切片排列 `- [ ]` 勾选框；`tdd` 与 `coding` 每完成一项代码实施即勾选 `- [x]`。 |

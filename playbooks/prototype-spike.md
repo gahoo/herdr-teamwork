@@ -58,8 +58,9 @@
 
 ### 阶段四：拍板转化与「用完即焚」铁律
 1. **人类拍板**：人类在浏览器中点击体验或审阅实测数据后，在 Window 1 向 `planner` 给出明确裁决（例如：“采用方案 B 的布局，加上方案 A 的快捷键”）。
-2. **结论固化**：
-   * `planner` 将验证后的结论提炼进正式 Feature 的 `spec.md`（若满足 ADR 三条件，则写入 `docs/adr/`）；
+2. **结论固化与知识提炼（Capture the Findings before Teardown）**：
+   * 在销毁临时分支前，`coding` 或 `planner` 必须将本次原型刺探验证得出的**非平凡技术事实**（如：跑通的数据结构/状态机定义、关键 API 调用方式、实测性能数据或选定的布局参数）提炼归档至 `changes/spike-<id>/result.md`；
+   * `planner` 将验证后的结论融入正式 Feature 的 `spec.md`（若满足 ADR 三条件，则写入 `docs/adr/` 并指向 `changes/spike-<id>/result.md`）；
    * 若源自 `reflections/<domain>.md` 的 `🔬 SPIKE_CANDIDATE`，将其状态更新为 `✅ DETERMINISTIC_LESSON`。
 3. **🔥 用完即焚（Throwaway Discipline）**：
    * **严禁将 Spike 期间编写的粗糙代码直接 Merge 进主干分支！**

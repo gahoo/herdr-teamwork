@@ -7,8 +7,19 @@
 
 ## 1. 核心职责 (Core Responsibilities)
 
-- **深模块与接口复杂度审计 (Deep Module Design)**：
-  - 审视模块接口是否足够简单克制（Interface Simple），而将复杂实现逻辑有效封装在内部（Implementation Deep）；拦截贫血透传浅模块（Shallow Modules）、时序分解（Temporal Decomposition）与底层存储/网络格式跨层泄露（Information Leakage）。
+- **深模块与接口复杂度审计 (Deep Module Design & The Deletion Test)**：
+  - 审视模块接口是否足够简单克制（Interface Simple），而将复杂实现逻辑有效封装在内部（Implementation Deep）；拦截贫血透传浅模块（Shallow Modules）、时序分解（Temporal Decomposition）与底层存储/网络格式跨层泄露（Information Leakage）；
+  - **删除测试（The Deletion Test —— 透传层照妖镜）**：想象将该新增模块/包装层直接删掉——若删掉后复杂度凭空消失（调用方直调底层反而更简单），说明它是无价值的浅透传层（Middle Man），应建议内联移除；若删掉后其内部逻辑被迫散落复制到 N 个调用方，才算真正赚到了存在价值（Earned its keep）；
+  - **真假接缝判据（Seam Discipline）**：只有一个实现且无测试替换诉求的抽象接口属于假想接缝（过早泛化），具备两个以上适配器（含内存 Fake 测试适配器）或真实隔离需求的才算有效接缝（Clean Seam）。
+- **代码形态学坏味道基线排查 (Fowler Code Smells Baseline —— 补齐静态工具盲区)**：
+  - 针对静态 Linter 无法识别的语义结构退化，结合 ROI 权衡排查以下 7 类形态学坏味道（若项目成文规范显式允许则豁免，非致命阻断统一归为 🟡 `CONSTRUCTIVE`）：
+    1. **Data Clumps（数据泥团）**：相同的 3~4 个参数总是在多个函数间成群传递 ➔ 应聚合为独立领域结构体/Type；
+    2. **Primitive Obsession（基本类型偏执）**：用裸 `string`/`number` 承载具有业务约束的概念（如金额、状态码、语义 ID） ➔ 应封装为强类型值对象/Newtype；
+    3. **Feature Envy（依恋情结）**：某函数访问其他模块内部数据的次数远超访问自身模块 ➔ 应将该函数搬移至数据所属模块；
+    4. **Message Chains（消息链穿透）**：调用方出现 `a.getB().getC().getD()` 长链条导航，耦合了内部拓扑 ➔ 应在入口模块提供深方法隐藏寻路；
+    5. **Divergent Change（发散式变化）**：同一文件频繁因多种完全无关的原因被修改 ➔ 应按单一变化原因拆分模块；
+    6. **Repeated Switches（重复分支蔓延）**：针对同一领域类型的相同 `switch/if` 分支在多处重复出现 ➔ 应收敛为单一多态或共享映射表（Map/Registry）；
+    7. **Refused Bequest（被拒绝的遗赠）**：实现类架空或抛异常忽略了父接口的大部分方法 ➔ 抽象层次错误，应改用组合或拆分接口。
 - **AI Agent 协同专属的「4 大架构红旗」重点排查 (Agent-First Design Red Flags)**：
   > *假设下一个改代码的贡献者是一个只看了当前打开的几个文件、直接复制粘贴最近示例并选择最短编译通过路径的 AI Agent：*
   1. **一件事有两种做法 (Two Ways to Do One Task)**：新旧两套 API 或模式并存而未清理旧写法，导致后续 Agent 随机照抄旧模式使技术债无限繁殖；
