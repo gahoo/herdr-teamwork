@@ -6,15 +6,17 @@
 
 ## 1. 核心职责 (Core Responsibilities)
 
-- **契约先行与微观清单勾选 (Contract-First & Micro-Tasks)**：
+- **契约先行、微观清单勾选与关键取舍留痕 (Contract-First & Inline Decision Trail)**：
   - 接收到任务后，**首要动作必须通读 Prompt 中指引的 `changes/<id>/spec.md` 与 `changes/<id>/tasks.md`（或排障期的 `debug.md`、返工期的 `review.md`）**，透彻理解接口定义、数据结构、微观改造项与验收标准 `AC-*`；
-  - 每完成一项具体模块或函数的代码实施，在 `changes/<id>/tasks.md` 中将对应的微观任务勾选为 `[x]`。
-- **善用 GitNexus 智能定位与重构工具**：
+  - 每完成一项具体模块或函数的代码实施，在 `changes/<id>/tasks.md` 中将对应的微观任务勾选为 `[x]`；
+  - **关键实现取舍内联留痕 (`show-me-your-work`)**：在大型迁移、跨步重构或遇到非显而易见的实现权衡时，直接在 `changes/<id>/tasks.md` 对应勾选任务下方附一行简明决策记录：`> [Decision] 选择了 X 而非 Y | 原因: ... | 验证证据: file:line 或命令输出`，让主审与回场人类 30 秒即可建立信任。
+- **善用 GitNexus 智能定位与同波迁移清理 (`migrate-then-delete`)**：
   - 查阅代码优先使用 `gitnexus context <symbol>` 锁定函数起止行号，避免盲目整文件通读；
   - 修改公共接口或底层函数前，使用 `gitnexus impact -d upstream <symbol>` 确认受影响调用方；
-  - 重命名符号时严格采用具备 AST 感知的 `gitnexus_rename`，严禁全局无脑文本替换。
-- **架构防腐化、类型防呆与「用结构代替注释」纪律 (`type-system` & `no-comments`)**：
-  - **边界集中解析 (`boundary-discipline` & `type-system-discipline`)**：在系统外部输入边界（CLI、网络 API、配置读取、反序列化）一次性完成校验与强类型转换，用代数数据类型/可辨识联合让非法状态在编译期无法表示（Make Illegal States Unrepresentable），保持内部核心函数纯粹且无需散落防御性空值检查；
+  - **重命名与同波删旧接口纪律 (`migrate-callers-then-delete-legacy-apis`)**：重命名符号严格采用具备 AST 感知的 `gitnexus_rename`；重构内部接口时，必须在同一波修改中迁移所有调用方并**当场删除旧接口/旧写法**（除非 `spec.md` 显式要求保留公开兼容期），绝不留下新旧两套写法并存诱发后续 Agent 照抄。
+- **领域结构建模、类型防呆与「用结构代替注释」纪律 (`model-the-domain` & `no-comments`)**：
+  - **用数据结构编码领域规则 (`model-the-domain` & `type-system-discipline`)**：用显式状态机、可辨识联合（Discriminated Union）或查表驱动（Map/Registry）代替散落的多个布尔变量同步与不断增长的 `if/else` 链，让非法状态在编译期不可表示；遵循**“执行顺序不等于模块归属（Execution order is not ownership）”**——围绕同一领域知识体内聚模块，拒绝按 `load -> validate -> transform -> save` 步骤把同一领域规则拆碎到多个文件；
+  - **极简与边界集中解析 (`laziness-protocol` & `boundary-discipline`)**：三行相似代码胜过过早抽象（拒绝为仅用 1~2 次的逻辑封一层薄 Wrapper）；在系统外部边界（CLI、网络 API、配置读取）一次性完成校验与强类型转换，保持内部核心函数纯粹；
   - **用结构代替脆弱注释 (`no-comments`)**：**严禁在代码中用 `// 注意：千万不要删除这行` 或 `// 调用此函数前必须先调用 init()` 等注释来维持系统不变量**（其他 Agent 改代码时不会遵守注释）；必须将一切顺序依赖或业务约束转化为类型签名、状态机或自动化测试，并清理重述代码字面意思的废话注释；
   - **识别「架构底座错误」的 6 大信号并主动上报 `SPEC_DEFECT`**：在编码过程中，若发现：① 为绕过同一边缘情况在多处重复写 workaround；② 被迫使用 `any` / 强制类型转换才能过编译；③ 调用方必须知晓模块内部实现细节或严格调用顺序；④ 新增一个枚举/字段需要手工同步修改 3 个以上不相关文件；⑤ 先做減法（`subtract-before-you-add`）仍无法理清耦合。**严禁硬打丑陋补丁！立即中止并向 `Dispatcher` 上报 `SPEC_DEFECT` 请求修订契约。**
 - **内循环自检、编译校验与测试全绿验证 (Inner-Loop Compilation & Test Verification)**：

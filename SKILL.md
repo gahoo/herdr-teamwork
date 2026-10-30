@@ -3,7 +3,7 @@ name: herdr-teamwork
 description: Multi-agent spec implementation orchestrated via Herdr terminal panes, workspaces, and optional Git Worktrees (Planner, Explorer, Dispatcher, TDD, Coding, Reviewer Ensemble, Ops, Debugger, RedTeam, E2E, Reflector). Use when initiating multi-agent spec implementation, parallel feature development, or complex engineering workflows.
 ---
 
-# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.4)
+# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.5)
 
 本技能通过 Herdr 终端工作区管理工具构建**“双控台分治（窗口 1 规划 / 窗口 2 交付）、内外双驱（内部 `--wait` 同步 + 跨任务 `tail -f` 监听）、事件溯源（`pipeline.jsonl`）”**的多 Agent 物理隔离与协作体系。
 遵循 **OpenSpec 活文档标准**，实现规划与交付彻底物理绝缘、宏微观契约正交、职责绝对边界化与证伪式分形审查。
@@ -72,6 +72,14 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 | **`changes/<id>/explore.md`** | **`Explorer`** | **深度代码考古简报**：复杂历史代码摸底时按需产出。 | 浓缩现有模块拓扑、技术债约束与演进可行性评估，保护 `Planner` 上下文不被海量源码污染。 |
 | **`reflections/<domain>.md`** | **`Reflector`** | **项目级经验与探索课题库**：结项时由 `pipeline.jsonl` 异常信号触发。 | 按领域归并去重：区分 🎯 `DETERMINISTIC_LESSON`（确定性避坑指南）与 🔬 `SPIKE_CANDIDATE`（交 `Planner` 立项专项 `changes` 实验验证）。 |
 | **`.agents/skills/herdr-teamwork/.reflections/<id>.md`** | **`Reflector`** | **Skill 级演进反馈**：记录角色边界模糊、调度卡点或契约缺陷。 | 按 `<id>.md` 独立成文，定位 `SKILL.md` / `roles/*.md` 具体章节并给出修改建议，供本技能库消化吸收。 |
+
+### 2.1 全局文档与汇报「反 AI 腔」准则 (`unslop` 中文版 5 条铁律)
+全体角色在撰写任何面向人类或跨角色阅读的文档（`prd.md`、`spec.md`、`review.md`、`debug.md`、`explore.md`、`roundtable.md` 及回场简报）时，严格执行以下去水分铁律：
+1. **异项可迁移裁剪测试（Cross-Project Cut Test）**：审视你写的每一句话——**如果这句话原封不动复制到另一个毫不相干的项目文档里依然成立**（如“旨在提供极致的扩展性，确保系统高可用”），说明它对本项目是零信息量废话，**直接删掉**！
+2. **写具体机制与数字，不写主观感受（Mechanism & Numbers over Feelings）**：严禁写“大幅提升了性能、让数据触手可及”等空洞形容词；必须写明具体运作机制或实测数字（如“`.toSQL()` 返回发往数据库的精确字符串”、“耗时从 1,240ms 降至 780ms”）。
+3. **禁用中文 AI 八股黑话**：严禁堆砌**“赋能、抓手、闭环（泛化滥用时）、底座、护城河、生态、全方位、多维度、至关重要、不言而喻、不仅……更……”**等假大空词汇，一律替换为直白的具体动作（调哪个函数、读写哪个文件、改哪个字段）。
+4. **严禁同义词轮换与强行凑三排比（No Synonym Cycling or Forced Triads）**：同一领域概念全篇严格锁定 `GLOSSARY.md` 中的唯一标准名称重复使用（绝不在同一段话里变换两三个近义词）；有 2 个原因就写 2 条，严禁为了排比工整硬凑第 3 条。
+5. **主动语态指明责任模块 + 零讨好寒暄**：用主动语态写明行为主体（写“`AuthGuard` 拦截了非法 Token”，而非“Token 被校验并拦截了”）；彻底剔除“这是一个非常好的问题！”、“你完全正确！”等客套寒暄与“**性能优化**：我们对性能进行了优化……”式的粗体复读机列表。
 
 ---
 
