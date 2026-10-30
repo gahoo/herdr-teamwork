@@ -23,11 +23,11 @@
 
 ### 2.1 第一步：黑匣子轨迹审计与按需跨窗格问询 (Trace Audit & Agent Interview)
 1. **研读物证**：读取 `changes/<id>/pipeline.jsonl` 全量事件流，并结合 `changes/<id>/review.md`、`changes/<id>/debug.md` 锁定发生返工、卡顿或偏差的具体工序（`step`）与轮次（`round`）。
-2. **按需问询当事 Agent（When Needed）**：
+2. **按需问询当事 Agent（含业务根因 + 契约阅读轨迹配合反馈）**：
    - 若物证文档已清晰写明根因，直接进入提炼阶段，无需打扰其他 Agent；
-   - 若某次失误、误解或耗时卡顿在文档中原因不明（例如：“为什么 `coding` 在第 1 轮漏掉了某边界？”或“为什么 `ops` 启动服务失败了两次？”），主动使用 `herdr` 向当事 Agent 发起简短追问（`worktree` 模式下带上 `--workspace ws-<id>`）：
+   - 若某次失误、误解或耗时卡顿在文档中原因不明，或怀疑当事角色在阅读契约/Playbook 时发生了理解偏差与跳转遗漏，主动使用 `herdr` 向当事 Agent 发起简短追问，要求其配合反馈**业务根因与契约阅读体验**（`worktree` 模式下带上 `--workspace ws-<id>`）：
      ```bash
-     herdr agent prompt coding --workspace ws-001 "【Reflector 复盘问询】在刚完成的 001-auth Round 1 中，是什么契约歧义或代码盲区导致了 [BLOCKER] 返工？请用 5 行以内简述根因。" --wait --timeout 60000
+     herdr agent prompt coding --workspace ws-001 "【Reflector 复盘问询】在刚完成的 001-auth Round 1 中：① 是什么业务盲区或契约歧义导致了返工？② 执行期间阅读 roles/ 或 playbooks/ 时，有无指令不够显眼、遗漏跳转链接或感觉冗余的步骤？请用 5 行以内如实反馈。" --wait --timeout 60000
      ```
 
 ### 2.2 第二步：项目级经验教训与探索课题落盘 (`reflections/<domain>.md`)
@@ -52,7 +52,8 @@
 - **面向 Agent 写作规范 (`writing-for-agents` Discipline)**：在拟定条文修改建议（Proposed Diff）时，必须遵循：
   1. **正向引导优于否定禁令 (Positive Steering over Negation)**：避免仅写“不要做 X”（否定词反而会激活模型对错误模式的注意力），必须直接写明**“当遇到场景 X 时，执行标准动作 Y”**；
   2. **渐进式披露 (Progressive Disclosure)**：高频底线写入 `roles/<role>.md`，低频复杂规程下沉至 `playbooks/*.md` 并通过路由表按需挂载，严禁将主契约文件撑成臃肿巨石；
-  3. **剔除无效空话 (Hunt No-Ops)**：删掉一切模型本来就会做或无法验证的修饰性废话。
+  3. **剔除无效空话 (Hunt No-Ops)**：删掉一切模型本来就会做或无法验证的修饰性废话；
+  4. **基于真实浏览轨迹调优 (Navigation Trace Tuning)**：结合当事角色反馈的契约阅读轨迹，强化被遗漏的关联跳转链接、将多角色反复跨文件查阅的高频约定提入主契约，并清理长期无人触发的冗余条文。
 - 明确列出：
   1. **触发变更集与摩擦现象**（引述 `pipeline.jsonl` 中的具体事件行）；
   2. **暴露的 Skill 规范缺陷定位**（精确指向 `SKILL.md`、`roles/<role>.md` 或 `playbooks/<name>.md` 的具体章节）；

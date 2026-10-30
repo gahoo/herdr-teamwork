@@ -3,7 +3,7 @@ name: herdr-teamwork
 description: Multi-agent spec implementation orchestrated via Herdr terminal panes, workspaces, and optional Git Worktrees (Planner, Explorer, Dispatcher, TDD, Coding, Reviewer Ensemble, Ops, Debugger, RedTeam, E2E, Reflector). Use when initiating multi-agent spec implementation, parallel feature development, or complex engineering workflows.
 ---
 
-# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.7.1)
+# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.7.2)
 
 本技能通过 Herdr 终端工作区管理工具构建**“双控台分治（窗口 1 规划 / 窗口 2 交付）、内外双驱（内部 `--wait` 同步 + 跨任务 `tail -f` 监听）、事件溯源（`pipeline.jsonl`）”**的多 Agent 物理隔离与协作体系。
 遵循 **OpenSpec 活文档标准**，实现规划与交付彻底物理绝缘、宏微观契约正交、职责绝对边界化与证伪式分形审查。
