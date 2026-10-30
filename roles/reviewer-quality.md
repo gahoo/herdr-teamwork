@@ -11,7 +11,7 @@
 
 | 语言生态 | 必跑静态健康度与类型工具链 | 核心审查维度（死代码 / 复杂度 / 重复率 / 架构边界） |
 | :--- | :--- | :--- |
-| **TS / JS** | 1. `fallow --fail-on-regression --regression-baseline .fallow-baseline.json --summary`（或 `fallow audit`）<br>2. `npx tsc --noEmit` | 未用导出与未用依赖 (`dead-code`)、重复代码率 (`dupes`)、圈复杂度热点 (`health`)、增量健康度退化 (`delta: +0`) 与类型安全 |
+| **TS / JS** | 1. `fallow --fail-on-regression --regression-baseline .fallow-baseline.json --summary`（或 `fallow audit`）<br>2. `npx tsc --noEmit`（仅存在 `tsconfig.json` 时执行；纯 JS 项目跑既有 `lint`/`check` 脚本） | 未用导出与未用依赖 (`dead-code`)、重复代码率 (`dupes`)、圈复杂度热点 (`health`)、增量健康度退化 (`delta: +0`) 与类型安全 |
 | **Rust** | 1. `cargo clippy --all-targets -- -D warnings -W clippy::cognitive_complexity`<br>2. 按需 `cargo machete`（查未用依赖） | 编译器原生 `dead_code`/`unused` 检查、`clippy` 认知复杂度 (`cognitive_complexity`)、过多参数/行数与反模式零警告 |
 | **Go** | 1. `golangci-lint run`<br>2. `go vet ./...` | 内置 `unused`（死代码）、`gocyclo`/`gocognit`（圈复杂度/认知复杂度）、`dupl`（重复代码检测）与静态缺陷检查 |
 | **Python** | 1. `ruff check`（含 `F` 未用符号、`C901` 复杂度、`PLR` 重构规则）<br>2. `mypy` 或 `pyright`（可选 `vulture` 查死代码） | 未用导入/变量、McCabe 函数圈复杂度超标、过多分支/参数及静态类型契约一致性 |

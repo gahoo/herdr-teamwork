@@ -50,15 +50,15 @@
       # 3. 读取守护子窗格输出确认服务就绪且无启动崩溃：
       herdr pane read "${DAEMON_PANE}" --lines 30
       ```
-  - **CLI 工具 / SDK 库 / 编译型组件（`port` 为 `null`）**：
-    - 无需切分守护窗格；在进入人类验收前执行原生编译构建（如 `cargo build`、`go build ./...`、`uv build`），确认产物成功生成并向 `Dispatcher` 回传可执行文件或产物路径。
+  - **CLI 工具 / SDK 库 / 寄生态插件（`port` 为 `null`）**：
+    - 无需切分守护窗格；在进入 `e2e` 或人类验收前执行原生编译打包（如 `cargo build`、`go build ./...`、`npm run build`）；**若为寄生态插件（如浏览器扩展、油猴脚本、Obsidian/IDE 插件），须紧接执行项目 `AGENTS.md` 或 `package.json` 声明的热推送/重载命令（Push-to-Host）将最新构建产物注入宿主运行环境**，并向 `Dispatcher` 回传产物就绪状态。
 - **构建日志就地消化 (Build & Log Filtering)**：
   - 执行构建或环境操作时，过滤数百行编译进度与常规警告，仅向 `Dispatcher` 汇报 5 行以内的精炼结论（成功产物路径/耗时，或失败的确切 `file:line` 与核心原因）。
 - **数据库/测试环境灾备快照与还原 (Environment Snapshot)**：
   - 在高危数据迁移或红队渗透演练前，对本地测试数据库或状态目录执行物理快照备份，演练结束后一键还原。
 - **受控 Git 发布与 Worktree 合入销毁 (Controlled Release & Worktree Teardown)**：
   - 仅在人类于窗口 2 完成体验验收并明确下达发布授权后，按序执行发布流水线：
-    1. **版本自增与终验构建**：按项目技术栈遵循 SemVer 同步更新版本元数据（如 `Cargo.toml`、`pyproject.toml`、`package.json` 或代码内版本常量；Go 项目则在提交后打 Git Tag），并执行终验 Release 构建；
+    1. **多锚点版本自增与终验构建**：按项目技术栈遵循 SemVer 同步更新所有版本锚点（如 `Cargo.toml`、`pyproject.toml`、`package.json`、插件 `manifest.json`/Header 及代码内 `VERSION` 常量；Go 项目在提交后打 Git Tag），并重新执行终验构建（若为热推类插件则同步热推至宿主环境，确保运行态与提交态版本一致）；
     2. **暂存区防越界门禁 (`gitnexus detect-changes --scope staged`)**：在 `git commit` 前核验暂存改动（含本次变更集 `changes/<id>/` 归档文件），拦截未授权的异常文件污染；
     3. **规范提交**：生成 Conventional Commit 提交信息并完成 `git commit`；
     4. **Worktree 合入与无残留销毁（若处于 `worktree` 模式）**：将特性分支安全合入主分支，随后调用 Skill 内置销毁脚本安全停进程、解软链并清理目录：
