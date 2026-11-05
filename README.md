@@ -1,11 +1,11 @@
-# Herdr Teamwork v2.8.1 ⚡
+# Herdr Teamwork v2.8.2 ⚡
 
 > **Multi-Agent Spec Implementation Framework Orchestrated via Herdr & Git Worktrees**
 >
-> 基于 **Herdr** 终端工作区管理工具构建的**“双控台分治、内外双驱、事件溯源、双层自演进”**多 Agent 协同工程规范。遵循 **OpenSpec 活文档标准**、**单流水线内同步等待 (`--wait`) + 跨流水线文件流监听 (`tail -f pipeline.jsonl`)**，通过 **`roles/`（常驻职责）+ `playbooks/`（按需战术剧本）+ `scripts/`（自动化基建）** 三元架构，无缝支持跨语言单线开发与多 Worktree / Workspace 高并发并行交付。
+> 基于 **Herdr** 终端工作区管理工具构建的**“双控台分治、内外双驱、事件溯源、双层自演进”**多 Agent 协同工程规范。遵循 **OpenSpec 活文档标准**、**单流水线内同步等待 (`--wait`) + 跨流水线文件流监听 (`tail -f pipeline.jsonl`)**，通过 **`roles/`（常驻职责）+ `playbooks/`（按需战术剧本）+ `tools/`（标准指令配方卡）+ `scripts/`（自动化基建）** 四元架构，无缝支持跨语言单线开发与多 Worktree / Workspace 高并发并行交付。
 
 [![Skill](https://img.shields.io/badge/Agent_Skill-herdr--teamwork-blue?style=flat-square)](https://skills.sh)
-[![Version](https://img.shields.io/badge/Version-v2.8.1-orange?style=flat-square)](SKILL.md)
+[![Version](https://img.shields.io/badge/Version-v2.8.2-orange?style=flat-square)](SKILL.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
 ---
@@ -25,19 +25,19 @@ npx skills add gahoo/herdr-teamwork
 
 ---
 
-## 🏛️ 核心架构亮点 (v2.8.1 Architecture Highlights)
+## 🏛️ 核心架构亮点 (v2.8.2 Architecture Highlights)
 
 1. **双主控台分治 + 严格工具白名单（规划与交付物理绝缘，90% 问题就地闭环）**：
    - **窗口 1：`Planner`（总规划台）**：常驻主工作区左窗格，受严格只读图谱与契约工具白名单约束。负责与人类探讨需求、维护统一领域语言 `GLOSSARY.md` 与 `changes/KANBAN.md`、唤起 `Explorer` 深潜摸底、按需直询 `Arch / Security` 专家进行 Stage 1 预审，落盘 `prd.md`、`spec.md`、`tasks.md` 并写入 `pipeline.jsonl` 首行 `PLAN` 事件，上下文 100% 纯净。
    - **窗口 2：`Dispatcher`（交付总控台）**：常驻主工作区右窗格，物理剥夺源码读取权（禁读 `src/` 与 `tests/`），独占续写 `pipeline.jsonl`。负责维护人类 FIFO 认知队列，**将 90% 的验收报障（追加 `REPLAN` 调 `debugger`）与发布授权（调 `ops`）在窗口 2 就地闭环**，仅 10% 契约缺陷（`SPEC_DEFECT`）切回窗口 1。
 2. **内外双驱、跨语言 Worktree 隔离与子窗格透明守护（零冲撞、零黑盒）**：
-   - **微观单流水线内（模式乙）**：`Dispatcher` 使用 `herdr agent prompt <role> "..." --wait --timeout <ms>` 同步阻塞调度下游角色，仅由 `Dispatcher` 追加写入 `changes/<id>/pipeline.jsonl`，彻底杜绝下游忘写收据引发的永久死锁。
+   - **微观单流水线内（模式乙）**：`Dispatcher` 遵循 [`tools/herdr.md §[H-3]`](tools/herdr.md) 纯事件驱动（默认覆盖 `idle | done | blocked` 三态事件唤醒）同步阻塞调度下游角色，仅由 `Dispatcher` 追加写入 `changes/<id>/pipeline.jsonl`，彻底杜绝下游忘写收据或后台终态死锁。
    - **宏观跨流水线层（`worktree` 并行模式）**：由 `Ops` 调用内置 [`scripts/worktree-up.sh`](scripts/worktree-up.sh) 与 [`scripts/worktree-down.sh`](scripts/worktree-down.sh) 管理 `.worktrees/<id>/` 生命周期与跨语言依赖软链（支持 Node `node_modules` / Python `.venv` 写时解链、Rust/Go 缓存加速）；`Ops` 在专属子窗格（`.ops-pane`）前台透明运行守护服务，人类与 Agent 均可直读原生实时日志。
 3. **三拍点将、5 级证据阶梯与跨语言静态健康门禁（杜绝橡皮图章与脑补挑刺）**：
    - **三拍点将**：`Lead Reviewer` 分诊输出 `SPAWN_EXPERTS` 点将令 ➔ `Dispatcher` 代为切屏并发拉起专家并回收简报 ➔ `Lead Reviewer` 基于 **5 级证据阶梯**（剔除无确定性触发路径的理论担忧）执行 ROI 仲裁。
    - **行号级证伪举证 (`Proof of Defense`) + 跨语言静态扫描**：`Quality Reviewer` 独占吞吐 TS (`fallow`+`tsc`) / Rust (`clippy`) / Go (`golangci-lint`) / Python (`ruff`+`mypy`) 原始日志；全体审查员强制贴出源码/测试防御行号 (`file:line`) 方可放行。
 4. **渐进式战术剧本（`playbooks/`）与领域知识物化（`GLOSSARY.md` + `E2E_PLAYBOOK.md`）**：
-   - **渐进式加载（Progressive Disclosure）**：16 个角色的常驻契约（`roles/`）保持极简底线，仅通过尾部路由表按需挂载 9 大专项战术剧本（`playbooks/`），平时零 Token 负担，命中条件时跨角色协同执行 **`[SPIKE]` 快速原型刺探**、**`[HILLCLIMB]` 科学爬山**、**全库架构深度巡检**、**重大架构圆桌辩论**、**形式化状态机验证**、**像素级视觉比对**与**交互式配置向导生成**。
+   - **渐进式加载（Progressive Disclosure）**：16 个角色的常驻契约（`roles/`）保持极简底线，仅通过尾部路由表按需挂载 11 大专项战术剧本（`playbooks/`），平时零 Token 负担，命中条件时跨角色协同执行 **`[SPIKE]` 快速原型刺探**、**`[HILLCLIMB]` 科学爬山**、**全库架构深度巡检**、**重大架构圆桌辩论**、**形式化状态机验证**、**像素级视觉比对**与**交互式配置向导生成**。
    - **物化导航与领域词典**：通过 `GLOSSARY.md` 消除多 Agent 命名漂移；通过 `E2E_PLAYBOOK.md` 物化页面路由与交互记忆，让 `e2e` 告别每次从零盲目摸索 DOM。
 5. **全局 `Reflector` 双层反思闭环与「四级防错强化阶梯」**：
    - 当 `pipeline.jsonl` 出现返工、重排或受阻信号时，在销毁工作区前唤醒全局 `Reflector`，按需跨窗格问询当事 Agent，并严格遵循 **「Level 1 架构消除 > Level 2 类型/Lint 机械拦截 > Level 3 行为测试锁死 > Level 4 文档规则兜底」** 阶梯，同步沉淀项目级 `reflections/<domain>.md`（含 `🔬 SPIKE_CANDIDATE` 立项闭环）与 Skill 级 `.reflections/<id>.md`。
@@ -68,16 +68,17 @@ project-root/
 ├── .agents/                         # Agent 运行时支撑基建
 │   ├── environment.json             # 宿主机器 Harness 画像与 16 角色配置
 │   ├── session.json                 # Herdr 会话状态快照
-│   └── skills/herdr-teamwork/       # 本技能规范库 (roles/ + playbooks/ + scripts/ + .reflections/)
+│   └── skills/herdr-teamwork/       # 本技能规范库 (roles/ + playbooks/ + tools/ + scripts/ + .reflections/)
 └── .worktrees/                      # Worktree 并行执行隔离区 (Ops 建场管理，软链共享 changes / .agents / 依赖)
 ```
 
 ---
 
-## 📖 规范全览：16 正交角色 × 11 战术剧本 × 2 基建脚本
+## 📖 规范全览：16 正交角色 × 11 战术剧本 × 1 指令卡 × 2 基建脚本
 
-### 1. 总纲与自动化脚本
-- **核心总纲**：[`SKILL.md`](SKILL.md) —— 完整工程规范、双控台交互协议、`pipeline.jsonl` 事件流标准、两阶段审查、上下文生命周期与 CLI 命令矩阵。
+### 1. 总纲、标准指令配方卡与自动化脚本
+- **核心总纲**：[`SKILL.md`](SKILL.md) —— 完整工程规范、双控台交互协议、`pipeline.jsonl` 事件流标准、两阶段审查、上下文生命周期与配置字典。
+- **标准指令配方卡 (`tools/`)**：[`tools/herdr.md`](tools/herdr.md) —— 涵盖窗格切分 (`§[H-1]`)、角色启动与会话恢复 (`§[H-2]`)、零轮询纯事件等待 (`§[H-3]`)、Worktree 平行工作区 (`§[H-4]`)、`.ops-pane` 守护子窗格 (`§[H-5]`) 与上下文/中断回收 (`§[H-6]`) 的唯一权威 CLI 配方。
 - **内置脚本 (`scripts/`)**：[`scripts/worktree-up.sh`](scripts/worktree-up.sh)（跨语言 Worktree 物理建场与依赖软链挂载）、[`scripts/worktree-down.sh`](scripts/worktree-down.sh)（守护进程清理、安全解链与工作区销毁）。
 
 ### 2. 16 个正交角色契约 (`roles/` —— Who)

@@ -3,7 +3,7 @@ name: herdr-teamwork
 description: Multi-agent spec implementation orchestrated via Herdr terminal panes, workspaces, and optional Git Worktrees (Planner, Explorer, Dispatcher, TDD, Coding, Reviewer Ensemble, Ops, Debugger, RedTeam, E2E, Reflector). Use when initiating multi-agent spec implementation, parallel feature development, or complex engineering workflows.
 ---
 
-# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.8.1)
+# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.8.2)
 
 本技能通过 Herdr 终端工作区管理工具构建**“双控台分治（窗口 1 规划 / 窗口 2 交付）、内外双驱（内部 `--wait` 同步 + 跨任务 `tail -f` 监听）、事件溯源（`pipeline.jsonl`）”**的多 Agent 物理隔离与协作体系。
 遵循 **OpenSpec 活文档标准**，实现规划与交付彻底物理绝缘、宏微观契约正交、职责绝对边界化与证伪式分形审查。
@@ -39,6 +39,7 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 │   └── skills/herdr-teamwork/       # 本技能规范库
 │       ├── roles/                   # 【Who】16 个正交角色的常驻本职契约库
 │       ├── playbooks/               # 【How】11 个按需触发的专项战术剧本 (含 bootstrap-teamwork 初始化自举，跨角色共享)
+│       ├── tools/                   # 【CLI】Herdr 编排与窗格控制唯一权威指令配方卡 (tools/herdr.md §[H-1]~§[H-6])
 │       ├── scripts/                 # 【Tools】跨项目通用 Worktree 建场与销毁脚本 (worktree-up.sh / worktree-down.sh)
 │       └── .reflections/            # Skill 级流程与契约改进反馈 (<id>.md，供 herdr-teamwork 消化吸收)
 └── .worktrees/                      # 【并行执行隔离区】(worktree 模式下由 Ops 建场管理，纳入 .gitignore)
@@ -201,9 +202,9 @@ flowchart TD
 - **`ctx` 跨特性上下文策略枚举（专供 `standard` 常驻模式）**：`"keep"`（强关联连续小切片，直接保留）| `"compact"`（默认推荐，结项后主动压缩沉淀项目演进记忆）| `"clear"`（跨完全无关业务域，清空重置）。
 
 ### 5.3 下游 Agent 故障自愈三步法 (Self-Healing SOP)
-当 `Dispatcher` 执行 `--wait` 发生超时或下游异常时，**严禁越权代庖**，必须按序执行：
-1. **观察与中断重试**：先执行 `herdr agent read <TARGET> --lines 20` 检查是否仍在正常输出；若确系卡死，执行 `herdr agent send-keys <TARGET> ctrl+c`，确认 `herdr agent get <TARGET>` 恢复就绪后重试。
-2. **重启进程**：若重试无效，执行 `herdr agent stop <TARGET>` 后重新 `herdr agent start <TARGET>` 恢复会话。
+当 `Dispatcher` 执行等待发生异常时，**严禁越权代庖**，必须严格按 [`tools/herdr.md §[H-6]`](tools/herdr.md) 依次执行：
+1. **观察与中断重试**：先读取目标状态与最近输出检查是否仍在正常 `working`；若确系卡死，发送 `ctrl+c` 中断当前回合并确认恢复就绪后重试。
+2. **重建窗格重启进程**：若重试无效，切分新窗格并关闭旧异常窗格，重新启动该角色实例恢复会话。
 3. **挂起上报**：若自愈仍失败，`Dispatcher` 向 `changes/<id>/pipeline.jsonl` 追加 `"state": "STALLED"` 事件并上报窗口 2。
 
 ### 5.4 非 Worktree (`standard`) 模式上下文生命周期管理 (Context Lifecycle Management)
@@ -256,6 +257,10 @@ flowchart TD
     "shadcn-ui": {
       "path": ".agents/skills/shadcn-ui/SKILL.md",
       "roles": ["planner", "coding", "reviewer-ux"]
+    },
+    "fallow-skills": {
+      "path": ".agents/skills/fallow-skills/SKILL.md",
+      "roles": ["reviewer-quality", "reviewer-arch", "explorer"]
     }
   },
   "harness_profiles": {
@@ -293,109 +298,36 @@ flowchart TD
 | **`active_roles`** | `string[]` | 本项目实际启用的角色白名单（如纯 CLI 项目剔除 `e2e`/`reviewer-ux`，防误点名）。 |
 | **`toolchain`** | `object` | 初始化阶段一次性验证固化的构建（`build`）、单测（`test`）、类型检查（`typecheck`）、静态健康（`static_health`）与热推（`push_cmd`）命令，日常运行零探测直接调用。 |
 | **`version_anchors`** | `string[]` | 受控发版时 `ops` 需同步递增 SemVer 版本号的文件清单（如 `package.json`, `manifest.json`, 代码常量文件）。 |
-| **`domain_skills`** | `object` | `Bootstrap` 扫描或联网检索推荐安装的垂类领域 Skill（如 `shadcn-ui`、`chrome-extensions`），通过 `roles` 数组按需精准挂载给相关角色，避免无关角色消耗上下文。 |
-| **`harness_profiles`** | `object` | `Bootstrap` 通过 `<harness> --help` 核实的各 CLI 压缩指令（`compact_cmd`）、清空指令（`clear_cmd`）与会话恢复参数（`resume_flag`）；退出/停止统一用 `herdr agent stop`。 |
+| **`domain_skills`** | `object` | `Bootstrap` 扫描或联网检索推荐安装的垂类领域与工具 Skill（如 `shadcn-ui`、`fallow-skills`、`chrome-extensions`），通过 `roles` 数组按需精准挂载给相关角色，避免无关角色消耗上下文。 |
+| **`harness_profiles`** | `object` | `Bootstrap` 通过 `<harness> --help` 核实的各 CLI 压缩指令（`compact_cmd`）、清空指令（`clear_cmd`）与会话恢复参数（`resume_flag`）；中断与关闭窗格统一按 [`tools/herdr.md §[H-6]`](tools/herdr.md) 执行。 |
 | **`roles.<id>`** | `object` | 各角色绑定的 `harness`、逻辑 `model`、逻辑思考强度 `thinking` (`"none"`\|`"low"`\|`"medium"`\|`"high"`)，以及供 `herdr agent start` 直接展开透传的原生启动参数数组 **`cli_args`**。 |
 
 ---
 
-## 7. Herdr 内外双驱调度、Workspace 隔离与分屏范式 (CLI Patterns)
+## 7. Herdr 编排指令规范、跨任务监听与会话快照 (`tools/herdr.md` & `session.json`)
 
-### 7.1 Worktree 物理建场（`Ops` 执行）与多任务监听（`Master Dispatcher` 执行）
+> **配套必读规范**：`dispatcher`、`ops`、`planner`、`reflector` 角色及 `bootstrap-teamwork`、`roundtable-debate` 剧本必读 **[`tools/herdr.md`](tools/herdr.md)**，并遵照对应段落（`§[H-1]` ~ `§[H-6]`）执行：
+
+| 编排场景 | 唯一权威指令配方章节 | 核心机制要点 |
+| :--- | :--- | :--- |
+| **切分窗格与创建标签页** | **[`tools/herdr.md §[H-1]`](tools/herdr.md)** | 统一携带 `--no-focus`，并通过 `jq -r` 提取 `.result.pane.pane_id` 或 `.result.root_pane.pane_id`。 |
+| **角色启动、快照导出与跨天复活** | **[`tools/herdr.md §[H-2]`](tools/herdr.md)** | 从 `.agents/environment.json` 展开 `cli_args` 透传；用 `herdr agent list \| jq ...` 导出 `.agents/session.json`。 |
+| **事件驱动派发、等待与读取** | **[`tools/herdr.md §[H-3]`](tools/herdr.md)** | **纯事件驱动等待**，默认自动匹配 `idle \| done \| blocked` 三种终态唤醒；使用 `--source recent-unwrapped` 读取输出。 |
+| **Worktree 平行工作区建场与回收** | **[`tools/herdr.md §[H-4]`](tools/herdr.md)** | 调 `worktree-up.sh` ➔ `herdr workspace create --label "ws-<id>"` ➔ 启动全局唯一角色名（如 `dispatcher-001`）。 |
+| **后台服务守护子窗格 (`.ops-pane`)** | **[`tools/herdr.md §[H-5]`](tools/herdr.md)** | 在 `ops` Tab 内切分子窗格并存入 `.ops-pane`，用 `pane run` 与 `pane wait-output` 驱动常驻开发服务。 |
+| **上下文打理、中断重试与窗格回收** | **[`tools/herdr.md §[H-6]`](tools/herdr.md)** | 发送 `compact_cmd`/`clear_cmd`、`send-keys ctrl+c` 中断重试，或通过 `herdr pane close` 关闭窗格。 |
+
+### 7.1 `Master Dispatcher` 跨流水线事件监听与 FIFO 认知队列提取
 ```bash
-# 1. 【worktree 模式前置建场】Master Dispatcher 阻塞调度主工作区 Ops 调用内置建场脚本：
-herdr agent prompt ops "请为 changes/001-auth 执行 Worktree 建场：分支 feat/001-auth" --wait --timeout 30000
-
-# Ops 内部直接调用本 Skill 内置的跨语言通用建场脚本（自动完成 git worktree add、changes/.agents 软链及 node_modules/.venv 探测挂载）：
-.agents/skills/herdr-teamwork/scripts/worktree-up.sh "001-auth" "feat/001-auth"
-
-# 2. 【Master Dispatcher】创建独立 Herdr Workspace (ws-001) 并异步点火该工作区的 Worker Dispatcher：
-herdr workspace create ws-001 --cwd ".worktrees/001-auth"
-# (在 ws-001 启动独立角色实例后异步点火，不带 --wait)
-herdr agent prompt dispatcher --workspace ws-001 "请接管 changes/001-auth，按 pipeline.jsonl 启动流水线"
-
-# 3. 【Master Dispatcher】挂起后台单次触发监听命令（任一任务进入待处理状态即退出并自动唤醒总控台）：
+# 1. 挂起后台单次触发监听命令（任一任务进入待处理状态即退出并自动唤醒窗口 2 总控台）：
 tail -n 0 -f changes/*/pipeline.jsonl | grep --line-buffered -m 1 -E '"state":"(WAITING_|STALLED|DONE)"'
 
-# 4. 【Master Dispatcher】提取全部待人类处理的 FIFO 认知队列（按时间戳升序）：
+# 2. 提取全部待人类处理的 FIFO 认知队列（按时间戳升序）：
 tail -q -n 1 changes/*/pipeline.jsonl | jq -s 'map(select(.state == "WAITING_ACCEPTANCE" or .state == "WAITING_DECISION" or .state == "STALLED")) | sort_by(.ts)'
 ```
 
-### 7.2 单流水线内部同步阻塞调度范式（模式乙）
-```bash
-# Dispatcher 在当前所属 Workspace 内依次阻塞式调度下游工人（必须显式传入契约路径）：
-herdr agent prompt tdd "请阅读 changes/001-auth/spec.md 与 changes/001-auth/tasks.md，编写失败测试 (Red Test) 并勾选对应任务项" --wait --timeout 120000
-herdr agent prompt reviewer-lead "请依据 changes/001-auth/spec.md 对新增测试执行 Stage 2A 测试代码快检，更新 changes/001-auth/review.md" --wait --timeout 90000
-herdr agent prompt coding "请阅读 changes/001-auth/spec.md 与 changes/001-auth/tasks.md，实施业务代码、勾选任务项并运行关联单测迭代至 Green" --wait --timeout 180000
-
-# 读取终端输出（使用 --source recent-unwrapped 防止终端软换行截断路径）：
-herdr agent read reviewer-lead --source recent-unwrapped --lines 40
-```
-
-### 7.3 Dispatcher 替 Lead Reviewer 动态调度与常驻复用专家范式
-```bash
-# 1. 若目标专家尚未启动，则在当前 Workspace 的 review Tab 右侧切分新窗格，并展开 cli_args（同时传入模型与思考强度）启动：
-if ! herdr agent get reviewer-quality >/dev/null 2>&1; then
-  QUAL_PANE=$(herdr pane split --target review:p1 --direction right -q)
-  QUAL_ARGS=($(jq -r '.roles["reviewer-quality"].cli_args[]' .agents/environment.json))
-  herdr agent start reviewer-quality --kind "$(jq -r '.roles["reviewer-quality"].harness' .agents/environment.json)" --pane "$QUAL_PANE" -- "${QUAL_ARGS[@]}"
-fi
-if ! herdr agent get reviewer-arch >/dev/null 2>&1; then
-  ARCH_PANE=$(herdr pane split --target review:p1 --direction down -q)
-  ARCH_ARGS=($(jq -r '.roles["reviewer-arch"].cli_args[]' .agents/environment.json))
-  herdr agent start reviewer-arch --kind "$(jq -r '.roles["reviewer-arch"].harness' .agents/environment.json)" --pane "$ARCH_PANE" -- "${ARCH_ARGS[@]}"
-fi
-
-# 2. 并发派发任务并依次 wait 回收：
-herdr agent prompt reviewer-quality "请执行静态健康度扫描与全量测试回归，输出 <=15 行简报"
-herdr agent prompt reviewer-arch "请结合 changes/001-auth/spec.md 审查架构边界与爆炸半径，焦点：$FOCUS"
-herdr agent wait reviewer-quality --timeout 120000
-herdr agent wait reviewer-arch --timeout 120000
-
-# 3. 提取专家简报（standard 模式下保持窗格常驻，待整个 Feature 结项 DONE 后再对 arch 执行 /compact、对 quality 执行 /clear）：
-QUAL_REPORT=$(herdr agent read reviewer-quality --source recent-unwrapped --lines 30)
-ARCH_REPORT=$(herdr agent read reviewer-arch --source recent-unwrapped --lines 45)
-```
-
-### 7.4 会话快照与跨天秒级复活 (`.agents/session.json` 结构范例与字段说明)
-`.agents/session.json` 记录当前活跃窗格的运行时拓扑与会话 ID，专供终端重启或跨天复工时秒级恢复常驻角色记忆：
-
-```bash
-# 1. 保存快照（关联读取 .agents/environment.json 中的准确 model 与 thinking，显式过滤未命名窗格与临时 bootstrap）：
-herdr agent list | jq --slurpfile env .agents/environment.json \
-  --arg ws "${HERDR_WORKSPACE_ID:-main}" --arg proj "$(basename "$PWD")" \
-  '{
-    updated_at: (now | todate),
-    workspace_id: $ws,
-    project: $proj,
-    agents: [
-      .result.agents[]
-      | select(.name != null and .name != "bootstrap")
-      | . as $a
-      | ($env[0].roles[$a.name] // {}) as $r
-      | {
-          key: $a.name,
-          value: {
-            name: $a.name,
-            pane_id: $a.pane_id,
-            tab_id: $a.tab_id,
-            harness: ($r.harness // $a.kind),
-            model: ($r.model // "default"),
-            thinking: ($r.thinking // "default"),
-            conversation_id: $a.agent_session.value
-          }
-        }
-    ] | from_entries
-  }' > .agents/session.json
-
-# 2. 跨天复活某常驻角色示例（读取 environment.json 的 cli_args 与 session.json 的 conversation_id 恢复记忆）：
-ROLE="planner"
-HARNESS=$(jq -r --arg r "$ROLE" '.agents[$r].harness' .agents/session.json)
-CONV_ID=$(jq -r --arg r "$ROLE" '.agents[$r].conversation_id' .agents/session.json)
-RESUME_FLAG=$(jq -r --arg h "$HARNESS" '.harness_profiles[$h].resume_flag' .agents/environment.json)
-CLI_ARGS=($(jq -r --arg r "$ROLE" '.roles[$r].cli_args[]' .agents/environment.json))
-herdr agent start "$ROLE" --kind "$HARNESS" --pane "$TARGET_PANE" -- "${CLI_ARGS[@]}" "$RESUME_FLAG" "$CONV_ID"
-```
+### 7.2 会话快照结构与字段字典 (`.agents/session.json`)
+`.agents/session.json` 记录当前活跃窗格的运行时拓扑与会话 ID（导出与恢复命令见 **[`tools/herdr.md §[H-2]`](tools/herdr.md)**），专供终端重启或跨天复工时秒级恢复常驻角色记忆：
 
 ```json
 {

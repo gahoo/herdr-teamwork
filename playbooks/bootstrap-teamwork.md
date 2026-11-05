@@ -2,6 +2,7 @@
 
 > **定位**：本剧本专供新项目或存量项目首次启用 `herdr-teamwork`（或重新调整团队模型与工具链配置）时执行。
 > 由人类在初始 Herdr 终端窗格中唤醒一个**一次性临时引导实例（`Bootstrap Agent`）**读取本剧本：负责探测宿主机器可用 Harness/模型与工具集、与人类一轮对齐项目配置、生成 `.agents/environment.json` 与活文档骨架、拉起真正的 `Planner`（窗口 1）+ `Dispatcher`（窗口 2）+ `Ops` 常驻窗格并保存 `.agents/session.json`，最后**关闭自身临时窗格功成身退**，确保 `Planner` 从第 0 回合起即保持 100% 纯净上下文与严格沙箱。
+> **配套必读文档**：**[`tools/herdr.md`](../tools/herdr.md)** —— 窗格切分、角色启动、`session.json` 快照导出与自身窗格关闭统一遵照其中 `§[H-1]`、`§[H-2]`、`§[H-3]` 与 `§[H-6]` 段落执行。
 
 ---
 
@@ -45,10 +46,10 @@ ls -d .agents/skills/* ~/.agents/skills/* ~/.claude/skills/* ~/.gemini/skills/* 
 
 | Harness (`kind`) | 模型与思考强度 CLI 参数参考 (`cli_args`) | 会话恢复参数 (`resume_flag`) | 压缩上下文指令 (`compact_cmd`) | 清空与停止/退出准则 |
 | :--- | :--- | :--- | :--- | :--- |
-| **`claude`** | `["--model", "<m>", "--effort", "<high\|medium\|low>"]` | `"--resume"` | `"/compact 保留项目架构拓扑与核心演进决策"` | 清空：`/clear`<br>**停止/退出：统一调 `herdr agent stop` 或 `herdr pane close`，严禁盲猜 `/exit` 或 `/quit`** |
-| **`codex`** | `["--model", "<m>", "-c", "model_reasoning_effort=\"<high\|medium\|low>\""]` | `"resume"` | `"/compact"` | 清空：`/new`（或 `stop && start`） |
+| **`claude`** | `["--model", "<m>", "--effort", "<high\|medium\|low>"]` | `"--resume"` | `"/compact 保留项目架构拓扑与核心演进决策"` | 清空：`/clear`<br>**停止/退出：统一按 [`tools/herdr.md §[H-6]`](../tools/herdr.md) 关闭或重建窗格，严禁盲猜 `/exit` 或 `/quit`** |
+| **`codex`** | `["--model", "<m>", "-c", "model_reasoning_effort=\"<high\|medium\|low>\""]` | `"resume"` | `"/compact"` | 清空：`/new` |
 | **`pi`** | `["--model", "<m>", "--thinking", "<high\|medium\|low\|off>"]` | `"--resume"` | `"/compact 保留项目架构拓扑与核心演进决策"` | 清空：`/new` |
-| **`agy`** / **`hermes`** | 按 `<cmd> --help` 实测填入 `cli_args` | 按 `--help` 实测填入 | `"/compact"` | 清空：`/clear`（或 `herdr agent stop && start` 进程级归零） |
+| **`agy`** / **`hermes`** | 按 `<cmd> --help` 实测填入 `cli_args` | 按 `--help` 实测填入 | `"/compact"` | 清空：`/clear`（或按 [`tools/herdr.md §[H-6]`](../tools/herdr.md) 重建窗格归零） |
 
 ### Step 2：四档算力选型建议与人类一轮式拍板 (`1-Round Human Alignment`)
 根据 Step 1 的探测结果，按以下原则草拟一份《项目协同配置方案表》，向人类发起**单轮确认**：
@@ -71,12 +72,12 @@ ls -d .agents/skills/* ~/.agents/skills/* ~/.claude/skills/* ~/.gemini/skills/* 
    - 默认上下文打理策略（`default_ctx`，针对 `standard` 模式结项后）：`"compact"`（默认推荐：压缩保留项目架构记忆）、`"clear"`（跨无关域清空归零）或 `"keep"`（连续微切片保留）。
 5. **推荐安装缺失的高价值工具（先给理由，由人类拍板决定装不装）**：
    - 若探测发现缺失 `gitnexus`、`jq`、`rg` 或当前语言核心静态分析器（如 TS/JS 缺 `fallow`、Rust 缺 `clippy`、Go 缺 `golangci-lint`、Python 缺 `ruff`），必须先说明**该工具在本项目中的具体作用与推荐理由**及 1 行安装命令，由人类拍板决定是否安装；将最终确认可用的验证命令固化进 `toolchain`，**后续日常运行直接读取配置执行，不再每次重复探测浪费 Token**。
-6. **推荐 AI 友好型领域方案与专业垂类 Skill 选装及按角色挂载 (`domain_skills` —— 必须附推荐理由并由人类拍板）**：
+6. **推荐 AI 友好型领域方案与专业垂类/工具 Skill 选装及按角色挂载 (`domain_skills` —— 必须附推荐理由并由人类拍板）**：
    - **从 0 到 1 新项目方案建议**：若项目尚在技术选型阶段，主动给出对 AI Agent 最透明友好的白盒方案建议与理由（例如：现代 Web 前端推荐 `TypeScript + Tailwind CSS + shadcn/ui`——理由是组件源码直接落盘在项目内而非黑盒 `node_modules`，便于 Agent 直读直改与类型校验），供人类拍板；
-   - **垂类领域 Skill 推荐清单（严禁未经授权私自安装）**：结合项目核心框架/库（如 `shadcn/ui`、React/Next.js、Chrome Extension MV3、Obsidian、Rust Tokio、FastAPI 等），汇总 Step 1 扫描到的本机既有 Skill 以及通过 `npx skills find <keyword>` / 联网搜索发现的外部最新高评价 Skill，向人类逐项呈报 **4 要素供拍板决定装不装**：
-     1. **Skill 名称与安装来源**（本机已有路径，或 `npx skills add <owner/skill>`）；
-     2. **针对本项目的具体推荐理由（Why）**（说明它能提供什么最新框架规范、能帮 Agent 避开什么常见反模式或过时 API）；
-     3. **拟精准挂载的角色（Who）**（遵循“按职责挂载、拒绝全员无脑加载”原则，如将 `shadcn-ui` 仅挂载给 `["planner", "coding", "reviewer-ux"]`，让 `dispatcher`、`ops` 等无关角色保持零上下文负担）；
+   - **垂类领域与工具 Skill 推荐清单（严禁未经授权私自安装）**：结合项目核心框架/库与已启用工具（如 TS/JS 项目启用了 `fallow` 时推荐官方 `fallow-rs/fallow-skills`，前端推荐 `shadcn/ui`、React/Next.js、Chrome Extension MV3、Obsidian、Rust Tokio、FastAPI 等），汇总 Step 1 扫描到的本机既有 Skill 以及通过 `npx skills find <keyword>` / 联网搜索发现的外部最新高评价 Skill，向人类逐项呈报 **4 要素供拍板决定装不装**：
+     1. **Skill 名称与安装来源**（本机已有路径，或 `npx skills add <owner/skill>`，如 `npx skills add fallow-rs/fallow-skills`）；
+     2. **针对本项目的具体推荐理由（Why）**（说明它能提供什么最新框架规范或工具标准用法、能帮 Agent 避开什么常见反模式或参数臆测）；
+     3. **拟精准挂载的角色（Who）**（遵循“按职责挂载、拒绝全员无脑加载”原则：如将 `shadcn-ui` 仅挂载给 `["planner", "coding", "reviewer-ux"]`，将 `fallow-skills` 仅挂载给 `["reviewer-quality", "reviewer-arch", "explorer"]`，让 `dispatcher`、`ops` 等无关角色保持零上下文负担）；
      4. **是否启用/安装（请人类拍板 Yes/No）**。
 
 ### Step 3：配置落盘、图谱建库与活文档骨架初始化 (`Scaffolding`)
@@ -96,35 +97,17 @@ ls -d .agents/skills/* ~/.agents/skills/* ~/.claude/skills/* ~/.gemini/skills/* 
    - **`E2E_PLAYBOOK.md`**：仅当 `active_roles` 包含 `e2e` 时创建 6 要素结构化导航记忆表头。
 
 ### Step 4：拉起常驻控制台拓扑并保存 `session.json` (`Spawn Console Topology`)
-严格读取 `.agents/environment.json` 中为各角色敲定的 `harness` 与 `cli_args`（同时携带模型与思考强度参数），使用 `herdr` 拉起常驻控制台窗格：
-
-```bash
-# 1. 在当前 Tab 切分出窗口 1 (Planner) 与窗口 2 (Dispatcher)：
-PLANNER_PANE=$(herdr pane split --current --direction right --cwd "$PWD" --no-focus | jq -r '.result.pane.pane_id')
-DISP_PANE=$(herdr pane split --pane "$PLANNER_PANE" --direction right --cwd "$PWD" --no-focus | jq -r '.result.pane.pane_id')
-
-# 2. 创建独立 ops Tab 并获取其根窗格：
-OPS_PANE=$(herdr tab create --workspace "${HERDR_WORKSPACE_ID}" --cwd "$PWD" | jq -r '.result.root_pane.pane_id')
-
-# 3. 按 environment.json 配置的 Harness 与 cli_args（含模型与思考强度）分别启动三大核心常驻角色：
-PLANNER_ARGS=($(jq -r '.roles.planner.cli_args[]' .agents/environment.json))
-DISP_ARGS=($(jq -r '.roles.dispatcher.cli_args[]' .agents/environment.json))
-OPS_ARGS=($(jq -r '.roles.ops.cli_args[]' .agents/environment.json))
-
-herdr agent start planner --kind "$(jq -r '.roles.planner.harness' .agents/environment.json)" --pane "$PLANNER_PANE" -- "${PLANNER_ARGS[@]}"
-herdr agent start dispatcher --kind "$(jq -r '.roles.dispatcher.harness' .agents/environment.json)" --pane "$DISP_PANE" -- "${DISP_ARGS[@]}"
-herdr agent start ops --kind "$(jq -r '.roles.ops.harness' .agents/environment.json)" --pane "$OPS_PANE" -- "${OPS_ARGS[@]}"
-
-# 4. 向 Planner 与 Dispatcher 发送各自身份就位提示（加载各自角色契约）：
-herdr agent prompt planner "请阅读 .agents/skills/herdr-teamwork/SKILL.md 与 roles/planner.md，作为窗口 1 总规划台就位，读取 changes/KANBAN.md 与 GLOSSARY.md 等候人类需求。"
-herdr agent prompt dispatcher "请阅读 .agents/skills/herdr-teamwork/SKILL.md 与 roles/dispatcher.md，作为窗口 2 交付总控台就位。"
-
-# 5. 保存会话快照 .agents/session.json（关联读取 environment.json 中的 model 与 thinking，显式过滤临时 bootstrap 自身）：
-herdr agent list | jq --slurpfile env .agents/environment.json \
-  --arg ws "${HERDR_WORKSPACE_ID:-main}" --arg proj "$(basename "$PWD")" \
-  '{updated_at: (now | todate), workspace_id: $ws, project: $proj, agents: [.result.agents[] | select(.name != null and .name != "bootstrap") | . as $a | ($env[0].roles[$a.name] // {}) as $r | {key: $a.name, value: {name: $a.name, pane_id: $a.pane_id, tab_id: $a.tab_id, harness: ($r.harness // $a.kind), model: ($r.model // "default"), thinking: ($r.thinking // "default"), conversation_id: $a.agent_session.value}}] | from_entries}' > .agents/session.json
-```
+严格读取 **[`tools/herdr.md`](../tools/herdr.md)** 中 `§[H-1]`、`§[H-2]` 与 `§[H-3]` 的标准指令配方，依次完成常驻控制台拉起与快照落盘：
+1. **切分双主控窗格与独立 `ops` 标签页（按 [`tools/herdr.md §[H-1]`](../tools/herdr.md)）**：
+   - 在当前 Tab 向右切分出窗口 1（`PLANNER_PANE`）与窗口 2（`DISP_PANE`），并在当前工作区新建独立 `ops` Tab 获取其根窗格（`OPS_PANE`）。
+2. **按 `environment.json` 启动三大常驻角色（按 [`tools/herdr.md §[H-2]`](../tools/herdr.md)）**：
+   - 分别读取 `.agents/environment.json` 中 `planner`、`dispatcher`、`ops` 的 `harness` 与 `cli_args` 数组，在对应窗格启动三个角色实例。
+3. **发送就位提示（按 [`tools/herdr.md §[H-3]`](../tools/herdr.md) 异步发送，不带 `--wait`）**：
+   - 向 `planner` 发送：「请阅读 `.agents/skills/herdr-teamwork/SKILL.md`、`roles/planner.md` 与 `tools/herdr.md`，作为窗口 1 总规划台就位，读取 `changes/KANBAN.md` 与 `GLOSSARY.md` 等候人类需求。」
+   - 向 `dispatcher` 发送：「请阅读 `.agents/skills/herdr-teamwork/SKILL.md`、`roles/dispatcher.md` 与 `tools/herdr.md`，作为窗口 2 交付总控台就位。」
+4. **导出 `.agents/session.json` 快照（按 [`tools/herdr.md §[H-2]`](../tools/herdr.md)）**：
+   - 运行 `§[H-2]` 中的 `herdr agent list | jq ...` 配方，将当前活跃角色拓扑、模型与 `conversation_id` 落盘至 `.agents/session.json`（自动过滤临时 `bootstrap` 自身）。
 
 ### Step 5：功成身退 (`Self-Teardown`)
-1. 向人类输出简短的《建场完成汇报》（说明 `planner` 与 `dispatcher` 窗格已就绪、`.agents/environment.json` 与 `.agents/session.json` 已落盘）；
-2. **使用 Herdr 原语销毁临时引导窗格（严禁盲猜 `/exit` 或 `/quit`）**：直接执行 `herdr pane close --current`，把终端屏幕彻底交还给纯净的左窗格 `Planner`（窗口 1）与右窗格 `Dispatcher`（窗口 2）！
+1. 向人类输出简短的《建场完成汇报》（说明 `planner`、`dispatcher`、`ops` 窗格已就绪，`.agents/environment.json` 与 `.agents/session.json` 已落盘）；
+2. **按 [`tools/herdr.md §[H-6]`](../tools/herdr.md) 关闭自身临时引导窗格**（传入 `$HERDR_PANE_ID`），把终端屏幕彻底交还给纯净的左窗格 `Planner`（窗口 1）与右窗格 `Dispatcher`（窗口 2）！

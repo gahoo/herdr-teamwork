@@ -1,6 +1,7 @@
 # Playbook: 重大架构变更圆桌辩论 (`roundtable-debate`)
 
 > **定位**：Stage 1 宏观预审的「重型升级版」。由原 `planner` 临时 Fork 出一个一次性**圆桌主席分身**，组织多位专家「背靠背亮牌 ➔ 定向交锋 ➔ 主席裁决」，裁决落盘后分身销毁，原 `planner` 只消费结论。
+> **配套必读文档**：**[`tools/herdr.md`](../tools/herdr.md)** —— 窗格切分、专家启动、并发派发、事件等待与临时窗格关闭统一遵照其中 `§[H-1]`、`§[H-2]`、`§[H-3]` 与 `§[H-6]` 段落执行。
 
 ---
 
@@ -44,13 +45,9 @@
 
 ### 步骤 0：`planner` 立题与 Fork 主席分身
 1. 创建 `changes/<id>/roundtable.md`，写入 **议题陈述**（一句话唯一争议问题）、**候选方案 A/B(/C)**、**参会专家名单与各自代表的维度**、**必须回答的约束**（如目标 QPS、兼容性要求）。
-2. 临时 Fork 主席窗格并启动（复用 `.agents/environment.json` 中 `planner` 的 harness / model / thinking 配置）：
-   ```bash
-   RT_PANE=$(herdr pane split --target "${HERDR_PANE_ID}" --direction down -q)
-   herdr agent start planner-roundtable --kind "$(jq -r '.roles.planner.harness' .agents/environment.json)" --pane "$RT_PANE" -- --model "$(jq -r '.roles.planner.model' .agents/environment.json)"
-   herdr agent prompt planner-roundtable "你是圆桌主席分身。仅按 .agents/skills/herdr-teamwork/playbooks/roundtable-debate.md 第 4 节执行，议题见 changes/<id>/roundtable.md；完成后输出 ROUNDTABLE_DONE 并结束。"
-   ```
-3. 异步等待（或继续与人类讨论其他规划），收到 `ROUNDTABLE_DONE` 后读取 `roundtable.md` 的【裁决摘要】节。
+2. 按 **[`tools/herdr.md §[H-1] & §[H-2]`](../tools/herdr.md)** 在当前窗格下方切分临时窗格，复用 `.agents/environment.json` 中 `planner` 的 `harness` 与 `cli_args` 启动角色 `planner-roundtable`，随后按 **`§[H-3]`** 发送启动提示：
+   > `你是圆桌主席分身。请先阅读 .agents/skills/herdr-teamwork/tools/herdr.md，再仅按 .agents/skills/herdr-teamwork/playbooks/roundtable-debate.md 第 4 节执行，议题见 changes/<id>/roundtable.md；完成后输出 ROUNDTABLE_DONE 并结束。`
+3. 等待主席分身完成（或继续与人类讨论其他规划），收到 `ROUNDTABLE_DONE` 后读取 `roundtable.md` 的【裁决摘要】节，并按 **[`tools/herdr.md §[H-6]`](../tools/herdr.md)** 关闭 `planner-roundtable` 临时窗格。
 
 ### 步骤 1：主席分身执行规程（第 4 节）见下。
 
@@ -61,12 +58,9 @@
 > 你是临时分身，只负责本次议题。**严禁修改 `prd.md` / `spec.md` / `tasks.md` / `KANBAN.md` / `pipeline.jsonl`，严禁读写业务源码**；你的唯一写入对象是 `changes/<id>/roundtable.md`。
 
 ### 4.1 第 1 轮：背靠背独立亮牌与类型草图征集 (Blind Opening & Type Sketch)
-对每位参会专家（复用常驻窗格，不存在则按 `SKILL.md` 7.3 节方式拉起）**并发**派发，且**不得透露其他专家的存在、立场或发言**（若议题仅有痛点尚无成型候选方案，要求各专家先按各自维度独立草拟一套**仅含类型签名与调用方示例、函数体填 `not implemented` 的接口草图 Type Sketch**）：
-```bash
-herdr agent prompt <expert> "圆桌议题见 changes/<id>/roundtable.md。请仅从你的专业维度独立立论，不限篇幅，必须包含：① 推荐方案及排序（若尚无现成方案，请直接给出你设计的类型签名与调用方代码示例草图 Type Sketch）；② 支撑证据（file:line / gitnexus 取证 / 量级推算，禁止教科书套话）；③ 若忽视你所代表维度，最先在哪里出事；④ 你能接受的最小让步条件。输出完毕后结束回合。" 
-herdr agent wait <expert> --timeout 300000
-herdr agent read <expert> --source recent-unwrapped --lines 200
-```
+对每位参会专家（复用常驻窗格，若尚未启动则按 **[`tools/herdr.md §[H-2]`](../tools/herdr.md)** 拉起），按 **[`tools/herdr.md §[H-3]`](../tools/herdr.md)** **并发**派发以下立论指令（并发提交后逐一执行 `herdr agent wait <expert>` 并用 `--source recent-unwrapped --lines 200` 读取），且**不得透露其他专家的存在、立场或发言**：
+> `圆桌议题见 changes/<id>/roundtable.md。请仅从你的专业维度独立立论，不限篇幅，必须包含：① 推荐方案及排序（若尚无现成方案，请直接给出你设计的类型签名与调用方代码示例草图 Type Sketch）；② 支撑证据（file:line / gitnexus 取证 / 量级推算，禁止教科书套话）；③ 若忽视你所代表维度，最先在哪里出事；④ 你能接受的最小让步条件。输出完毕后结束回合。`
+
 将各专家原话**按原文**写入 `roundtable.md` 的【第 1 轮立论】节（保留证据，不转述润色）。
 
 ### 4.2 冲突提炼
@@ -74,10 +68,9 @@ herdr agent read <expert> --source recent-unwrapped --lines 200
 - 否则提炼 **唯一最关键的冲突焦点**（如「`arch` 的抽象层是否会让热点路径多一次间接调用」），明确**冲突双方**（可多于两方，每个焦点一组）。
 
 ### 4.3 第 2 轮：定向交锋 (Targeted Clash，仅 1 轮)
-只对冲突方，把**对方的原始立论**喂给他，要求正面回应：
-```bash
-herdr agent prompt <expert> "对方立论见 changes/<id>/roundtable.md【第 1 轮立论】中 <对方> 一节。针对冲突焦点「<焦点>」：① 指出对方立论依赖的前提是否成立（给出证据）；② 若成立，你愿意接受的折中修正是什么；③ 给出你的最终推荐。仅此一轮。"
-```
+只对冲突方，按 **[`tools/herdr.md §[H-3]`](../tools/herdr.md)** 把**对方的原始立论**喂给他，要求正面回应并等待读取结果：
+> `对方立论见 changes/<id>/roundtable.md【第 1 轮立论】中 <对方> 一节。针对冲突焦点「<焦点>」：① 指出对方立论依赖的前提是否成立（给出证据）；② 若成立，你愿意接受的折中修正是什么；③ 给出你的最终推荐。仅此一轮。`
+
 将回应原文写入【第 2 轮交锋】节。**严禁发起第 3 轮**；仍无法调和的分歧由主席在裁决中显式取舍。
 
 ### 4.4 裁决：单一主干底座 + 局部优势嫁接 (Verdict: Base + Graft)
@@ -95,7 +88,7 @@ herdr agent prompt <expert> "对方立论见 changes/<id>/roundtable.md【第 1 
 证据不足以裁决时（关键前提无 Level 3 以上证据），在摘要中标注 `NEEDS_SPIKE` 并建议 `playbooks/prototype-spike.md`，而非强行拍板。
 
 ### 4.5 收尾
-输出单行 `ROUNDTABLE_DONE: changes/<id>/roundtable.md`，原 `planner` 读取后由其 `herdr pane close` 销毁本窗格（主席不得自行销毁以免丢失回执）。
+输出单行 `ROUNDTABLE_DONE: changes/<id>/roundtable.md`，原 `planner` 读取后按 **[`tools/herdr.md §[H-6]`](../tools/herdr.md)** 关闭本窗格（主席不得自行销毁以免丢失回执）。
 
 ---
 
