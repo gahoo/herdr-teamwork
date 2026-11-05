@@ -3,7 +3,7 @@ name: herdr-teamwork
 description: Multi-agent spec implementation orchestrated via Herdr terminal panes, workspaces, and optional Git Worktrees (Planner, Explorer, Dispatcher, TDD, Coding, Reviewer Ensemble, Ops, Debugger, RedTeam, E2E, Reflector). Use when initiating multi-agent spec implementation, parallel feature development, or complex engineering workflows.
 ---
 
-# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.7.2)
+# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.8)
 
 本技能通过 Herdr 终端工作区管理工具构建**“双控台分治（窗口 1 规划 / 窗口 2 交付）、内外双驱（内部 `--wait` 同步 + 跨任务 `tail -f` 监听）、事件溯源（`pipeline.jsonl`）”**的多 Agent 物理隔离与协作体系。
 遵循 **OpenSpec 活文档标准**，实现规划与交付彻底物理绝缘、宏微观契约正交、职责绝对边界化与证伪式分形审查。
@@ -38,7 +38,7 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 │   ├── session.json                 # Herdr 会话状态快照与跨天秒级复活配置
 │   └── skills/herdr-teamwork/       # 本技能规范库
 │       ├── roles/                   # 【Who】16 个正交角色的常驻本职契约库
-│       ├── playbooks/               # 【How】10 个按需触发的专项战术剧本 (渐进式按需读取，跨角色共享)
+│       ├── playbooks/               # 【How】11 个按需触发的专项战术剧本 (含 bootstrap-teamwork 初始化自举，跨角色共享)
 │       ├── scripts/                 # 【Tools】跨项目通用 Worktree 建场与销毁脚本 (worktree-up.sh / worktree-down.sh)
 │       └── .reflections/            # Skill 级流程与契约改进反馈 (<id>.md，供 herdr-teamwork 消化吸收)
 └── .worktrees/                      # 【并行执行隔离区】(worktree 模式下由 Ops 建场管理，纳入 .gitignore)
@@ -218,44 +218,77 @@ flowchart TD
 
 ---
 
-## 6. 异构 Agent 环境探针与全角色映射 (`.agents/environment.json`)
+## 6. 项目自举初始化与异构环境画像 (`.agents/environment.json`)
 
-初始化时探测本地已安装的 CLI (`claude`, `codex`, `agy`, `pi`, `hermes`)，根据 16 个角色的算力诉求生成 `.agents/environment.json`：
+首次在项目中启用本技能（或重配团队模型与工具链）时，由当前终端中的**一次性临时引导实例（`Bootstrap Agent`）**读取并执行 **[`playbooks/bootstrap-teamwork.md`](playbooks/bootstrap-teamwork.md)**：自动探测宿主机已安装的 CLI (`claude`, `codex`, `agy`, `pi`, `hermes`) 与静态工具链，按以下**四档算力画像**与人类灵活敲定模型分配（而非死板绑定固定模型名），落盘 `.agents/environment.json` 与活文档骨架，拉起 `Planner` + `Dispatcher` + `Ops` 常驻窗格后关闭临时引导窗格功成身退：
 
-| 角色集群与 ID | 核心算力诉求 | 优选 Harness 梯队 (由高到低) | 理想思考深度 (Thinking) |
+| 角色集群与 ID | 核心算力诉求 | 优选 Harness 倾向参考 | 理想思考深度 (Thinking) |
 | :--- | :--- | :--- | :--- |
-| **`planner` / `reflector` / `explorer` / `debugger` / `security-redteam` / `reviewer-lead` / `reviewer-arch` / `reviewer-perf` / `reviewer-security`** | 高维架构抽象、元认知复盘、法医式逆向溯源、攻防博弈与证伪裁决 | `claude-code` ➔ `codex` ➔ `agy` | **High** (深度推理) |
-| **`coding` / `tdd` / `reviewer-ux`** | 严格契约遵从、边界用例推演、精准行级实现与交互审计 | `codex` ➔ `claude-code` ➔ `agy` | **Medium** (适度推断) |
-| **`e2e`** | 极速 DOM/A11y 树理解、页面语义自愈与冒烟走查 | `agy` ➔ `claude-code` ➔ `pi` | **Low ~ Medium** (极速自愈) |
-| **`dispatcher` / `ops` / `reviewer-quality`** | 毫秒级状态机流转、确定性建场发布、海量原始日志吞吐过滤 | `pi` ➔ `hermes` ➔ `agy` ➔ `claude-code` | **None / Low** (零延迟确定性) |
+| **`planner` / `reflector` / `explorer` / `debugger` / `security-redteam` / `reviewer-lead` / `reviewer-arch` / `reviewer-perf` / `reviewer-security`** | 高维架构抽象、元认知复盘、法医式逆向溯源、攻防博弈与证伪裁决 | 当前可用池中逻辑推理最强的 Harness 与模型 (`claude-code` / `codex` / `agy`) | **High** (深度推理) |
+| **`coding` / `tdd` / `reviewer-ux`** | 严格契约遵从、边界用例推演、精准行级实现与交互审计 | 代码生成精准且速度均衡的主力模型 (`codex` / `claude-code` / `agy`) | **Medium** (适度推断) |
+| **`e2e`** | 极速 DOM/A11y 树理解、页面语义自愈与冒烟走查 | 挂载了 `chrome-devtools-mcp` 且响应迅速的模型 (`agy` / `claude-code` / `pi`) | **Low ~ Medium** (极速自愈) |
+| **`dispatcher` / `ops` / `reviewer-quality`** | 毫秒级状态机流转、确定性建场发布、海量原始日志吞吐过滤 | 延迟最低、Token 最经济的轻量 Harness 与模型 (`pi` / `hermes` / `agy`) | **None / Low** (零延迟确定性) |
 
-### `.agents/environment.json` 标准完整结构
+### `.agents/environment.json` 标准完整结构与字段字典
 ```json
 {
-  "updated_at": "2026-10-27T00:00:00Z",
+  "updated_at": "2026-11-05T00:00:00Z",
   "mode": "standard",
+  "default_ctx": "compact",
+  "runtime_type": "daemon_port",
   "base_port": 3000,
+  "target_url": null,
   "detected_harnesses": ["claude", "codex", "agy", "pi"],
+  "active_roles": [
+    "planner", "explorer", "dispatcher", "tdd", "coding", "ops",
+    "debugger", "e2e", "reviewer-lead", "reviewer-quality",
+    "reviewer-arch", "reviewer-perf", "reviewer-security", "reviewer-ux", "reflector"
+  ],
+  "toolchain": {
+    "build": "npm run build",
+    "test": "npx vitest run",
+    "typecheck": "npx tsc --noEmit",
+    "static_health": "fallow --fail-on-regression --regression-baseline .fallow-baseline.json --summary",
+    "push_cmd": null
+  },
+  "version_anchors": ["package.json"],
+  "harness_profiles": {
+    "claude": { "compact_cmd": "/compact 保留项目架构拓扑与核心演进决策", "clear_cmd": "/clear", "resume_flag": "--resume" },
+    "codex": { "compact_cmd": "/compact", "clear_cmd": "/new", "resume_flag": "resume" },
+    "pi": { "compact_cmd": "/compact 保留项目架构拓扑与核心演进决策", "clear_cmd": "/new", "resume_flag": "--resume" },
+    "agy": { "compact_cmd": "/compact", "clear_cmd": "/clear", "resume_flag": "--resume" }
+  },
   "roles": {
-    "planner": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
-    "reflector": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
-    "explorer": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
-    "dispatcher": { "harness": "pi", "model": "gemini-3.8-flash-low", "thinking": "none" },
-    "tdd": { "harness": "codex", "model": "gpt-5-codex", "thinking": "medium" },
-    "coding": { "harness": "codex", "model": "gpt-5-codex", "thinking": "medium" },
-    "ops": { "harness": "pi", "model": "gemini-3.8-flash-low", "thinking": "none" },
-    "debugger": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
-    "security-redteam": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
-    "e2e": { "harness": "agy", "model": "gemini-3.8-flash-medium", "thinking": "low" },
-    "reviewer-lead": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
-    "reviewer-quality": { "harness": "pi", "model": "gemini-3.8-flash-low", "thinking": "none" },
-    "reviewer-arch": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
-    "reviewer-perf": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
-    "reviewer-security": { "harness": "claude", "model": "claude-3-7-sonnet", "thinking": "high" },
-    "reviewer-ux": { "harness": "codex", "model": "gpt-5-codex", "thinking": "medium" }
+    "planner": { "harness": "claude", "model": "<high-reasoning-model>", "thinking": "high", "cli_args": ["--model", "<high-reasoning-model>", "--effort", "high"] },
+    "reflector": { "harness": "claude", "model": "<high-reasoning-model>", "thinking": "high", "cli_args": ["--model", "<high-reasoning-model>", "--effort", "high"] },
+    "explorer": { "harness": "claude", "model": "<high-reasoning-model>", "thinking": "high", "cli_args": ["--model", "<high-reasoning-model>", "--effort", "high"] },
+    "dispatcher": { "harness": "pi", "model": "<fast-light-model>", "thinking": "none", "cli_args": ["--model", "<fast-light-model>", "--thinking", "off"] },
+    "tdd": { "harness": "codex", "model": "<coding-model>", "thinking": "medium", "cli_args": ["--model", "<coding-model>", "-c", "model_reasoning_effort=\"medium\""] },
+    "coding": { "harness": "codex", "model": "<coding-model>", "thinking": "medium", "cli_args": ["--model", "<coding-model>", "-c", "model_reasoning_effort=\"medium\""] },
+    "ops": { "harness": "pi", "model": "<fast-light-model>", "thinking": "none", "cli_args": ["--model", "<fast-light-model>", "--thinking", "off"] },
+    "debugger": { "harness": "claude", "model": "<high-reasoning-model>", "thinking": "high", "cli_args": ["--model", "<high-reasoning-model>", "--effort", "high"] },
+    "security-redteam": { "harness": "claude", "model": "<high-reasoning-model>", "thinking": "high", "cli_args": ["--model", "<high-reasoning-model>", "--effort", "high"] },
+    "e2e": { "harness": "agy", "model": "<browser-model>", "thinking": "low", "cli_args": ["--model", "<browser-model>"] },
+    "reviewer-lead": { "harness": "claude", "model": "<high-reasoning-model>", "thinking": "high", "cli_args": ["--model", "<high-reasoning-model>", "--effort", "high"] },
+    "reviewer-quality": { "harness": "pi", "model": "<fast-light-model>", "thinking": "none", "cli_args": ["--model", "<fast-light-model>", "--thinking", "off"] },
+    "reviewer-arch": { "harness": "claude", "model": "<high-reasoning-model>", "thinking": "high", "cli_args": ["--model", "<high-reasoning-model>", "--effort", "high"] },
+    "reviewer-perf": { "harness": "claude", "model": "<high-reasoning-model>", "thinking": "high", "cli_args": ["--model", "<high-reasoning-model>", "--effort", "high"] },
+    "reviewer-security": { "harness": "claude", "model": "<high-reasoning-model>", "thinking": "high", "cli_args": ["--model", "<high-reasoning-model>", "--effort", "high"] },
+    "reviewer-ux": { "harness": "codex", "model": "<coding-model>", "thinking": "medium", "cli_args": ["--model", "<coding-model>", "-c", "model_reasoning_effort=\"medium\""] }
   }
 }
 ```
+
+| 字段路径 | 类型 / 枚举值 | 含义与运行机制说明 |
+| :--- | :--- | :--- |
+| **`mode`** | `"standard"` \| `"worktree"` | 默认开发模式：`standard`（单工作区原地串行）或 `worktree`（`.worktrees/<id>` 独立工作区高并发）。 |
+| **`default_ctx`** | `"compact"` \| `"clear"` \| `"keep"` | `standard` 模式下每完成一个 Feature 后，对 `tdd/coding/reviewer-lead` 的默认上下文打理策略。 |
+| **`runtime_type`** | `"daemon_port"` \| `"push_to_host"` \| `"artifact_only"` | 验收运行态：常驻端口服务（配 `base_port`）、寄生态热推插件（配 `toolchain.push_cmd` + `target_url`）或纯编译产物。 |
+| **`active_roles`** | `string[]` | 本项目实际启用的角色白名单（如纯 CLI 项目剔除 `e2e`/`reviewer-ux`，防误点名）。 |
+| **`toolchain`** | `object` | 初始化阶段一次性验证固化的构建（`build`）、单测（`test`）、类型检查（`typecheck`）、静态健康（`static_health`）与热推（`push_cmd`）命令，日常运行零探测直接调用。 |
+| **`version_anchors`** | `string[]` | 受控发版时 `ops` 需同步递增 SemVer 版本号的文件清单（如 `package.json`, `manifest.json`, 代码常量文件）。 |
+| **`harness_profiles`** | `object` | `Bootstrap` 通过 `<harness> --help` 核实的各 CLI 压缩指令（`compact_cmd`）、清空指令（`clear_cmd`）与会话恢复参数（`resume_flag`）；退出/停止统一用 `herdr agent stop`。 |
+| **`roles.<id>`** | `object` | 各角色绑定的 `harness`、逻辑 `model`、逻辑思考强度 `thinking` (`"none"`\|`"low"`\|`"medium"`\|`"high"`)，以及供 `herdr agent start` 直接展开透传的原生启动参数数组 **`cli_args`**。 |
 
 ---
 
@@ -294,14 +327,16 @@ herdr agent read reviewer-lead --source recent-unwrapped --lines 40
 
 ### 7.3 Dispatcher 替 Lead Reviewer 动态调度与常驻复用专家范式
 ```bash
-# 1. 若目标专家尚未启动，则在当前 Workspace 的 review Tab 右侧切分新窗格并启动（若已常驻则直接复用）：
+# 1. 若目标专家尚未启动，则在当前 Workspace 的 review Tab 右侧切分新窗格，并展开 cli_args（同时传入模型与思考强度）启动：
 if ! herdr agent get reviewer-quality >/dev/null 2>&1; then
   QUAL_PANE=$(herdr pane split --target review:p1 --direction right -q)
-  herdr agent start reviewer-quality --kind $(jq -r '.roles["reviewer-quality"].harness' .agents/environment.json) --pane "$QUAL_PANE" -- --model $(jq -r '.roles["reviewer-quality"].model' .agents/environment.json)
+  QUAL_ARGS=($(jq -r '.roles["reviewer-quality"].cli_args[]' .agents/environment.json))
+  herdr agent start reviewer-quality --kind "$(jq -r '.roles["reviewer-quality"].harness' .agents/environment.json)" --pane "$QUAL_PANE" -- "${QUAL_ARGS[@]}"
 fi
 if ! herdr agent get reviewer-arch >/dev/null 2>&1; then
   ARCH_PANE=$(herdr pane split --target review:p1 --direction down -q)
-  herdr agent start reviewer-arch --kind $(jq -r '.roles["reviewer-arch"].harness' .agents/environment.json) --pane "$ARCH_PANE" -- --model $(jq -r '.roles["reviewer-arch"].model' .agents/environment.json)
+  ARCH_ARGS=($(jq -r '.roles["reviewer-arch"].cli_args[]' .agents/environment.json))
+  herdr agent start reviewer-arch --kind "$(jq -r '.roles["reviewer-arch"].harness' .agents/environment.json)" --pane "$ARCH_PANE" -- "${ARCH_ARGS[@]}"
 fi
 
 # 2. 并发派发任务并依次 wait 回收：
@@ -315,12 +350,80 @@ QUAL_REPORT=$(herdr agent read reviewer-quality --source recent-unwrapped --line
 ARCH_REPORT=$(herdr agent read reviewer-arch --source recent-unwrapped --lines 45)
 ```
 
-### 7.4 会话快照与跨天秒级复活 (`.agents/session.json`)
+### 7.4 会话快照与跨天秒级复活 (`.agents/session.json` 结构范例与字段说明)
+`.agents/session.json` 记录当前活跃窗格的运行时拓扑与会话 ID，专供终端重启或跨天复工时秒级恢复常驻角色记忆：
+
 ```bash
-# 保存快照：
-herdr agent list | jq --arg ws "${HERDR_WORKSPACE_ID:-main}" --arg proj "$(basename "$PWD")" \
-  '{updated_at: (now | todate), workspace_id: $ws, project: $proj, agents: [.result.agents[] | {key: (.name // "planner"), value: {name: (.name // "planner"), pane_id, tab_id, conversation_id: .agent_session.value, model: (.terminal_title | capture("--model (?<m>[^ ]+)") | .m // "default")}}] | from_entries}' > .agents/session.json
+# 1. 保存快照（关联读取 .agents/environment.json 中的准确 model 与 thinking，显式过滤未命名窗格与临时 bootstrap）：
+herdr agent list | jq --slurpfile env .agents/environment.json \
+  --arg ws "${HERDR_WORKSPACE_ID:-main}" --arg proj "$(basename "$PWD")" \
+  '{
+    updated_at: (now | todate),
+    workspace_id: $ws,
+    project: $proj,
+    agents: [
+      .result.agents[]
+      | select(.name != null and .name != "bootstrap")
+      | . as $a
+      | ($env[0].roles[$a.name] // {}) as $r
+      | {
+          key: $a.name,
+          value: {
+            name: $a.name,
+            pane_id: $a.pane_id,
+            tab_id: $a.tab_id,
+            harness: ($r.harness // $a.kind),
+            model: ($r.model // "default"),
+            thinking: ($r.thinking // "default"),
+            conversation_id: $a.agent_session.value
+          }
+        }
+    ] | from_entries
+  }' > .agents/session.json
+
+# 2. 跨天复活某常驻角色示例（读取 environment.json 的 cli_args 与 session.json 的 conversation_id 恢复记忆）：
+ROLE="planner"
+HARNESS=$(jq -r --arg r "$ROLE" '.agents[$r].harness' .agents/session.json)
+CONV_ID=$(jq -r --arg r "$ROLE" '.agents[$r].conversation_id' .agents/session.json)
+RESUME_FLAG=$(jq -r --arg h "$HARNESS" '.harness_profiles[$h].resume_flag' .agents/environment.json)
+CLI_ARGS=($(jq -r --arg r "$ROLE" '.roles[$r].cli_args[]' .agents/environment.json))
+herdr agent start "$ROLE" --kind "$HARNESS" --pane "$TARGET_PANE" -- "${CLI_ARGS[@]}" "$RESUME_FLAG" "$CONV_ID"
 ```
+
+```json
+{
+  "updated_at": "2026-11-05T08:00:00Z",
+  "workspace_id": "w1",
+  "project": "my-project",
+  "agents": {
+    "planner": {
+      "name": "planner",
+      "pane_id": "w1:p2",
+      "tab_id": "w1:t1",
+      "harness": "claude",
+      "model": "<high-reasoning-model>",
+      "thinking": "high",
+      "conversation_id": "conv_01hxyz..."
+    },
+    "dispatcher": {
+      "name": "dispatcher",
+      "pane_id": "w1:p3",
+      "tab_id": "w1:t1",
+      "harness": "pi",
+      "model": "<fast-light-model>",
+      "thinking": "none",
+      "conversation_id": "session_98abc..."
+    }
+  }
+}
+```
+
+| 字段路径 | 含义与运行机制说明 |
+| :--- | :--- |
+| **`workspace_id` / `project`** | 快照所属的 Herdr 工作区 ID（如 `w1`）与项目目录名。 |
+| **`agents.<role>.pane_id` / `tab_id`** | 角色当前驻留的稳定窗格与标签页句柄（Herdr 关闭其他窗格不会导致已分配 ID 重排）。 |
+| **`agents.<role>.harness` / `model` / `thinking`** | 从 `.agents/environment.json` 同步关联记录的实际运行底座、模型名与思考强度。 |
+| **`agents.<role>.conversation_id`** | Herdr 捕获的底层 Agent 会话 ID（`.agent_session.value`），配合 `harness_profiles.<harness>.resume_flag` 实现跨天原地恢复上下文。 |
 
 ---
 

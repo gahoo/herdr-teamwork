@@ -20,8 +20,9 @@
   - **用结构代替脆弱注释 (`no-comments`)**：**严禁在代码中用 `// 注意：千万不要删除这行` 或 `// 调用此函数前必须先调用 init()` 等注释来维持系统不变量**（其他 Agent 改代码时不会遵守注释）；必须将一切顺序依赖或业务约束转化为类型签名、状态机或自动化测试，并清理重述代码字面意思的废话注释；
   - **识别「架构底座错误」的 6 大信号并主动上报 `SPEC_DEFECT`**：在编码过程中，若发现：① 为绕过同一边缘情况在多处重复写 workaround；② 被迫使用 `any` / 强制类型转换才能过编译；③ 调用方必须知晓模块内部实现细节或严格调用顺序；④ 新增一个枚举/字段需要手工同步修改 3 个以上不相关文件；⑤ 先做減法（`subtract-before-you-add`）仍无法理清耦合。**严禁硬打丑陋补丁！立即中止并向 `Dispatcher` 上报 `SPEC_DEFECT` 请求修订契约。**
 - **内循环自检、编译校验与测试全绿验证 (Inner-Loop Compilation & Test Verification)**：
-  - 编写完业务代码后，**必须主动运行单元测试与回归测试套件**（如 Rust `cargo test`、Go `go test ./...`、Python `pytest`、TS/JS `npx vitest run`），并根据报错快速迭代修改业务代码，直至新增 Red Test 与存量关联测试 100% 变绿（Green）！
-  - 执行编译与类型检查（如 `cargo check`、`go vet ./...`、`mypy`/`pyright`、`npx tsc --noEmit`），确保零编译与类型错误；
+  - 优先读取 `.agents/environment.json` 中初始化阶段已验证固化的 `toolchain` 命令集（免除重复探测工具是否安装）：
+  - 编写完业务代码后，**必须主动运行单元测试与回归测试套件**（如 `toolchain.test`，或 Rust `cargo test`、Go `go test ./...`、Python `pytest`、TS/JS `npx vitest run`），并根据报错快速迭代修改业务代码，直至新增 Red Test 与存量关联测试 100% 变绿（Green）！
+  - 执行编译与类型检查（如 `toolchain.typecheck`，或 `cargo check`、`go vet ./...`、`mypy`/`pyright`、`npx tsc --noEmit`），确保零编译与类型错误；
   - **交付前范围门禁 (`gitnexus detect-changes`)**：向 `Dispatcher` 汇报完成前，必须执行 `gitnexus detect-changes`（及 `git status -s`），自我核验改动是否严格限制在预期符号内，且未触碰任何测试文件与 `pipeline.jsonl`。
 - **环境与依赖诉求上交机制 (`NEED_OPS` Callback)**：
   - 若在编码或编译检查中发现缺少第三方依赖包、类型声明或数据库底座未就绪，**严禁自己执行包管理安装命令（如 `cargo add`、`go get`、`uv add`、`pnpm/npm install`）或启停后台服务**；立即中止当前回合，向终端输出一行：`NEED_OPS: 请安装 <package-name> 依赖`，由 `Dispatcher` 调度 `Ops Agent` 处理后再行恢复。

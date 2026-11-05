@@ -1,30 +1,31 @@
-# Herdr Teamwork v2.7.2 ⚡
+# Herdr Teamwork v2.8 ⚡
 
 > **Multi-Agent Spec Implementation Framework Orchestrated via Herdr & Git Worktrees**
 >
 > 基于 **Herdr** 终端工作区管理工具构建的**“双控台分治、内外双驱、事件溯源、双层自演进”**多 Agent 协同工程规范。遵循 **OpenSpec 活文档标准**、**单流水线内同步等待 (`--wait`) + 跨流水线文件流监听 (`tail -f pipeline.jsonl`)**，通过 **`roles/`（常驻职责）+ `playbooks/`（按需战术剧本）+ `scripts/`（自动化基建）** 三元架构，无缝支持跨语言单线开发与多 Worktree / Workspace 高并发并行交付。
 
 [![Skill](https://img.shields.io/badge/Agent_Skill-herdr--teamwork-blue?style=flat-square)](https://skills.sh)
-[![Version](https://img.shields.io/badge/Version-v2.7.2-orange?style=flat-square)](SKILL.md)
+[![Version](https://img.shields.io/badge/Version-v2.8-orange?style=flat-square)](SKILL.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
 ---
 
-## 🚀 快速安装 (Installation)
+## 🚀 快速安装与自举初始化 (Installation & Bootstrap)
 
-无需复杂配置，直接通过 `npx skills` 将本技能一键安装至你的工程或全局环境中：
+无需复杂手工配置，通过 `npx skills` 安装后，由一次性临时引导实例执行 [`playbooks/bootstrap-teamwork.md`](playbooks/bootstrap-teamwork.md) 即可全自动拉起双控台协同环境：
 
 ```bash
-# 1. 安装至当前项目
+# 1. 安装至当前项目（或加 -g 全局安装）
 npx skills add gahoo/herdr-teamwork
 
-# 2. 或者全局安装 (User Scope)
-npx skills add gahoo/herdr-teamwork -g
+# 2. 在 Herdr 终端窗格随便启动任意 Agent 作为临时 Bootstrap，发送一句指令：
+#    "请按 .agents/skills/herdr-teamwork/playbooks/bootstrap-teamwork.md 初始化本项目的 Teamwork 环境"
+#    (Bootstrap 完成工具链探针、模型选配、活文档建场并拉起 Planner + Dispatcher + Ops 后将自动关闭退出)
 ```
 
 ---
 
-## 🏛️ 核心架构亮点 (v2.7.2 Architecture Highlights)
+## 🏛️ 核心架构亮点 (v2.8 Architecture Highlights)
 
 1. **双主控台分治 + 严格工具白名单（规划与交付物理绝缘，90% 问题就地闭环）**：
    - **窗口 1：`Planner`（总规划台）**：常驻主工作区左窗格，受严格只读图谱与契约工具白名单约束。负责与人类探讨需求、维护统一领域语言 `GLOSSARY.md` 与 `changes/KANBAN.md`、唤起 `Explorer` 深潜摸底、按需直询 `Arch / Security` 专家进行 Stage 1 预审，落盘 `prd.md`、`spec.md`、`tasks.md` 并写入 `pipeline.jsonl` 首行 `PLAN` 事件，上下文 100% 纯净。
@@ -73,7 +74,7 @@ project-root/
 
 ---
 
-## 📖 规范全览：16 正交角色 × 10 战术剧本 × 2 基建脚本
+## 📖 规范全览：16 正交角色 × 11 战术剧本 × 2 基建脚本
 
 ### 1. 总纲与自动化脚本
 - **核心总纲**：[`SKILL.md`](SKILL.md) —— 完整工程规范、双控台交互协议、`pipeline.jsonl` 事件流标准、两阶段审查、上下文生命周期与 CLI 命令矩阵。
@@ -100,10 +101,11 @@ project-root/
 | **分形审查层** | [`roles/reviewer-ux.md`](roles/reviewer-ux.md) | **交互与无障碍专家**：审查热键冲突、输入法容错、Focus Trap 焦点闭环、ARIA 无障碍与视觉一致性。 |
 | **反思演进层** | [`roles/reflector.md`](roles/reflector.md) | **全局流程反思官**：由异常信号触发，按四级防错强化阶梯沉淀项目级 `reflections/<domain>.md` 与 Skill 级 `.reflections/<id>.md`。 |
 
-### 3. 10 个按需触发战术剧本 (`playbooks/` —— How)
+### 3. 11 个按需触发战术剧本 (`playbooks/` —— How)
 
 | 战术剧本文件 | 触发场景 (When) | 发起者 ➔ 核心执行者 |
 | :--- | :--- | :--- |
+| [`playbooks/bootstrap-teamwork.md`](playbooks/bootstrap-teamwork.md) | 新项目或存量项目首次启用 `herdr-teamwork`（或重配模型与工具链）时 | 人类唤醒一次性 **`Bootstrap Agent`** 探测环境、敲定模型与 `toolchain`、拉起双控台并保存 `session.json` 后自动关闭退出 |
 | [`playbooks/arch-audit.md`](playbooks/arch-audit.md) | 每累计完成 3~5 个特性，或连续出现浅模块耦合预警时 | `planner` 提议立项 ➔ **`reviewer-arch`** 全库扫描产出 `arch-report.html` |
 | [`playbooks/roundtable-debate.md`](playbooks/roundtable-debate.md) | 重大架构议题：单向门 + 跨 ≥2 维度显著权衡 + 2~3 套互斥方案时 | `planner` 立题并 Fork **临时主席分身** ➔ 专家背靠背亮牌 + 冲突方交锋 1 轮 ➔ 主席裁决 ➔ **人类点头** |
 | [`playbooks/prototype-spike.md`](playbooks/prototype-spike.md) | UI/技术方案吃不准，或验证 `reflector` 的 `🔬 SPIKE_CANDIDATE` 时 | `planner` 立项 `[SPIKE]` ➔ **`coding` + `ops`** 快速构建原型（拍板后用完即焚） |

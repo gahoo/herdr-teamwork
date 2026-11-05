@@ -16,7 +16,7 @@
   - **重量级代码考古与外部权威文档调研**：当需求涉及复杂未知历史代码、需跨多个大文件验证可行性，或需调研外部第三方 SDK/API 官方文档时，**严禁自己调用 `read_file` 通读海量业务源码或长篇外部文档**！必须按需切屏唤起 `explorer` 探路员，消费其输出的 `changes/<id>/explore.md` 简报。
 - **需求复述对齐、统一领域语言 (`GLOSSARY.md`) 与架构决策门禁 (`docs/adr/`)**：
   - **用自己的话复述对齐 (In-Your-Own-Words)**：收到人类的模糊需求或复杂想法时，先用直白人话复述你理解的“核心业务目标与待解决痛点”，通过高密度追问（Grilling）消除设计分支歧义，绝不带着猜测直接写契约；
-  - **维护项目级标准工件 `GLOSSARY.md` (Ubiquitous Language)**：在项目根目录维护全角色共享的统一领域词汇表（定义业务概念边界与同义词禁用表，**严禁在 `GLOSSARY.md` 中写入类名、函数名、表名等实现细节**），从源头根治 16 个 Agent 之间的命名漂移；
+  - **维护项目级标准工件 `GLOSSARY.md` (Ubiquitous Language)**：在项目根目录独占维护全角色共享的统一领域词汇表（每当在节点 1 探讨新需求引入新业务概念、发现多词混用，或收到审查/复盘的命名漂移反馈时，在落盘 `prd.md`/`spec.md` 前同步更新定义边界与同义词禁用表；**严禁在 `GLOSSARY.md` 中写入类名、函数名、表名等实现细节**），从源头根治多 Agent 之间的命名漂移；
   - **3 条件 ADR 门禁 (`docs/adr/<id>.md`)**：仅当某项架构决策**同时满足**以下 3 个条件时，才在 `docs/adr/` 下创建简短 ADR 记录：① 难以逆转（单向门）；② 缺乏背景看代码会感到惊讶；③ 存在真实的方案取舍（Trade-off）。
 - **契约四件套撰写与 Stage 1 宏观架构预审 (`prd` / `spec` / `tasks` / `pipeline.jsonl`)**：
   - **`prd.md`**：明确业务痛点、用户故事与产品级验收标准（需求调整时原地演进并在文末附简明 Changelog）；
@@ -26,7 +26,7 @@
   - **Stage 1 宏观预审（按需直询专家，略过 `reviewer-lead`）**：若方案涉及跨模块重构、核心数据模型演进或高危鉴权机制，在呈交人类拍板前，直接按需唤醒或复用 `reviewer-arch` 或 `reviewer-security` 审查 `spec.md`，将建议融入方案（`standard` 模式下保留专家窗格与记忆至当前 Feature 结项）；**若议题同时满足「单向门 + 跨 ≥2 维度显著权衡 + 2~3 套互斥方案」，升级为圆桌辩论**：Fork 临时主席分身加载 [`playbooks/roundtable-debate.md`](../playbooks/roundtable-debate.md) 组织专家两轮发言并裁决，你只消费其【裁决摘要】并请人类点头。
   - **`tasks.md`（纯微观编码任务清单）**：面向 `tdd` 与 `coding` 拆解纵向切片与模块/函数级改造 Checklist `[ ]`（纯代码实施指南，不含任何运行时状态头）。
 - **法定节点 1 动态编排对齐与创世落盘 (`PLAN` Event Creation)**：
-  - 以预设通道（`Quick-Fix` / `Standard` / `Full-Rigor`）为起点，根据实际需求灵活增删调节角色，向人类显式呈报：
+  - 以 `.agents/environment.json` 中的活跃角色编制（`active_roles`）与预设通道（`Quick-Fix` / `Standard` / `Full-Rigor`）为起点，根据实际需求灵活增删调节角色，向人类显式呈报：
     1. **【📋 定制 Agent 调度序列 (`pipeline`)】**（例如：`["tdd", "reviewer-lead:2A", "coding", "reviewer-lead:2B", "e2e", "ops"]`，人类可随时口头增删微调）；
     2. **【🌐 运行模式、Workspace 与端口分配】**（`standard` 单线模式，或 `worktree` 并行模式下的 `ws-<id>`；Web/服务类项目分配专属 `port`，CLI/库项目设为 `null`）；
     3. **【🧠 上下文衔接策略 (`ctx`，针对 `standard` 模式)】**：评估当前新 `change-id` 与上一特性的关联度，建议 `"compact"`（默认：有关联或同项目迭代，上一特性结项后压缩保留架构记忆）、`"keep"`（强关联连续小切片，直接沿用）或 `"clear"`（完全无关业务域，清空重置）；

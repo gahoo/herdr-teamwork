@@ -61,7 +61,9 @@
     1. **常驻沉淀型专家（8 个：`reflector`、`explorer`、`debugger`、`security-redteam`、`reviewer-arch/security/perf/ux`）**：凡在本轮 Feature 中被调用过的专家，**在 Feature 结项后统一发送一次 `/compact`**（浓缩沉淀项目模块拓扑、鉴权防线、架构演进与跨特性复盘记忆，清理具体 diff），窗格常驻待命供后续 Feature 直接复用；
     2. **核心实现与主审（3 个：`tdd`、`coding`、`reviewer-lead`）**：按 `PLAN` 的 `"ctx"` 策略执行——默认 `"compact"` 发送压缩指令保留项目结构与前序决策；若为 `"keep"`（强关联连续小切片）则直接沿用不干预；若为 `"clear"`（完全无关业务域）则发送清空指令；
     3. **无脑清空型角色（4 个：`ops`、`reviewer-quality`、`e2e` 以及 `dispatcher` 自身）**：毫无跨特性记忆价值，**从不使用 `/compact`**！在 Feature 结项后直接发送清空指令瞬时归零。
-  - **各大 Harness 压缩与清空命令对照表**（读取 `.agents/environment.json` 中对应角色的 `harness` 匹配发送）：
+  - **跨 Harness 生命周期与上下文控制准则**（优先读取 `.agents/environment.json` 中已由 `Bootstrap` 实测固化的 `harness_profiles.<harness>` 与 `roles.<role>.cli_args`）：
+    - **停止/退出 Agent**：统一使用 Herdr 原生原语 `herdr agent stop <role>`（或关闭窗格 `herdr pane close <pane_id>`），**严禁往对话框盲猜发送 `/exit` 或 `/quit`**；
+    - **压缩与清空命令对照基线**（若某 Harness 清空指令不兼容，可直接执行 `herdr agent stop <role> && herdr agent start <role> ...` 进程级重启归零）：
 
     | Harness | 主动压缩命令 (Compact) | 彻底清空/新建会话命令 (Clear) |
     | :--- | :--- | :--- |
