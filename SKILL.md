@@ -3,7 +3,7 @@ name: herdr-teamwork
 description: Multi-agent spec implementation orchestrated via Herdr terminal panes, workspaces, and optional Git Worktrees (Planner, Explorer, Dispatcher, TDD, Coding, Reviewer Ensemble, Ops, Debugger, RedTeam, E2E, Reflector). Use when initiating multi-agent spec implementation, parallel feature development, or complex engineering workflows.
 ---
 
-# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.8)
+# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.8.1)
 
 本技能通过 Herdr 终端工作区管理工具构建**“双控台分治（窗口 1 规划 / 窗口 2 交付）、内外双驱（内部 `--wait` 同步 + 跨任务 `tail -f` 监听）、事件溯源（`pipeline.jsonl`）”**的多 Agent 物理隔离与协作体系。
 遵循 **OpenSpec 活文档标准**，实现规划与交付彻底物理绝缘、宏微观契约正交、职责绝对边界化与证伪式分形审查。
@@ -252,6 +252,12 @@ flowchart TD
     "push_cmd": null
   },
   "version_anchors": ["package.json"],
+  "domain_skills": {
+    "shadcn-ui": {
+      "path": ".agents/skills/shadcn-ui/SKILL.md",
+      "roles": ["planner", "coding", "reviewer-ux"]
+    }
+  },
   "harness_profiles": {
     "claude": { "compact_cmd": "/compact 保留项目架构拓扑与核心演进决策", "clear_cmd": "/clear", "resume_flag": "--resume" },
     "codex": { "compact_cmd": "/compact", "clear_cmd": "/new", "resume_flag": "resume" },
@@ -287,6 +293,7 @@ flowchart TD
 | **`active_roles`** | `string[]` | 本项目实际启用的角色白名单（如纯 CLI 项目剔除 `e2e`/`reviewer-ux`，防误点名）。 |
 | **`toolchain`** | `object` | 初始化阶段一次性验证固化的构建（`build`）、单测（`test`）、类型检查（`typecheck`）、静态健康（`static_health`）与热推（`push_cmd`）命令，日常运行零探测直接调用。 |
 | **`version_anchors`** | `string[]` | 受控发版时 `ops` 需同步递增 SemVer 版本号的文件清单（如 `package.json`, `manifest.json`, 代码常量文件）。 |
+| **`domain_skills`** | `object` | `Bootstrap` 扫描或联网检索推荐安装的垂类领域 Skill（如 `shadcn-ui`、`chrome-extensions`），通过 `roles` 数组按需精准挂载给相关角色，避免无关角色消耗上下文。 |
 | **`harness_profiles`** | `object` | `Bootstrap` 通过 `<harness> --help` 核实的各 CLI 压缩指令（`compact_cmd`）、清空指令（`clear_cmd`）与会话恢复参数（`resume_flag`）；退出/停止统一用 `herdr agent stop`。 |
 | **`roles.<id>`** | `object` | 各角色绑定的 `harness`、逻辑 `model`、逻辑思考强度 `thinking` (`"none"`\|`"low"`\|`"medium"`\|`"high"`)，以及供 `herdr agent start` 直接展开透传的原生启动参数数组 **`cli_args`**。 |
 

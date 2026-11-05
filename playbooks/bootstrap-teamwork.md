@@ -35,6 +35,10 @@ done
 
 # 4. 扫描项目根目录技术栈特征、既有规范与版本锚点：
 ls -la Cargo.toml go.mod pyproject.toml package.json manifest.json tsconfig.json AGENTS.md CLAUDE.md .fallow-baseline.json 2>/dev/null || true
+
+# 5. 盘点本机已安装的项目级与全局垂类 Skills，并按项目技术栈检索外部生态最新匹配的 Skill：
+ls -d .agents/skills/* ~/.agents/skills/* ~/.claude/skills/* ~/.gemini/skills/* 2>/dev/null || true
+# (若识别出特定框架如 shadcn/nextjs/chrome-extension/rust/fastapi，执行 npx skills find <keyword> 或联网搜索 skills.sh / GitHub 高评价垂类 Skill)
 ```
 
 #### 主流 Harness 参数与控制命令速查基线（以本机 `--help` 实测输出为准固化至 `environment.json`）
@@ -65,14 +69,22 @@ ls -la Cargo.toml go.mod pyproject.toml package.json manifest.json tsconfig.json
 4. **确认并发模式与跨特性上下文策略**：
    - 默认模式：`standard`（单工作区原地串行） vs `worktree`（多分支独立工作区高并发）；
    - 默认上下文打理策略（`default_ctx`，针对 `standard` 模式结项后）：`"compact"`（默认推荐：压缩保留项目架构记忆）、`"clear"`（跨无关域清空归零）或 `"keep"`（连续微切片保留）。
-5. **推荐安装缺失的高价值工具（按需）**：
-   - 若探测发现缺失 `gitnexus`、`jq`、`rg` 或当前语言核心静态分析器（如 TS/JS 缺 `fallow`、Rust 缺 `clippy`、Go 缺 `golangci-lint`、Python 缺 `ruff`），列出 1 行安装命令询问人类是否现在安装；将最终确认可用的验证命令固化进 `toolchain`，**后续日常运行直接读取配置执行，不再每次重复探测浪费 Token**。
+5. **推荐安装缺失的高价值工具（先给理由，由人类拍板决定装不装）**：
+   - 若探测发现缺失 `gitnexus`、`jq`、`rg` 或当前语言核心静态分析器（如 TS/JS 缺 `fallow`、Rust 缺 `clippy`、Go 缺 `golangci-lint`、Python 缺 `ruff`），必须先说明**该工具在本项目中的具体作用与推荐理由**及 1 行安装命令，由人类拍板决定是否安装；将最终确认可用的验证命令固化进 `toolchain`，**后续日常运行直接读取配置执行，不再每次重复探测浪费 Token**。
+6. **推荐 AI 友好型领域方案与专业垂类 Skill 选装及按角色挂载 (`domain_skills` —— 必须附推荐理由并由人类拍板）**：
+   - **从 0 到 1 新项目方案建议**：若项目尚在技术选型阶段，主动给出对 AI Agent 最透明友好的白盒方案建议与理由（例如：现代 Web 前端推荐 `TypeScript + Tailwind CSS + shadcn/ui`——理由是组件源码直接落盘在项目内而非黑盒 `node_modules`，便于 Agent 直读直改与类型校验），供人类拍板；
+   - **垂类领域 Skill 推荐清单（严禁未经授权私自安装）**：结合项目核心框架/库（如 `shadcn/ui`、React/Next.js、Chrome Extension MV3、Obsidian、Rust Tokio、FastAPI 等），汇总 Step 1 扫描到的本机既有 Skill 以及通过 `npx skills find <keyword>` / 联网搜索发现的外部最新高评价 Skill，向人类逐项呈报 **4 要素供拍板决定装不装**：
+     1. **Skill 名称与安装来源**（本机已有路径，或 `npx skills add <owner/skill>`）；
+     2. **针对本项目的具体推荐理由（Why）**（说明它能提供什么最新框架规范、能帮 Agent 避开什么常见反模式或过时 API）；
+     3. **拟精准挂载的角色（Who）**（遵循“按职责挂载、拒绝全员无脑加载”原则，如将 `shadcn-ui` 仅挂载给 `["planner", "coding", "reviewer-ux"]`，让 `dispatcher`、`ops` 等无关角色保持零上下文负担）；
+     4. **是否启用/安装（请人类拍板 Yes/No）**。
 
 ### Step 3：配置落盘、图谱建库与活文档骨架初始化 (`Scaffolding`)
-人类确认后，依次执行以下幂等建场动作：
+待人类对 Step 2 方案（含选装哪些工具与 Skill）明确拍板后，依次执行以下幂等建场动作：
 
-1. **写入 `.agents/environment.json`**：
-   严格按照 [`SKILL.md` §6](../SKILL.md) 的标准结构，将对齐后的完整配置（含 `mode`、`default_ctx`、`runtime_type`、`base_port`/`target_url`、`active_roles`、`toolchain`、`version_anchors`、`harness_profiles` 以及包含 `thinking` 与实测 `cli_args` 数组的 `roles` 映射）写入 `.agents/environment.json`。
+1. **仅安装人类明确拍板同意的外部工具与领域 Skills，写入 `.agents/environment.json`**：
+   - 仅对人类在 Step 2 明确同意安装的项执行安装命令（如 `npx skills add <owner/skill>`；人类未勾选或拒绝的项严禁安装）；
+   - 严格按照 [`SKILL.md` §6](../SKILL.md) 的标准结构，将对齐后的完整配置（含 `mode`、`default_ctx`、`runtime_type`、`base_port`/`target_url`、`active_roles`、`toolchain`、`version_anchors`、`domain_skills`、`harness_profiles` 以及包含 `thinking` 与实测 `cli_args` 数组的 `roles` 映射）写入 `.agents/environment.json`。
 2. **加固 `.gitignore`**：
    检查项目 `.gitignore`，确保包含 `.worktrees/`、`.ops-pane`、`.ops.pid`（防止 Worktree 目录与后台守护子窗格句柄污染版本库）。
 3. **初始化代码图谱与存量静态基线**：

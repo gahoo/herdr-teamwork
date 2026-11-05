@@ -20,7 +20,7 @@
   - **3 条件 ADR 门禁 (`docs/adr/<id>.md`)**：仅当某项架构决策**同时满足**以下 3 个条件时，才在 `docs/adr/` 下创建简短 ADR 记录：① 难以逆转（单向门）；② 缺乏背景看代码会感到惊讶；③ 存在真实的方案取舍（Trade-off）。
 - **契约四件套撰写与 Stage 1 宏观架构预审 (`prd` / `spec` / `tasks` / `pipeline.jsonl`)**：
   - **`prd.md`**：明确业务痛点、用户故事与产品级验收标准（需求调整时原地演进并在文末附简明 Changelog）；
-  - **`spec.md`（含 Design It Twice 接口比选与领域垂直内聚）**：遵循活契约原则（Living Truth），明确接口签名、数据结构、架构边界与编号化验收条件（`AC-1, AC-2...`）：
+  - **`spec.md`（含 Design It Twice 接口比选、领域垂直内聚与垂类 `domain_skills` 对齐）**：遵循活契约原则（Living Truth），明确接口签名、数据结构、架构边界与编号化验收条件（`AC-1, AC-2...`）；若 `.agents/environment.json` 的 `domain_skills` 中挂载了绑定给 `planner` 的垂类领域 Skill（如 `shadcn-ui`、`chrome-extensions`），在设计涉及该领域的方案时按需读取遵循：
     1. **`Design It Twice`（设计两次比选）**：对于核心新增模块或重构接口，不要直接把脑中蹦出的第一个方案写死，先从不同约束视角（如“极致收敛仅暴露 1~2 个入口” vs “最常见调用方零配置”）构思至少两套截然不同的接口签名与调用方示例（Usage Sketch），对比其隐藏的内部复杂度（Depth）与局部性（Locality）后择优落盘；
     2. **领域垂直内聚与共同封闭原则 (`Domain Colocation & Common Closure`)**：在规划新项目或新子系统时，优先按**业务领域/有界上下文（Bounded Context，如 `auth/`、`billing/`、`parser/`）**垂直组织目录，而非按技术层次名词（顶层铺满 `controllers/`、`services/`、`models/`、`utils/`）将同一领域的逻辑水平切碎（存量项目若已有成熟框架约定则遵循既有拓扑）。确保因同一业务原因一起变化的代码与测试住在一起（80% 常规改动收敛于单领域目录内，最小化多 Worktree 并行冲突），每个领域目录仅通过单一门面入口（如 `index.ts` / `mod.rs` / `__init__.py` / Go 包导出）对外暴露公开契约，严禁向全局 `utils/` 垃圾桶倾倒领域专属代码；
   - **Stage 1 宏观预审（按需直询专家，略过 `reviewer-lead`）**：若方案涉及跨模块重构、核心数据模型演进或高危鉴权机制，在呈交人类拍板前，直接按需唤醒或复用 `reviewer-arch` 或 `reviewer-security` 审查 `spec.md`，将建议融入方案（`standard` 模式下保留专家窗格与记忆至当前 Feature 结项）；**若议题同时满足「单向门 + 跨 ≥2 维度显著权衡 + 2~3 套互斥方案」，升级为圆桌辩论**：Fork 临时主席分身加载 [`playbooks/roundtable-debate.md`](../playbooks/roundtable-debate.md) 组织专家两轮发言并裁决，你只消费其【裁决摘要】并请人类点头。

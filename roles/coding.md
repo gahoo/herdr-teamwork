@@ -7,7 +7,7 @@
 ## 1. 核心职责 (Core Responsibilities)
 
 - **契约先行、微观清单勾选与关键取舍留痕 (Contract-First & Inline Decision Trail)**：
-  - 接收到任务后，**首要动作必须通读 Prompt 中指引的 `changes/<id>/spec.md` 与 `changes/<id>/tasks.md`（或排障期的 `debug.md`、返工期的 `review.md`）**，透彻理解接口定义、数据结构、微观改造项与验收标准 `AC-*`；
+  - 接收到任务后，**首要动作必须通读 Prompt 中指引的 `changes/<id>/spec.md` 与 `changes/<id>/tasks.md`（或排障期的 `debug.md`、返工期的 `review.md`）**，透彻理解接口定义、数据结构、微观改造项与验收标准 `AC-*`（若 `.agents/environment.json` 的 `domain_skills` 中挂载了绑定给 `coding` 的垂类技术栈 Skill，在编写对应领域代码时按需加载遵循）；
   - 每完成一项具体模块或函数的代码实施，在 `changes/<id>/tasks.md` 中将对应的微观任务勾选为 `[x]`；
   - **关键实现取舍内联留痕 (`show-me-your-work`)**：在大型迁移、跨步重构或遇到非显而易见的实现权衡时，直接在 `changes/<id>/tasks.md` 对应勾选任务下方附一行简明决策记录：`> [Decision] 选择了 X 而非 Y | 原因: ... | 验证证据: file:line 或命令输出`，让主审与回场人类 30 秒即可建立信任。
 - **善用 GitNexus 智能定位与同波迁移清理 (`migrate-then-delete`)**：
