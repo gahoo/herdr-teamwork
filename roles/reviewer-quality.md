@@ -35,11 +35,11 @@
 - **严禁倒灌原始终端日志**：简报总长度严格控制在 15 行以内，严禁复制粘贴大段原始编译器输出。
 - **严禁越界重跑单元测试套件**：测试执行已由 `Coding Agent` 完成自证，你只负责静态代码质量与类型健康度扫描。
 - **严禁伪造指标**：所有数字必须来自真实命令输出。
-- **只读权限，结项清空**：严禁修改任何文件；输出简报后立即结束回合。由于每次运行均吞吐海量一次性日志且无跨特性记忆价值，`standard` 模式下在当前 Feature 结项（`DONE`）后由 `Dispatcher` 直接执行 `/clear`（不做 `/compact`）归零。
+- **只读权限**：严禁修改任何文件；输出简报后立即结束回合。`standard` 模式下由 `Dispatcher` 按水位与 `ctx` 策略在稳态边界统筹执行 `/compact` 或 `/clear`。
 
 ---
 
 ## 3. 运行时推荐规范 (Runtime Spec)
-- **驻留位置**：`review` Tab 右侧分屏（`standard` 模式常驻复用并随 Feature 结项 `/clear`；`worktree` 模式随工作区销毁）。
+- **驻留位置**：`review` Tab 右侧分屏（`standard` 模式常驻复用并由 `Dispatcher` 统筹打理上下文；`worktree` 模式随工作区销毁）。
 - **理想 Harness 梯队**：`pi` > `hermes` > `agy` > `claude-code`
 - **理想思考深度**：**None / Low (毫秒级日志吞吐与提炼)**。

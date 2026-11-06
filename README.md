@@ -1,11 +1,11 @@
-# Herdr Teamwork v2.8.2 ⚡
+# Herdr Teamwork v2.9.0 ⚡
 
 > **Multi-Agent Spec Implementation Framework Orchestrated via Herdr & Git Worktrees**
 >
 > 基于 **Herdr** 终端工作区管理工具构建的**“双控台分治、内外双驱、事件溯源、双层自演进”**多 Agent 协同工程规范。遵循 **OpenSpec 活文档标准**、**单流水线内同步等待 (`--wait`) + 跨流水线文件流监听 (`tail -f pipeline.jsonl`)**，通过 **`roles/`（常驻职责）+ `playbooks/`（按需战术剧本）+ `tools/`（标准指令配方卡）+ `scripts/`（自动化基建）** 四元架构，无缝支持跨语言单线开发与多 Worktree / Workspace 高并发并行交付。
 
 [![Skill](https://img.shields.io/badge/Agent_Skill-herdr--teamwork-blue?style=flat-square)](https://skills.sh)
-[![Version](https://img.shields.io/badge/Version-v2.8.2-orange?style=flat-square)](SKILL.md)
+[![Version](https://img.shields.io/badge/Version-v2.9.0-orange?style=flat-square)](SKILL.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
 ---
@@ -25,7 +25,7 @@ npx skills add gahoo/herdr-teamwork
 
 ---
 
-## 🏛️ 核心架构亮点 (v2.8.2 Architecture Highlights)
+## 🏛️ 核心架构亮点 (v2.9.0 Architecture Highlights)
 
 1. **双主控台分治 + 严格工具白名单（规划与交付物理绝缘，90% 问题就地闭环）**：
    - **窗口 1：`Planner`（总规划台）**：常驻主工作区左窗格，受严格只读图谱与契约工具白名单约束。负责与人类探讨需求、维护统一领域语言 `GLOSSARY.md` 与 `changes/KANBAN.md`、唤起 `Explorer` 深潜摸底、按需直询 `Arch / Security` 专家进行 Stage 1 预审，落盘 `prd.md`、`spec.md`、`tasks.md` 并写入 `pipeline.jsonl` 首行 `PLAN` 事件，上下文 100% 纯净。
@@ -41,8 +41,9 @@ npx skills add gahoo/herdr-teamwork
    - **物化导航与领域词典**：通过 `GLOSSARY.md` 消除多 Agent 命名漂移；通过 `E2E_PLAYBOOK.md` 物化页面路由与交互记忆，让 `e2e` 告别每次从零盲目摸索 DOM。
 5. **全局 `Reflector` 双层反思闭环与「四级防错强化阶梯」**：
    - 当 `pipeline.jsonl` 出现返工、重排或受阻信号时，在销毁工作区前唤醒全局 `Reflector`，按需跨窗格问询当事 Agent，并严格遵循 **「Level 1 架构消除 > Level 2 类型/Lint 机械拦截 > Level 3 行为测试锁死 > Level 4 文档规则兜底」** 阶梯，同步沉淀项目级 `reflections/<domain>.md`（含 `🔬 SPIKE_CANDIDATE` 立项闭环）与 Skill 级 `.reflections/<id>.md`。
-6. **非 Worktree (`standard`) 模式 4 级上下文生命周期管理**：
-   - 特性进行中全员保留现场；特性结项（`DONE`）后，8 个项目记忆型专家（`reflector` / `explorer` / `debugger` / `security-redteam` / `reviewer-arch/security/perf/ux`）统一执行 `/compact` 沉淀长期架构心智，4 个高噪工具人（`dispatcher` / `ops` / `reviewer-quality` / `e2e`）直接 `/clear` 瞬时归零。
+6. **多 Agent 上下文主动统筹管理（双通道水位探针 + 动态智力阈值 + 稳态边界点火 + 三域矩阵）**：
+   - 内置 [`scripts/agent-context.sh`](scripts/agent-context.sh) 水位探针（优先直读 `herdr-agent-usage` StatusLine 缓存/Metadata，兜底采用 `herdr agent list` 严格会话归属 + 256KB 有界尾部倒扫），按 **「模型长文智力抗衰档位 (Tier S/A/B) × 物理窗口大小」** 动态标定 `ARMED` 与 `DANGER` 阈值；
+   - 实行 **Arm/Fire 分离**：由 `Dispatcher` 在「派活前水位闸门 (`Pre-Dispatch Gate`)」和「特性结项且 `Reflector` 采蜜完成后的空闲窗口」发起 EESV 四要素结构化主动 `/compact`（全员保留经验不盲目清空），配合 `AGENTS.md` 压缩后强制重载锁与「Planner 二世」交接机制，彻底根治中途被动压缩失忆。
 
 ---
 
@@ -74,12 +75,12 @@ project-root/
 
 ---
 
-## 📖 规范全览：16 正交角色 × 11 战术剧本 × 1 指令卡 × 2 基建脚本
+## 📖 规范全览：16 正交角色 × 11 战术剧本 × 1 指令卡 × 3 基建脚本
 
 ### 1. 总纲、标准指令配方卡与自动化脚本
 - **核心总纲**：[`SKILL.md`](SKILL.md) —— 完整工程规范、双控台交互协议、`pipeline.jsonl` 事件流标准、两阶段审查、上下文生命周期与配置字典。
-- **标准指令配方卡 (`tools/`)**：[`tools/herdr.md`](tools/herdr.md) —— 涵盖窗格切分 (`§[H-1]`)、角色启动与会话恢复 (`§[H-2]`)、零轮询纯事件等待 (`§[H-3]`)、Worktree 平行工作区 (`§[H-4]`)、`.ops-pane` 守护子窗格 (`§[H-5]`) 与上下文/中断回收 (`§[H-6]`) 的唯一权威 CLI 配方。
-- **内置脚本 (`scripts/`)**：[`scripts/worktree-up.sh`](scripts/worktree-up.sh)（跨语言 Worktree 物理建场与依赖软链挂载）、[`scripts/worktree-down.sh`](scripts/worktree-down.sh)（守护进程清理、安全解链与工作区销毁）。
+- **标准指令配方卡 (`tools/`)**：[`tools/herdr.md`](tools/herdr.md) —— 涵盖窗格切分 (`§[H-1]`)、角色启动与会话恢复 (`§[H-2]`)、零轮询纯事件等待 (`§[H-3]`)、Worktree 平行工作区 (`§[H-4]`)、`.ops-pane` 守护子窗格 (`§[H-5]`) 与上下文探针/主动压缩/中断回收 (`§[H-6]`) 的唯一权威 CLI 配方。
+- **内置脚本 (`scripts/`)**：[`scripts/worktree-up.sh`](scripts/worktree-up.sh)（跨语言 Worktree 物理建场与依赖软链挂载）、[`scripts/worktree-down.sh`](scripts/worktree-down.sh)（守护进程清理、安全解链与工作区销毁）、[`scripts/agent-context.sh`](scripts/agent-context.sh)（跨 Harness 双通道上下文水位探针与压缩断崖检测）。
 
 ### 2. 16 个正交角色契约 (`roles/` —— Who)
 
@@ -129,7 +130,7 @@ project-root/
 - **[Lauren Tan (`@poteto`) — `pstack`](https://github.com/cursor/plugins/tree/main/pstack)**：
   启发了本项目 `Reflector` 的「四级防错强化阶梯：架构消除 > 类型/Lint > 测试 > 文档兜底」（源自 `/correct`）、面向 AI Agent 协作的 4 大架构红旗与推倒重来信号（源自 `/architect` & `design-red-flags`）、5 级证据阶梯与实证过滤铁律（源自 `/blast-radius` & `/interrogate`）、单一量化指标科学爬山循环與数字真实性核查（源自 `hillclimb`、`benchmark-checklist` & `explain-the-number`）、高危状态机图解与形式化验证（源自 `/statechart` & `/create-formal-verification-skill`）、像素级视觉等价同屏比对（源自 `visual-parity`）、物化 E2E 路由与交互记忆的 `E2E_PLAYBOOK.md`（源自 `/create-verification-skill` 的 Feature Map 与 `build-the-lever`）、用结构代替脆弱注释（源自 `/no-comments`）以及人类回场全局简报与 `/how`+`/why` 递进图解教学（源自 `/ketchup` & `/teach`）。
 - **核心生态与基建工具**：
-  感谢 **Herdr**（多窗格终端工作区与 Agent 编排底座）、**[GitNexus](https://github.com/abhigyanpatwari/GitNexus)**（AST 级代码知识图谱与爆炸半径分析）、**[Fallow](https://github.com/fallow-rs/fallow)**（极速静态死代码与架构健康度分析）以及 **OpenSpec** 活文档规范。
+  感谢 **Herdr**（多窗格终端工作区与 Agent 编排底座）及 **`herdr-agent-usage`**（启发了严格会话归属、Fail-Closed 与 256KB 有界尾部扫描的跨 Harness 水位采集）、**`proactive-compact` & `pi-smart-compact`**（启发了 Arm/Fire 稳态边界点火、等待挪位与 EESV 四要素结构化保真压缩）、**[GitNexus](https://github.com/abhigyanpatwari/GitNexus)**（AST 级代码知识图谱与爆炸半径分析）、**[Fallow](https://github.com/fallow-rs/fallow)**（极速静态死代码与架构健康度分析）以及 **OpenSpec** 活文档规范。
 
 ---
 

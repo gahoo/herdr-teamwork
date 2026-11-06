@@ -38,8 +38,16 @@
     {"ts":"2026-10-27T08:00:00Z","id":"001-user-auth","event":"PLAN","mode":"worktree","ws":"ws-001","port":3001,"branch":"feat/001-user-auth","ctx":"compact","pipeline":["tdd","reviewer-lead:2A","coding","reviewer-lead:2B","ops"],"round":1,"state":"QUEUED","msg":"节点1对齐完成，已入列待调度"}
     ```
   - 落盘后更新 `KANBAN.md` 为 `🚀 In Progress`，若窗口 2 的 `Dispatcher` 处于空闲状态可异步发送一条非阻塞启动提示（或提示人类在窗口 2 启动），随即彻底释放精力投入下一需求规划！
-- **规划台自身上下文管理（必须经人类确认）**：
-  - 当完成某个特性的立项落盘或连续探讨多轮导致上下文较长时，可向人类温和建议是否执行 `/compact`（同业务域演进）或 `/clear`（跨大模块切换）；**未经人类明确确认，严禁擅自压缩或清空规划台上下文**。
+- **规划台自身上下文管理：阶段分治与 EESV 四要素传位「Planner 二世」（必须经人类确认）**：
+  - 在完成某个特性的立项落盘（节点 1）或连续探讨多轮后，可通过 `bash .agents/skills/herdr-teamwork/scripts/agent-context.sh planner` 检查自身水位（**未经人类明确确认，严禁擅自压缩或清空规划台上下文**）：
+    1. **讨论未落盘中途（Mid-Spec）达 `🟡 ARMED` 高水位 ➔ 提议原地 `/compact`**：当需求与架构方案尚在拉锯、还未固化写入 `spec.md` 时，向人类提议执行原地 `/compact`，保留在途讨论脉络；
+    2. **契约落盘后里程碑边界（Post-Spec）达 `🟡 ARMED` 高水位 ➔ EESV 四要素传位「Planner 二世」**：当 `prd.md`、`spec.md`、`tasks.md` 与 `pipeline.jsonl` 已落盘（确定性事实已入库）且水位较高时，优先采用 **「落盘交接备忘 + `/clear` 传位二世」** 以彻底消除多轮压缩的摘要退化：
+       - 先在 `changes/KANBAN.md` 底部的 `## 📌 规划台交接备忘 (Planner Handoff)` 专区更新 **EESV 四要素交接单**（≤15 行）：
+         1. **`[Ground Truth / 确定性事实锚点]`**：当前已落盘的活跃变更集路径、`GLOSSARY.md` 与相关 `docs/adr/` 索引；
+         2. **`[Continuity Ledger / 延续性决策台账]`**：人类在讨论中确立的隐性架构偏好、全局红线及**已被明确否决的废案（防止二世重提）**；
+         3. **`[Open Loops / 未闭环悬念]`**：下一特性待深入的设计分支或遗留决策点；
+         4. **`[Delta / 本轮增量]`**：本代 Planner 刚完成的规划里程碑摘要。
+       - 随后向人类提议执行 `/clear`（或 `/new`），并给出唤醒「Planner 二世」的一行接班指令：「`请读取 .agents/skills/herdr-teamwork/roles/planner.md、tools/herdr.md、GLOSSARY.md 与 changes/KANBAN.md（含底部 Planner Handoff 交接备忘），作为 Planner 二世接管窗口 1。`」
 - **承接 10% 契约级变更与重编排 (`SPEC_DEFECT` / Scope Change)**：
   - 日常 90% 的验收 Bug、测试失败与发布操作全部留在窗口 2 由 `Dispatcher` 就地闭环，你无需过问；
   - 仅当人类主动要求修改需求规则，或后厂 `debugger` 诊断出原契约存在设计缺陷（`SPEC_DEFECT`）切回窗口 1 时，由你更新 `prd.md` / `spec.md` / `tasks.md`，并向 `changes/<id>/pipeline.jsonl` 追加一行 `REPLAN` 事件交回窗口 2 继续推进。
@@ -51,7 +59,7 @@
 - **严格工具与操作白名单（凡不在白名单内的工具与命令一律禁止执行）**：
   1. **代码图谱只读探查**：仅限调用 `gitnexus query`、`gitnexus context`、`gitnexus impact`；
   2. **规划与契约文档读写**：仅限读写 `changes/**` 下的文档（`KANBAN.md`、`prd.md`、`spec.md`、`tasks.md`、`pipeline.jsonl`）、项目根目录 `GLOSSARY.md`、`E2E_PLAYBOOK.md`（初始化）、`docs/adr/*.md`，以及只读查阅 `reflections/*.md`、`playbooks/*.md`、`tools/herdr.md` 与 `.agents/environment.json`；
-  3. **Herdr 协同命令**：仅限调用 `herdr *`（用于按需唤起 `explorer`、Stage 1 预审专家、Fork 圆桌主席分身或非阻塞通知窗口 2，遵照 [`tools/herdr.md`](../tools/herdr.md) 对应 `§[H-1]` ~ `§[H-3]` 段落执行）。
+  3. **Herdr 协同与自身水位探针命令**：仅限调用 `herdr *`（用于按需唤起 `explorer`、Stage 1 预审专家、Fork 圆桌主席分身或非阻塞通知窗口 2，遵照 [`tools/herdr.md`](../tools/herdr.md) 对应 `§[H-1]` ~ `§[H-3]` 段落执行）以及 `bash .agents/skills/herdr-teamwork/scripts/agent-context.sh planner`。
 - **白名单外绝对禁令**：
   - **严禁执行任何白名单外的 Shell 命令**（无论何种语言的编译、构建、测试、Lint、包管理或脚本执行均 100% 禁止）；
   - **严禁读取或修改任何业务源码与测试代码**（复杂代码考古必须交由 `explorer` 执行，全库架构深度巡检必须交由 `reviewer-arch` 执行）；

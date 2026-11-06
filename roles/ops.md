@@ -72,6 +72,6 @@
 ---
 
 ## 5. 运行时推荐规范 (Runtime Spec)
-- **驻留位置**：独立 `ops` Tab（常驻，物理隔离；`worktree` 模式下各 `ws-<id>` 独立运行实例，Feature 结项后直接 `/clear`）。
+- **驻留位置**：独立 `ops` Tab（常驻，物理隔离；`standard` 模式下保留构建与环境排障经验，由 `Dispatcher` 按水位统筹主动 `/compact`；`worktree` 模式下各 `ws-<id>` 独立运行实例）。
 - **理想 Harness 梯队**：`pi` > `hermes` > `agy` > `claude-code`
 - **理想思考深度**：**None / Low (极速确定性执行)**。

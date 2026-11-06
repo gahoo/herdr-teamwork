@@ -24,10 +24,13 @@
 # 1. 验证处于 Herdr 托管窗格内，并查看支持的 Agent Kind 列表：
 test "${HERDR_ENV:-}" = 1 && herdr agent
 
-# 2. 探测宿主机已安装的 Agent CLI 与核心基建工具：
-for cmd in claude codex agy pi hermes jq rg gitnexus fallow tsc cargo golangci-lint ruff mypy pytest; do
+# 2. 探测宿主机已安装的 Agent CLI、上下文水位监控插件 (herdr-agent-usage) 与核心基建工具：
+for cmd in claude codex agy pi hermes herdr-agent-usage jq rg gitnexus fallow tsc cargo golangci-lint ruff mypy pytest; do
   command -v "$cmd" >/dev/null 2>&1 && echo "[INSTALLED] $cmd" || echo "[MISSING] $cmd"
 done
+# 检查 herdr-agent-usage 缓存目录与 Pi 压缩扩展挂载情况（避免双插件冲突或采蜜抢跑）：
+ls -d ~/.cache/herdr-agent-usage ~/.pi/agent/extensions/* 2>/dev/null || true
+grep -E "proactive-compact|smart-compact" ~/.pi/agent/settings.json 2>/dev/null || true
 
 # 3. 对本机已安装的 Agent CLI 执行一次 --help 探测，核实其传模型、思考强度与会话恢复的真实参数语法：
 for h in claude codex agy pi hermes; do
@@ -46,20 +49,26 @@ ls -d .agents/skills/* ~/.agents/skills/* ~/.claude/skills/* ~/.gemini/skills/* 
 
 | Harness (`kind`) | 模型与思考强度 CLI 参数参考 (`cli_args`) | 会话恢复参数 (`resume_flag`) | 压缩上下文指令 (`compact_cmd`) | 清空与停止/退出准则 |
 | :--- | :--- | :--- | :--- | :--- |
-| **`claude`** | `["--model", "<m>", "--effort", "<high\|medium\|low>"]` | `"--resume"` | `"/compact 保留项目架构拓扑与核心演进决策"` | 清空：`/clear`<br>**停止/退出：统一按 [`tools/herdr.md §[H-6]`](../tools/herdr.md) 关闭或重建窗格，严禁盲猜 `/exit` 或 `/quit`** |
+| **`claude`** | `["--model", "<m>", "--effort", "<high\|medium\|low>"]` | `"--resume"` | `"/compact 请保留：1.[Ground Truth]已验证的文件路径/命令与报错签名；2.[Continuity Ledger]当前生效的架构约束与职责边界；3.[Open Loops]未决待办项；4.[Delta]本轮改动。严禁伪造未读路径。"` | 清空：`/clear`<br>**停止/退出：统一按 [`tools/herdr.md §[H-6]`](../tools/herdr.md) 关闭或重建窗格，严禁盲猜 `/exit` 或 `/quit`** |
 | **`codex`** | `["--model", "<m>", "-c", "model_reasoning_effort=\"<high\|medium\|low>\""]` | `"resume"` | `"/compact"` | 清空：`/new` |
-| **`pi`** | `["--model", "<m>", "--thinking", "<high\|medium\|low\|off>"]` | `"--resume"` | `"/compact 保留项目架构拓扑与核心演进决策"` | 清空：`/new` |
+| **`pi`** | `["--model", "<m>", "--thinking", "<high\|medium\|low\|off>"]` | `"--resume"` | `"/compact 请保留：1.[Ground Truth]已验证的文件路径/命令与报错签名；2.[Continuity Ledger]当前生效的架构约束与职责边界；3.[Open Loops]未决待办项；4.[Delta]本轮改动。严禁伪造未读路径。"` | 清空：`/new` |
 | **`agy`** / **`hermes`** | 按 `<cmd> --help` 实测填入 `cli_args` | 按 `--help` 实测填入 | `"/compact"` | 清空：`/clear`（或按 [`tools/herdr.md §[H-6]`](../tools/herdr.md) 重建窗格归零） |
 
 ### Step 2：四档算力选型建议与人类一轮式拍板 (`1-Round Human Alignment`)
 根据 Step 1 的探测结果，按以下原则草拟一份《项目协同配置方案表》，向人类发起**单轮确认**：
 
-1. **按「四档算力画像」灵活选配 Harness 与模型（拒绝死板写死模型名）**：
-   询问人类当前各 CLI 可用的主力模型与额度偏好，按角色能力诉求给出推荐搭配供人类微调：
+1. **按「四档算力画像」灵活选配 Harness 与模型，并标定「长文智力抗衰档位 (`tier: S/A/B`) × 物理窗口 (`window_tokens`)」**：
+   询问人类当前各 CLI 可用的主力模型、物理上下文窗口大小及额度偏好，按角色能力诉求给出推荐搭配，并依据**宏观分档指导原则（不绑定易过时的具体模型名）**计算上下文压缩阈值（写入 `context_monitor`）：
    - **档位 A（高维推理与逆向溯源）** ➔ `planner`, `reflector`, `explorer`, `debugger`, `security-redteam`, `reviewer-lead/arch/perf/security`：**选配当前逻辑推理与架构抽象最强的模型 + `high` 思考深度**；
    - **档位 B（严谨契约遵从与代码生成）** ➔ `coding`, `tdd`, `reviewer-ux`：**选配代码生成精准、速度均衡的主力编码模型 + `medium` 思考深度**；
    - **档位 C（浏览器多模态与 DOM 交互）** ➔ `e2e`：**选配已挂载 `chrome-devtools-mcp` 且响应迅速的模型 + `low~medium` 思考深度**；
-   - **档位 D（低延迟状态机与海量日志吞吐）** ➔ `dispatcher`, `ops`, `reviewer-quality`：**选配响应最快、Token 成本最低的轻量模型 + `none/low` 思考深度**。
+   - **档位 D（低延迟状态机与海量日志吞吐）** ➔ `dispatcher`, `ops`, `reviewer-quality`：**选配响应最快、Token 成本最低的轻量或开源模型 + `none/low` 思考深度**。
+   - **📏 上下文水位阈值「70% / 60% / 50% 黄金比例法则」（模型档位 `Tier` × 实际自动压缩窗口 `Window` × 思考深度 `Thinking`）**：
+     - **窗口口径（以实际自动压缩死线为准）**：部分 Harness（如 `agy`）虽底层模型支持 1M，但客户端固定在 `262k` (`262,144`) 触发自动压缩，因此 `window_tokens` 以触发自动压缩的实际窗口为准；
+     - **思考深度微调（以 `medium` 为基准）**：`high/xhigh` 深度思考抗干扰更强，阈值放宽 **`+5%`**；`low/off` 浅层思考易受历史噪音干扰，阈值收紧 **`-8%`**；
+     - **Tier S（高智商旗舰级）**：`medium` 思考下 **`70%` 趁空闲压 (`ARMED`) / `80%` 派活前必压 (`DANGER`)**（例如 `262k` 窗口下：`low` `162k`、`medium` `183k`、`high` `196k` 趁空闲压）；
+     - **Tier A（主力全能编码级）**：`medium` 思考下 **`60%` 趁空闲压 (`ARMED`) / `72%` 派活前必压 (`DANGER`)**（例如 `262k` 窗口下：`low` `136k`、`medium` `157k`、`high` `170k` 趁空闲压）；
+     - **Tier B（中等参数开源 / 轻量级）**：`medium` 思考下 **`50%` 趁空闲压 (`ARMED`) / `62%` 派活前必压 (`DANGER`)**（**严格执行「物理大窗口 ≠ 高有效智力上限」原则**：十余 B 至数十 B 参数级开源模型受限于注意力容量，即便配置了超大窗口，`ARMED` 最高也封顶在 `90k~100k`；例如 `163k` 窗口下：`low` `68k`、`medium` `81k`、`high` `90k` 趁空闲压）。
 2. **裁剪项目专属「活跃角色编制 (`active_roles`)」**：
    - 根据项目类型建议启用的角色子集（例如：纯 CLI / SDK 库 / 后端无界面项目默认剔除 `e2e` 与 `reviewer-ux`；个人轻量工具可按需剔除 `security-redteam`）。
 3. **锁定「三类交付运行态 (`runtime_type`)」与版本锚点 (`version_anchors`)**：
@@ -67,11 +76,19 @@ ls -d .agents/skills/* ~/.agents/skills/* ~/.claude/skills/* ~/.gemini/skills/* 
    - **`push_to_host`（寄生态插件类：浏览器扩展、油猴脚本、Obsidian/IDE 插件）**：`base_port: null`，确认构建命令、热推送命令（`push_cmd`）及验收目标站点 `target_url`；
    - **`artifact_only`（CLI 工具 / SDK 库 / 编译器）**：`base_port: null`，确认构建与测试命令；
    - 确认发版时需同步递增版本号的文件清单（`version_anchors`，如 `["package.json", "manifest.json", "src/config.ts"]`）。
-4. **确认并发模式与跨特性上下文策略**：
-   - 默认模式：`standard`（单工作区原地串行） vs `worktree`（多分支独立工作区高并发）；
-   - 默认上下文打理策略（`default_ctx`，针对 `standard` 模式结项后）：`"compact"`（默认推荐：压缩保留项目架构记忆）、`"clear"`（跨无关域清空归零）或 `"keep"`（连续微切片保留）。
-5. **推荐安装缺失的高价值工具（先给理由，由人类拍板决定装不装）**：
-   - 若探测发现缺失 `gitnexus`、`jq`、`rg` 或当前语言核心静态分析器（如 TS/JS 缺 `fallow`、Rust 缺 `clippy`、Go 缺 `golangci-lint`、Python 缺 `ruff`），必须先说明**该工具在本项目中的具体作用与推荐理由**及 1 行安装命令，由人类拍板决定是否安装；将最终确认可用的验证命令固化进 `toolchain`，**后续日常运行直接读取配置执行，不再每次重复探测浪费 Token**。
+4. **确认并发模式、跨特性上下文策略与水位巡检松紧度 (`probe_policy`)**：
+   - **默认并发模式 (`mode`)**：`standard`（单工作区原地串行） vs `worktree`（多分支独立工作区高并发）；
+   - **默认结项上下文打理策略 (`default_ctx`，针对 `standard` 模式)**：`"compact"`（默认推荐：压缩保留项目架构记忆）、`"clear"`（跨无关域清空归零）或 `"keep"`（连续微切片保留）；
+   - **上下文水位巡检策略 (`context_monitor.probe_policy` —— 请人类二选一拍板)**：
+     - **`"strict"`（严格逐步闸门模式）**：`Dispatcher` 在**每次唤醒任何下游角色前**均调用 `agent-context.sh <role>` 核验水位与 `+JUST_COMPACTED` 断崖 + 特性结项 `DONE` 全量盘点。**（当主力包含 Tier B 开源/本地模型、短窗口模型 `<=128k`、开启了 `pi-proactive-compact` 等外部自动压缩插件，或特性颗粒度较大时，优先推荐 `"strict"`）**；
+     - **`"relaxed"`（宽松边界抽检模式）**：`Dispatcher` 仅在**特性结项 `DONE` 空闲期全量盘点 1 次**，常规一轮过（`round == 1`）中途免检；仅在发生多轮返工（`round >= 2` / `REPLAN`）或某角色开局距离 `ARMED` 不足 `35k` 且被二次唤醒前才执行单点抽检。**（当全队主力为 `200k~262k+` 大窗口 Tier S/A 旗舰模型且切片较小时，推荐 `"relaxed"` 以节省调度开销）**。
+5. **推荐安装缺失的高价值基建工具与上下文监控设施（先给理由，由人类拍板决定装不装）**：
+   - **代码图谱与静态健康工具**：若探测发现缺失 `gitnexus`、`jq`、`rg` 或当前语言核心静态分析器（如 TS/JS 缺 `fallow`、Rust 缺 `clippy`、Go 缺 `golangci-lint`、Python 缺 `ruff`），必须先说明**该工具在本项目中的具体作用与推荐理由**及 1 行安装命令，由人类拍板决定是否安装；将最终确认可用的验证命令固化进 `toolchain`，**后续日常运行直接读取配置执行，不再每次重复探测浪费 Token**；
+   - **强烈推荐安装 `herdr-agent-usage`（跨 Harness 实时水位与额度插件）**：若 Step 1 探测未安装 `herdr-agent-usage`，主动向人类推荐安装（说明理由：① 在 Herdr 侧边栏直观展示各窗格实时上下文进度条与 5h/7d 配额；② 为 `Claude/Agy` 提供零扫描开销的 `statusline` 实时水位缓存供 `scripts/agent-context.sh` 直读），并将安装状态记录进 `.agents/environment.json` 的 `context_monitor.herdr_agent_usage_installed`；
+   - **`pi` Agent 压缩插件策略说明（防抢跑误伤采蜜 & 防双插件冲突）**：若项目大量使用 `pi` Agent，向人类说明本套体系的配合准则：
+     1. **严禁同时挂载 `pi-proactive-compact` 与 `pi-smart-compact`**（会引发 `session_before_compact` 事件竞态与双重压缩污染）；
+     2. **推荐由 `Dispatcher` 统一宏观统筹（无需依赖 `pi-proactive-compact` 自动抢跑）**：`scripts/agent-context.sh` 原生即可直接读取 `~/.pi/agent/sessions/` 下的精确 Token 水位；由 `Dispatcher` 在「派活前闸门」与「`Reflector` 采蜜完成后」统一发起压缩，可避免 `pi-proactive-compact` 在回合结束瞬间自动抢跑压缩而**误伤 `Reflector` 所需的原始报错现场**或造成尾步派活锁阻塞；
+     3. **若宿主全局已安装 `pi-proactive-compact` 且希望保留**：将 `context_monitor.pi_proactive_compact_installed` 记为 `true`；`Dispatcher` 仍通过 `agent-context.sh` 宏观监控全局，一旦捕捉到插件自动压缩产生的 `+JUST_COMPACTED` 断崖信号，立即在下一条派活指令中强制注入「重读 `roles/<role>.md`」指令以防失忆。
 6. **推荐 AI 友好型领域方案与专业垂类/工具 Skill 选装及按角色挂载 (`domain_skills` —— 必须附推荐理由并由人类拍板）**：
    - **从 0 到 1 新项目方案建议**：若项目尚在技术选型阶段，主动给出对 AI Agent 最透明友好的白盒方案建议与理由（例如：现代 Web 前端推荐 `TypeScript + Tailwind CSS + shadcn/ui`——理由是组件源码直接落盘在项目内而非黑盒 `node_modules`，便于 Agent 直读直改与类型校验），供人类拍板；
    - **垂类领域与工具 Skill 推荐清单（严禁未经授权私自安装）**：结合项目核心框架/库与已启用工具（如 TS/JS 项目启用了 `fallow` 时推荐官方 `fallow-rs/fallow-skills`，前端推荐 `shadcn/ui`、React/Next.js、Chrome Extension MV3、Obsidian、Rust Tokio、FastAPI 等），汇总 Step 1 扫描到的本机既有 Skill 以及通过 `npx skills find <keyword>` / 联网搜索发现的外部最新高评价 Skill，向人类逐项呈报 **4 要素供拍板决定装不装**：
@@ -91,10 +108,12 @@ ls -d .agents/skills/* ~/.agents/skills/* ~/.claude/skills/* ~/.gemini/skills/* 
 3. **初始化代码图谱与存量静态基线**：
    - 执行 `npx gitnexus analyze` 建立 AST 代码知识图谱；
    - 若为存量项目且启用了支持基线豁免的静态分析器（如 `fallow`），运行 `fallow --save-regression-baseline .fallow-baseline.json` 建立存量基线（确保后续审查“存量不误伤，增量零退化”）。
-4. **创建核心活文档标准工件（若尚不存在）**：
-   - **`changes/KANBAN.md`**：创建包含 `## 📥 需求收件与待开展占位池 (Inbox / Backlog)`、`## 🚀 进行中 (In Progress)`、`## ✅ 已完成 (Done)` 的全局看板；
+4. **创建核心活文档标准工件与顶层 `AGENTS.md` 防失忆重载锁（若尚不存在）**：
+   - **`changes/KANBAN.md`**：创建包含 `## 📥 需求收件与待开展占位池 (Inbox / Backlog)`、`## 🚀 进行中 (In Progress)`、`## ✅ 已完成 (Done)` 以及底部 **`## 📌 规划台交接备忘 (Planner Handoff)`**（供高水位时按 EESV 四要素传位「Planner 二世」）的全局看板；
    - **`GLOSSARY.md`**：创建项目级统一领域语言词典（若为存量项目，扫描核心模块提取初始的 5~10 个业务领域概念填入；严禁混入类名/表名等实现细节）；
-   - **`E2E_PLAYBOOK.md`**：仅当 `active_roles` 包含 `e2e` 时创建 6 要素结构化导航记忆表头。
+   - **`E2E_PLAYBOOK.md`**：仅当 `active_roles` 包含 `e2e` 时创建 6 要素结构化导航记忆表头；
+   - **`AGENTS.md`（及 `CLAUDE.md` 软链/同步）注入「上下文压缩自检与角色书强制重载铁律」**：在项目根目录的 `AGENTS.md` 中确保写入以下跨角色保底条款，使任何角色在经历被动自动压缩或主动压缩后 100% 自动恢复职责与命令规范记忆：
+     > **【上下文压缩自检与强制重载协议 (Post-Compaction Mandatory Reload)】**：每当你收到新指令或恢复执行时，先检查自身上下文窗口顶部是否存在压缩摘要（如 `<CONTEXT_SUMMARY>` / `Summary of previous conversation`）。若存在压缩摘要，且**在该摘要之后的未压缩对话记录中尚未重新读取过你所属的角色契约 `.agents/skills/herdr-teamwork/roles/<your-role>.md`**，说明你刚经历了上下文压缩！你**必须将「调用文件读取工具完整重读 `roles/<your-role>.md` 与 `tools/herdr.md`（若职责涉及执行 herdr 命令）以及当前 `changes/<id>/pipeline.jsonl` 尾部」作为你的第 1 个动作**，严禁凭压缩摘要的模糊印象盲猜命令参数或越界操作！
 
 ### Step 4：拉起常驻控制台拓扑并保存 `session.json` (`Spawn Console Topology`)
 严格读取 **[`tools/herdr.md`](../tools/herdr.md)** 中 `§[H-1]`、`§[H-2]` 与 `§[H-3]` 的标准指令配方，依次完成常驻控制台拉起与快照落盘：

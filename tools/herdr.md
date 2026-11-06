@@ -147,26 +147,39 @@ herdr pane read "$DAEMON_PANE" --source recent-unwrapped --lines 30
 
 ---
 
-## §[H-6] 上下文打理、中断重试与窗格回收 (Context Maintenance, Interrupt & Release)
+## §[H-6] 上下文水位探针、主动压缩/重置、中断重试与窗格回收 (Context Watermark, Compaction, Interrupt & Release)
 
 ```bash
-# 1. 【Feature 结项后打理常驻角色上下文】（读取 .agents/environment.json 中的 compact_cmd 或 clear_cmd 发送）：
-HARNESS=$(jq -r '.roles["reviewer-arch"].harness' .agents/environment.json)
-COMPACT_CMD=$(jq -r --arg h "$HARNESS" '.harness_profiles[$h].compact_cmd' .agents/environment.json)
-herdr agent prompt reviewer-arch "$COMPACT_CMD" --wait
+# 1. 【跨 Harness 实时上下文水位探针】（双通道读取 herdr-agent-usage 或 256KB 有界尾部扫描 .jsonl，输出 OK / ARMED / DANGER / +JUST_COMPACTED）：
+bash .agents/skills/herdr-teamwork/scripts/agent-context.sh
+# 也可指定单个角色巡检（在派活前闸门 Pre-Dispatch Gate 调用）：
+bash .agents/skills/herdr-teamwork/scripts/agent-context.sh coding
 
-# 2. 【下游异常自愈 Step 1：观察并发送 ctrl+c 中断当前卡死回合】：
+# 2. 【主动上下文压缩 (Proactive Compaction —— EESV 四要素保真)】（当角色处于 ARMED/DANGER 且处于 idle/done 稳态边界时执行）：
+HARNESS=$(jq -r --arg r "$TARGET_ROLE" '.roles[$r].harness' .agents/environment.json)
+COMPACT_CMD=$(jq -r --arg h "$HARNESS" '.harness_profiles[$h].compact_cmd' .agents/environment.json)
+herdr agent prompt "$TARGET_ROLE" "$COMPACT_CMD" --wait
+# 压缩完成后，在下一条任务指令开头附带角色书重载提醒：
+# "请先调用读取工具确认 .agents/skills/herdr-teamwork/roles/${TARGET_ROLE}.md 职责边界，随后执行：..."
+
+# 3. 【跨无关业务大域清空并重塑角色记忆 (Clear & Re-Prime)】（仅在 PLAN.ctx == "clear" 且 Reflector 复盘完毕，或角色死循环污染时执行）：
+HARNESS=$(jq -r --arg r "$TARGET_ROLE" '.roles[$r].harness' .agents/environment.json)
+CLEAR_CMD=$(jq -r --arg h "$HARNESS" '.harness_profiles[$h].clear_cmd' .agents/environment.json)
+herdr agent prompt "$TARGET_ROLE" "$CLEAR_CMD" --wait
+herdr agent prompt "$TARGET_ROLE" "请读取 .agents/skills/herdr-teamwork/roles/${TARGET_ROLE}.md 与 tools/herdr.md（若适用）恢复角色契约待命" --wait
+
+# 4. 【下游异常自愈 Step 1：观察并发送 ctrl+c 中断当前卡死回合】：
 herdr agent get "$TARGET_ROLE"
 herdr agent read "$TARGET_ROLE" --source recent-unwrapped --lines 20
 herdr agent send-keys "$TARGET_ROLE" ctrl+c
 
-# 3. 【下游异常自愈 Step 2：销毁异常窗格并在新窗格重启进程】：
+# 5. 【下游异常自愈 Step 2：销毁异常窗格并在新窗格重启进程】：
 OLD_PANE=$(herdr agent get "$TARGET_ROLE" | jq -r '.result.agent.pane_id')
 NEW_PANE=$(herdr pane split --pane "$OLD_PANE" --direction right --cwd "$PWD" --no-focus | jq -r '.result.pane.pane_id')
 herdr pane close "$OLD_PANE"
 # 随后按 §[H-2] 在 $NEW_PANE 上重新执行 herdr agent start "$TARGET_ROLE" ...
 
-# 4. 【关闭指定窗格或自关闭当前临时窗格（如 bootstrap / planner-roundtable 退出）】：
+# 6. 【关闭指定窗格或自关闭当前临时窗格（如 bootstrap / planner-roundtable 退出）】：
 herdr pane close "$TARGET_PANE"
 # 若在临时窗格内部自关闭当前窗格，直接传入环境变量 $HERDR_PANE_ID：
 herdr pane close "$HERDR_PANE_ID"
