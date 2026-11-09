@@ -33,8 +33,8 @@
    - 读取 `changes/<id>/pipeline.jsonl` 中**最后一条 `PLAN` 或 `REPLAN` 事件**获取当前生效的 `pipeline` 角色序列与 `port`，读取最后一行确认当前进度；
    - **派活前水位闸门 (`Pre-Dispatch Gate` —— 按 `context_monitor.probe_policy` 执行 `strict` 或 `relaxed` 巡检)**：
      - 读取 `.agents/environment.json` 中的 `context_monitor.probe_policy`（默认为 `"strict"`）：
-       - **若为 `"strict"`（严格逐步闸门）**：在**每次**唤醒目标下游角色前，均执行 `bash .agents/skills/herdr-teamwork/scripts/agent-context.sh <target_role>` 检查其当前上下文水位；
-       - **若为 `"relaxed"`（宽松边界抽检）**：利用结项全量盘点建立初始余量底数，常规第 1 轮（`round == 1`）顺畅推进时中途免检；**仅当发生多轮返工（`round >= 2` 或 `REPLAN`），或某角色开局距 `ARMED` 余量不足 `35k` 且在本特性内被二次唤醒前**，才对其执行单点抽检 `bash .agents/skills/herdr-teamwork/scripts/agent-context.sh <target_role>`；
+       - **若为 `"strict"`（严格逐步闸门）**：在**每次**唤醒目标下游角色前，均执行 `python3 .agents/skills/herdr-teamwork/scripts/agent-context.py <target_role>` 检查其当前上下文水位（同时自动刷新 `.agents/session.json`）；
+       - **若为 `"relaxed"`（宽松边界抽检）**：利用结项全量盘点建立初始余量底数，常规第 1 轮（`round == 1`）顺畅推进时中途免检；**仅当发生多轮返工（`round >= 2` 或 `REPLAN`），或某角色开局距 `ARMED` 余量不足 `35k` 且在本特性内被二次唤醒前**，才对其执行单点抽检 `python3 .agents/skills/herdr-teamwork/scripts/agent-context.py <target_role>`；
      - **水位处置与防失忆注入**：
        1. 若探针显示状态为 `🔴 DANGER`（或处于 `🟡 ARMED` 且即将派发重度实现/排障任务），先按 **[`tools/herdr.md §[H-6]`](../tools/herdr.md)** 发送 `compact_cmd` 并 `--wait` 等待压缩完成；
        2. 若刚对其执行了主动压缩，或探针状态带有 `+JUST_COMPACTED`（检测到该窗格上一轮刚经历了自动压缩断崖：`curr_tokens < prev_tokens * 0.6`），在紧接着派发的任务 Prompt **开头必须强制附带角色书重载指令**：「`请先调用读取工具重读 .agents/skills/herdr-teamwork/roles/<role>.md（及 tools/herdr.md 若适用）恢复职责边界，随后执行：...`」；
@@ -60,20 +60,20 @@
   - 按 FIFO 顺序每次仅向人类播报 1 个 `WAITING_*` / `STALLED` 任务（若 `constructive > 0`，同步提醒人类验收后可将有价值的演进建议交由窗口 1 `Planner` 记入 `KANBAN.md`）；
   - **场景 A（人类验收反馈未知 Bug —— 就地闭环）**：无需切回 `Planner`！直接向 `changes/<id>/pipeline.jsonl` 追加一行 `REPLAN` 事件：
     `{"ts":"...","id":"...","event":"REPLAN","round":2,"pipeline":["debugger","tdd","coding","reviewer-lead:2B","ops"],"state":"RUNNING","msg":"人类验收报障，启动法医排障闭环"}`，随即驱动 `debugger` 产出 `debug.md`（若 `debugger` 标出 `SPEC_DEFECT`，则挂起为 `WAITING_DECISION` 提示人类切回窗口 1 修订 `spec.md`）；
-  - **场景 B（人类验收满意授权发布 ➔ 按异常信号触发 `reflector` 复盘 ➔ 销毁/清理收尾）**：
-    1. 调度 `ops` 执行终验构建、SemVer 更新、Git Commit 与主分支合入；
+  - **场景 B（人类验收满意授权发布 ➔ 子区预同步与冲突消解 ➔ 按异常信号触发 `reflector` 复盘 ➔ 销毁/清理收尾）**：
+    1. **受控发布与多 Worktree 合入冲突消解**：调度 `ops` 执行终验构建、SemVer 更新、Git Commit 与主分支合入；若在 `worktree` 模式下 `ops` 在子区内执行 `git merge main` 预同步时返回 **`MERGE_CONFLICT`**（存在 Git 文本冲突或合入 `main` 后编译/单测报语义冲突），立即按冲突文件归属唤醒本子工作区的原作者（`src/` 冲突或语义报错唤醒 `coding-<id>`，`tests/` 冲突唤醒 `tdd-<id>`）在 `.worktrees/<id>` 内消解冲突并跑通全量测试（若解冲突涉及 >20 行核心逻辑重构，由 `reviewer-lead-<id>` 快速复核），随后交回 `ops` 完成主分支合入；
     2. **异常信号触发 `reflector`（在销毁 Worktree 或清理上下文之前）**：检查 `changes/<id>/pipeline.jsonl` 是否包含波折信号（`round > 1` 返工、含 `event:"REPLAN"`、含 `state:"STALLED"`、频繁 `NEED_OPS` 或人类主动要求复盘）。若命中任一信号，按 **[`tools/herdr.md §[H-3]`](../tools/herdr.md)** 先阻塞唤醒主工作区全局 `reflector`（发送提示：「请基于 `changes/<id>/pipeline.jsonl` 执行结项反思复盘」），以便其在当事 Agent 记忆尚存时按需跨窗格问询并落盘 `reflections/<domain>.md` 与 `.agents/skills/herdr-teamwork/.reflections/<id>.md`（若产出 `🔬 [SPIKE_CANDIDATE]` 探索课题，同步向人类播报提醒交由窗口 1 `Planner` 排入 `KANBAN.md`）；若全程一轮顺畅无波折则直接跳过 `reflector`；
     3. 随后调度 `ops` 按 **[`tools/herdr.md §[H-4]`](../tools/herdr.md)** 执行 `worktree-down.sh` 销毁 Worktree 并刷新图谱，最后向 `pipeline.jsonl` 追加 `"state": "DONE"` 事件。
 - **非 Worktree (`standard`) 模式：特性结项（及 `Reflector` 采蜜后）的全局上下文统筹 (`Post-Reflector Idle Compaction`)**：
   - **🔒 `Reflector` 采蜜保护锁**：当特性包含波折信号需唤醒 `reflector` 时，在 `reflector` 完成跨窗格访谈并落盘经验之前，**严禁对任何参与角色执行 `/compact` 或 `/clear`**，确保保留 100% 原始报错与排障细节；
-  - **⏱️ 结项空闲窗口统筹打理（等待挪位 Shift the Wait）**：当特性完成发布（及按需完成 `reflector` 复盘）进入 **`state: "DONE"` 之后**，运行 `bash .agents/skills/herdr-teamwork/scripts/agent-context.sh` 巡检全队水位，并按 **[`tools/herdr.md §[H-6]`](../tools/herdr.md)** 读取 `.agents/environment.json` 中的 `harness_profiles.<harness>` 统一打理：
+  - **⏱️ 结项空闲窗口统筹打理（等待挪位 Shift the Wait）**：当特性完成发布（及按需完成 `reflector` 复盘）进入 **`state: "DONE"` 之后**，运行 `python3 .agents/skills/herdr-teamwork/scripts/agent-context.py` 巡检全队水位，并按 **[`tools/herdr.md §[H-6]`](../tools/herdr.md)** 读取 `.agents/environment.json` 中的 `harness_profiles.<harness>` 统一打理：
     1. **后厂与审查全员默认保留经验、按水位优先 `/compact`（含 `tdd`、`coding`、`ops`、`e2e`、`debugger`、`explorer`、`security-redteam`、`reviewer-*`、`reflector`）**：
        - 各角色在运行中均会沉淀宝贵的环境配置、页面路由与代码拓扑经验，**绝不每完结一个特性就盲目 `/clear`**；
        - 凡水位已达 `🟡 ARMED` / `🔴 DANGER`，或下一特性 `PLAN.ctx == "compact"` 且本轮被重度调用过的角色，在特性间空闲期统一发送带 **EESV 四要素保真锚点** 的 `compact_cmd`；若水位尚在 `🟢 OK` 安全区且 `ctx == "keep"`，直接原样保留零干预；
     2. **何时才执行 `Clear & Re-Prime`（彻底清空并重读角色书）？**
        - 仅在以下 **2 种场景** 下按 **[`tools/herdr.md §[H-6]`](../tools/herdr.md)** 发送 `clear_cmd` 并立即补发「请读取 `roles/<role>.md` 待命」：① `Planner` 在新特性的 `PLAN` 事件中显式指定 `"ctx": "clear"`（跨完全无关业务大域，且上一特性的 `Reflector` 已完成）；② 某角色陷入死循环或上下文被错误尝试严重污染（`STALLED`）；
     3. **`Dispatcher` 自身水位自检与压缩后强制重载锁**：
-       - 巡检 `agent-context.sh` 时同步查看 `dispatcher` 自身水位；若自身已达 `🟡 ARMED`，在特性结项空闲期向人类播报并主动触发自压缩；
+       - 巡检 `agent-context.py` 时同步查看 `dispatcher` 自身水位；若自身已达 `🟡 ARMED`，在特性结项空闲期向人类播报并主动触发自压缩；
        - **防失忆铁律**：无论何时，只要你（`Dispatcher`）经历了主动压缩或被动自动压缩（上下文顶部出现 `<CONTEXT_SUMMARY>` 且其后未压缩记录中未读取过本文件），你的**第一个动作必须无条件重新调用读取工具完整读取 `roles/dispatcher.md`、`tools/herdr.md` 以及 `changes/<id>/pipeline.jsonl` 尾部**！
   - **跨 Harness 压缩与清空指令基线**（优先读取 `.agents/environment.json` 的 `harness_profiles`；若某 Harness 清空指令不兼容，直接按 **[`tools/herdr.md §[H-6]`](../tools/herdr.md)** 重建窗格重启进程归零）：
 
@@ -92,7 +92,7 @@
 ## 3. 权限沙箱与工具白名单 (Strict Whitelist & Hard Boundaries)
 
 - **严格工具与操作白名单（凡不在白名单内的工具与命令一律禁止执行）**：
-  1. **Herdr 编排与水位探针命令**：`herdr *` 及 `bash .agents/skills/herdr-teamwork/scripts/agent-context.sh *`（遵照 [`tools/herdr.md`](../tools/herdr.md) 对应 `§[H-1]` ~ `§[H-6]` 段落执行）；
+  1. **Herdr 编排、水位探针与会话快照命令**：`herdr *`、`python3 .agents/skills/herdr-teamwork/scripts/agent-context.py *` 及 `python3 .agents/skills/herdr-teamwork/scripts/session-snapshot.py *`（遵照 [`tools/herdr.md`](../tools/herdr.md) 对应 `§[H-1]` ~ `§[H-6]` 段落执行）；
   2. **契约与状态流只读工具**：仅限对 `changes/*/*.md`、`changes/*/pipeline.jsonl`、`reflections/*.md` 及 `.agents/*.json` 执行读取操作（或使用 `jq`、`tail`、`head`、`cat`、`grep` 读取上述文件）；
   3. **单文件状态追加写入**：全系统**唯一允许写入**的操作是向 `changes/<id>/pipeline.jsonl` 追加单行 JSON；
   4. **Git 状态只读核查**：仅限 `git status -s`、`git diff --stat`、`git diff --name-only`（用于核查下游是否越界修改文件）。

@@ -39,40 +39,15 @@ if ! herdr agent get "$ROLE" >/dev/null 2>&1; then
   herdr agent start "$ROLE" --kind "$HARNESS" --pane "$TARGET_PANE" -- "${CLI_ARGS[@]}"
 fi
 
-# 2. 导出当前活跃 Agent 会话快照至 .agents/session.json（自动关联 model / thinking 并过滤未命名窗格与临时 bootstrap）：
-herdr agent list | jq --slurpfile env .agents/environment.json \
-  --arg ws "${HERDR_WORKSPACE_ID:-main}" --arg proj "$(basename "$PWD")" \
-  '{
-    updated_at: (now | todate),
-    workspace_id: $ws,
-    project: $proj,
-    agents: [
-      .result.agents[]
-      | select(.name != null and .name != "bootstrap")
-      | . as $a
-      | ($env[0].roles[$a.name] // {}) as $r
-      | {
-          key: $a.name,
-          value: {
-            name: $a.name,
-            pane_id: $a.pane_id,
-            tab_id: $a.tab_id,
-            harness: ($r.harness // $a.kind),
-            model: ($r.model // "default"),
-            thinking: ($r.thinking // "default"),
-            conversation_id: $a.agent_session.value
-          }
-        }
-    ] | from_entries
-  }' > .agents/session.json
+# 2. 为人类手敲启动的未命名窗格赋予正式角色名（无需重启进程，命名后即可被 session-snapshot.py save 纳管）：
+herdr agent rename "$HERDR_PANE_ID" planner
 
-# 3. 跨天复工原地恢复某常驻角色的历史会话记忆：
-ROLE="planner"
-HARNESS=$(jq -r --arg r "$ROLE" '.agents[$r].harness' .agents/session.json)
-CONV_ID=$(jq -r --arg r "$ROLE" '.agents[$r].conversation_id' .agents/session.json)
-RESUME_FLAG=$(jq -r --arg h "$HARNESS" '.harness_profiles[$h].resume_flag' .agents/environment.json)
-CLI_ARGS=($(jq -r --arg r "$ROLE" '.roles[$r].cli_args[]' .agents/environment.json))
-herdr agent start "$ROLE" --kind "$HARNESS" --pane "$TARGET_PANE" -- "${CLI_ARGS[@]}" "$RESUME_FLAG" "$CONV_ID"
+# 3. 导出/刷新当前活跃 Agent 会话快照至 .agents/session.json（自动提取 .jsonl 实时 model / thinking / conversation_id 并增量合并）：
+python3 .agents/skills/herdr-teamwork/scripts/session-snapshot.py save
+
+# 4. 跨天复工或重启后一键满血恢复角色历史会话（若角色已在线但模型/思考层级与快照不一致，agy/pi 自动发送 /model 原地无感切换，claude/codex 自动重启修正）：
+python3 .agents/skills/herdr-teamwork/scripts/session-snapshot.py restore
+python3 .agents/skills/herdr-teamwork/scripts/session-snapshot.py restore planner
 ```
 
 ---
@@ -111,13 +86,14 @@ WS_JSON=$(herdr workspace create --label "ws-001" --cwd "$PWD/.worktrees/001-aut
 WS_ID=$(echo "$WS_JSON" | jq -r '.result.workspace.workspace_id')
 WS_ROOT_PANE=$(echo "$WS_JSON" | jq -r '.result.root_pane.pane_id')
 
-# 3. 在新工作区根窗格启动带变更集后缀的全局唯一 Worker Dispatcher 并异步点火（不加 --wait）：
+# 3. 在新工作区根窗格启动带变更集后缀的全局唯一 Worker Dispatcher，保存快照并异步点火（不加 --wait）：
 DISP_HARNESS=$(jq -r '.roles.dispatcher.harness' .agents/environment.json)
 DISP_ARGS=($(jq -r '.roles.dispatcher.cli_args[]' .agents/environment.json))
 herdr agent start "dispatcher-001" --kind "$DISP_HARNESS" --pane "$WS_ROOT_PANE" -- "${DISP_ARGS[@]}"
+python3 .agents/skills/herdr-teamwork/scripts/session-snapshot.py save --all
 herdr agent prompt "dispatcher-001" "请接管 changes/001-auth，按 pipeline.jsonl 在当前工作区启动流水线"
 
-# 4. 特性结项合入后，安全销毁 Worktree 目录并关闭对应 Herdr Workspace：
+# 4. 特性结项合入后，安全销毁 Worktree 目录（自动触发 session-snapshot.py prune 清理已下线角色）并关闭对应 Herdr Workspace：
 .agents/skills/herdr-teamwork/scripts/worktree-down.sh "001-auth" --delete-branch
 herdr workspace close "$WS_ID"
 ```
@@ -150,10 +126,10 @@ herdr pane read "$DAEMON_PANE" --source recent-unwrapped --lines 30
 ## §[H-6] 上下文水位探针、主动压缩/重置、中断重试与窗格回收 (Context Watermark, Compaction, Interrupt & Release)
 
 ```bash
-# 1. 【跨 Harness 实时上下文水位探针】（双通道读取 herdr-agent-usage 或 256KB 有界尾部扫描 .jsonl，输出 OK / ARMED / DANGER / +JUST_COMPACTED）：
-bash .agents/skills/herdr-teamwork/scripts/agent-context.sh
+# 1. 【跨 Harness 实时上下文水位探针】（默认巡检当前 HERDR_WORKSPACE_ID 工作区并自动刷新 .agents/session.json；传 --all 可总览全部并发工作区）：
+python3 .agents/skills/herdr-teamwork/scripts/agent-context.py
 # 也可指定单个角色巡检（在派活前闸门 Pre-Dispatch Gate 调用）：
-bash .agents/skills/herdr-teamwork/scripts/agent-context.sh coding
+python3 .agents/skills/herdr-teamwork/scripts/agent-context.py coding
 
 # 2. 【主动上下文压缩 (Proactive Compaction —— EESV 四要素保真)】（当角色处于 ARMED/DANGER 且处于 idle/done 稳态边界时执行）：
 HARNESS=$(jq -r --arg r "$TARGET_ROLE" '.roles[$r].harness' .agents/environment.json)

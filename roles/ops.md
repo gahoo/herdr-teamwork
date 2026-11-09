@@ -42,12 +42,16 @@
   - 执行构建或环境操作时，过滤数百行编译进度与常规警告，仅向 `Dispatcher` 汇报 5 行以内的精炼结论（成功产物路径/耗时，或失败的确切 `file:line` 与核心原因）。
 - **数据库/测试环境灾备快照与还原 (Environment Snapshot)**：
   - 在高危数据迁移或红队渗透演练前，对本地测试数据库或状态目录执行物理快照备份，演练结束后一键还原。
-- **受控 Git 发布与 Worktree 合入销毁 (Controlled Release & Worktree Teardown)**：
-  - 仅在人类于窗口 2 完成体验验收并明确下达发布授权后，按序执行发布流水线：
+- **受控 Git 发布、多 Worktree 先达先合 (FCFS) 与子区预同步冲突消解 (Controlled Release & Worktree Merge Gate)**：
+  - 仅在人类于窗口 2 完成体验验收并明确下达发布授权后，遵循**「先过验收先合入主干 (`main`)，把冲突留在后到者的子 Worktree 内解决，绝不污染主工作区」**原则，按序执行发布流水线：
     1. **多锚点版本自增与终验构建**：按 `.agents/environment.json` 的 `version_anchors` 清单遵循 SemVer 同步更新所有版本锚点（如 `Cargo.toml`、`pyproject.toml`、`package.json`、插件 `manifest.json`/Header 及代码内 `VERSION` 常量；Go 项目在提交后打 Git Tag），并重新执行终验构建（若为热推类插件则同步热推至宿主环境，确保运行态与提交态版本一致）；
     2. **暂存区防越界门禁 (`gitnexus detect-changes --scope staged`)**：在 `git commit` 前核验暂存改动（含本次变更集 `changes/<id>/` 归档文件），拦截未授权的异常文件污染；
-    3. **规范提交**：生成 Conventional Commit 提交信息并完成 `git commit`；
-    4. **Worktree 合入与无残留销毁（若处于 `worktree` 模式）**：将特性分支安全合入主分支，随后按 **[`tools/herdr.md §[H-4]`](../tools/herdr.md)** 调用内置 `scripts/worktree-down.sh` 安全停进程、解软链、清理目录并关闭对应的 Herdr Workspace（`ws-<id>`）；
+    3. **规范提交**：在当前工作区（或 `.worktrees/<id>`）生成 Conventional Commit 提交信息并完成 `git commit`；
+    4. **多 Worktree 合入前子区预同步与冲突消解门禁（若处于 `worktree` 模式）**：
+       - **先行拉取主干试合 (`Pre-Merge Sync`)**：在切回主工作区合入前，先在 `.worktrees/<id>` 子目录内部检查主分支是否已有其他并发 Worktree 先行合入的新提交（`git rev-list HEAD..main --count`）；若 `> 0`，必须**先在 `.worktrees/<id>` 子区内执行 `git merge main --no-edit`**！
+       - **无冲突路径（防静默语义冲突复验）**：若 Git 自动合并无文本冲突，仍须在 `.worktrees/<id>` 内重跑一次 `typecheck` + `test`（防止先行合入的分支改了公共函数签名或类型导致静默语义冲突）；全部全绿后，切回主工作区执行快进合入 `git merge feat/<id>`；
+       - **有冲突或复验失败路径（交还原作者消解，严禁 `Ops` 私改业务源码）**：一旦 `git merge main` 出现文本冲突或合入后编译/单测失败，**严禁你自己瞎改 `src/` 或 `tests/` 代码**！保留子区内现场并立即向 `Dispatcher` 输出 `MERGE_CONFLICT: <冲突文件列表与报错摘要>`，由 `Dispatcher` 唤醒本子工作区的原作者（`coding-<id>` / `tdd-<id>`）在 `.worktrees/<id>` 内融合代码并跑通全量单测后，再交回你完成主分支合入；
+       - **无残留销毁**：主分支合入完成后，按 **[`tools/herdr.md §[H-4]`](../tools/herdr.md)** 调用内置 `scripts/worktree-down.sh` 安全停进程、解软链、清理目录（脚本将自动触发 `session-snapshot.py prune` 清理已下线角色快照）并关闭对应的 Herdr Workspace（`ws-<id>`）；
     5. **刷新图谱与基线**：在主干执行 `gitnexus analyze` 刷新代码知识图谱（若为 TS/JS 项目且配置了 `.fallow-baseline.json`，同步更新基线）。
 
 ---

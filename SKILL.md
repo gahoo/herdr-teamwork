@@ -3,7 +3,7 @@ name: herdr-teamwork
 description: Multi-agent spec implementation orchestrated via Herdr terminal panes, workspaces, and optional Git Worktrees (Planner, Explorer, Dispatcher, TDD, Coding, Reviewer Ensemble, Ops, Debugger, RedTeam, E2E, Reflector). Use when initiating multi-agent spec implementation, parallel feature development, or complex engineering workflows.
 ---
 
-# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.9.1)
+# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.10.0)
 
 本技能通过 Herdr 终端工作区管理工具构建**“双控台分治（窗口 1 规划 / 窗口 2 交付）、内外双驱（内部 `--wait` 同步 + 跨任务 `tail -f` 监听）、事件溯源（`pipeline.jsonl`）”**的多 Agent 物理隔离与协作体系。
 遵循 **OpenSpec 活文档标准**，实现规划与交付彻底物理绝缘、宏微观契约正交、职责绝对边界化与证伪式分形审查。
@@ -40,7 +40,7 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 │       ├── roles/                   # 【Who】16 个正交角色的常驻本职契约库
 │       ├── playbooks/               # 【How】11 个按需触发的专项战术剧本 (含 bootstrap-teamwork 初始化自举，跨角色共享)
 │       ├── tools/                   # 【CLI】Herdr 编排与窗格控制唯一权威指令配方卡 (tools/herdr.md §[H-1]~§[H-6])
-│       ├── scripts/                 # 【Tools】跨项目通用 Worktree 建场/销毁与上下文水位探针脚本 (worktree-up.sh / worktree-down.sh / agent-context.sh)
+│       ├── scripts/                 # 【Tools】跨项目通用 Worktree 建场/销毁、水位探针与会话快照脚本 (worktree-up.sh / worktree-down.sh / agent-context.py / session-snapshot.py)
 │       └── .reflections/            # Skill 级流程与契约改进反馈 (<id>.md，供 herdr-teamwork 消化吸收)
 └── .worktrees/                      # 【并行执行隔离区】(worktree 模式下由 Ops 建场管理，纳入 .gitignore)
     └── <id>/                        # 绑定独立 Herdr Workspace (ws-<id>) + 独立分支 + 按需端口
@@ -62,7 +62,7 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 | **`GLOSSARY.md`** | **`Planner`** | **项目级统一领域语言 (Ubiquitous Language)**：<br>全项目常驻标准工件，消除 16 个 Agent 间的概念命名漂移。 | 只定义核心业务概念边界与禁用同义词表；**严禁混入类名、文件路径或数据库表名等实现细节**。 |
 | **`E2E_PLAYBOOK.md`** | **`E2E Agent`**<br>(`Planner` 初始化) | **端到端验证路由与源码映射剧本 (按需工件)**：<br>仅在项目启用 `e2e` 角色时创建，免去每次测试或排障重新摸索 DOM 与源码路径。 | 按 **6 要素结构化记录**（`feature_id`、`entry_point` 源码路径、`user_route`、`dom_selectors`、`keyboard_shortcuts`、`gotchas`），每次验收通过后增量更新。 |
 | **`docs/adr/<id>.md`** | **`Planner`** | **架构决策记录 (Selective ADRs)**：<br>记录深远架构取舍，防止后续 Agent 因不解背景而回退设计。 | **严格 3 条件门禁**（同时满足才写）：① 难以逆转；② 缺乏背景看代码会感到惊讶；③ 存在真实的方案权衡（Trade-off）。 |
-| **`changes/KANBAN.md`** | **`Planner` 独占** | **全局大盘单文件内聚（含规划台交接备忘）**：<br>严禁私建碎片化 `Inbox.md`；未开展需求第一时间入池占位；结项与 `CONSTRUCTIVE` 建议仅在人类确认后由 `Planner` 录入；底部常设 `📌 规划台交接备忘 (Planner Handoff)` 供高水位传位「Planner 二世」。 | **需求未启，看板先行**：<br>- 状态流转：`📥 占位池 (Inbox/Backlog)` ➔ `🚀 进行中 (In Progress)` ➔ `✅ 已完成 (Done)`；<br>- 依赖与并发前沿：多任务间显式标注 `[Blocked by: <id>]`，无未决阻塞项的即构成可并发启动 Worktree 的 **Ready Frontier**。 |
+| **`changes/KANBAN.md`** | **`Planner` 独占** | **全局大盘单文件内聚（含规划台交接备忘）**：<br>严禁私建碎片化 `Inbox.md`；未开展需求第一时间入池占位；结项与 `CONSTRUCTIVE` 建议仅在人类确认后由 `Planner` 录入；底部常设 `📌 规划台交接备忘 (Planner Handoff)` 供高水位传位「Planner 二世」。 | **需求未启，看板先行**：<br>- 状态流转：`📥 占位池 (Inbox/Backlog)` ➔ `🚀 进行中 (In Progress)` ➔ `✅ 已完成 (Done)`；<br>- 依赖与并发前沿：仅对存在**硬逻辑前置依赖**的任务标注 `[Blocked by: <id>]`（单纯涉及相同源码文件修改的任务完全允许并发启动多个 Worktree，由合入期预同步消解冲突），无未决阻塞项的即构成 **Ready Frontier**。 |
 | **`changes/<id>/prd.md`** | **`Planner`** | **产品诉求 (Why & What)**：需求调整直接在原文就地演进。 | 文末附 2~3 行简明 `## 变更备忘录 (Changelog)` 记录妥协或调整原因。 |
 | **`changes/<id>/spec.md`** | **`Planner`**<br>(可咨询 `Arch`/`Sec`) | **活契约原则 (Living Truth)**：反映当前生效的最新接口与数据结构。 | 原地更新，不留弃用字段，历史交由 Git 追溯；含明确的验收条件编号 (`AC-1, AC-2...`)。 |
 | **`changes/<id>/tasks.md`** | **`Planner`** (建档)<br>**`TDD` / `Coding`** (勾选) | **微观代码任务清单 (How & Checklist)**：<br>细化到源码模块、函数与测试文件的改造点清单（不含任何运行时状态头，`Dispatcher` 不触碰此文件）。 | 按纵向切片排列 `- [ ]` 勾选框；`tdd` 与 `coding` 每完成一项代码实施即勾选 `- [x]`。 |
@@ -92,7 +92,7 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 | :--- | :--- | :--- | :--- | :--- |
 | **前店<br>规划层** | **`planner`** | [`roles/planner.md`](roles/planner.md) | **产品与架构规划师（窗口 1）**：直面人类聊需求、独占维护 `KANBAN.md`、撰写 `prd/spec/tasks`、动态定制工序并创建 `pipeline.jsonl` 首行 `PLAN`（含上下文策略 `ctx`）。 | **严格工具白名单（仅限 `gitnexus query/context/impact`、读写 `changes/**`、`herdr *`）**；严禁介入后厂排障；严禁未经人类确认擅自压缩或清空上下文。 |
 | **前店<br>规划层** | **`explorer`**<br>(项目记忆沉淀) | [`roles/explorer.md`](roles/explorer.md) | **代码探路与可行性预研员**：深入复杂历史源码验证用户想法的现实可行性，输出 `explore.md` 简报并沉淀项目演进心智模型。 | **严格只读权限**；严禁倒灌大段原始源码；`standard` 模式常驻复用（Feature 结项后 `/compact`），`worktree` 模式随工作区销毁。 |
-| **后厂<br>执行层** | **`dispatcher`** | [`roles/dispatcher.md`](roles/dispatcher.md) | **交付总控、状态机调度与上下文统筹官（窗口 2 总控 / `ws-<id>` 执行机）**：后台 `tail -f` 监听多任务、内部 `--wait` 阻塞调度、独占续写 `pipeline.jsonl`、替主审拉起/复用专家、通过 `agent-context.sh` 在派活前与结项采蜜后统筹全队上下文。 | **严格工具白名单（仅限 `herdr *`、`agent-context.sh`、只读契约文件、追加 `pipeline.jsonl`、`git status/diff`）**；**物理蒙眼禁读源码**；一切建场/构建/装包/Git 写操作全归 `ops`。 |
+| **后厂<br>执行层** | **`dispatcher`** | [`roles/dispatcher.md`](roles/dispatcher.md) | **交付总控、状态机调度与上下文统筹官（窗口 2 总控 / `ws-<id>` 执行机）**：后台 `tail -f` 监听多任务、内部 `--wait` 阻塞调度、独占续写 `pipeline.jsonl`、替主审拉起/复用专家、通过 `agent-context.py` 在派活前与结项采蜜后统筹全队上下文并同步 `.agents/session.json`。 | **严格工具白名单（仅限 `herdr *`、`agent-context.py`、`session-snapshot.py`、只读契约文件、追加 `pipeline.jsonl`、`git status/diff`）**；**物理蒙眼禁读源码**；一切建场/构建/装包/Git 写操作全归 `ops`。 |
 | **后厂<br>执行层** | **`tdd`** | [`roles/tdd.md`](roles/tdd.md) | **测试驱动开发工程师**：在业务编码前依据 `spec.md`、`tasks.md`、`debug.md` 或 `security-poc.md` 编写高严谨度失败用例 (Red Test) 并勾选 `tasks.md`。 | **严禁修改业务代码 (`src/`) 或 `pipeline.jsonl`**；严禁为迎合变绿而弱化断言或编写同语反复假阳性测试。 |
 | **后厂<br>执行层** | **`coding`** | [`roles/coding.md`](roles/coding.md) | **业务代码实现者**：依据 `spec.md` / `tasks.md` / `debug.md` 编写业务代码并勾选 `tasks.md`，**主动运行单元与回归测试迭代至全绿 (Green)**，执行编译/类型检查与 `gitnexus detect-changes`。 | **严禁修改任何测试文件 (`tests/`) 或 `pipeline.jsonl`**；严禁私自装包或启停服务（缺包输出 `NEED_OPS`）。 |
 | **后厂<br>执行层** | **`ops`**<br>(项目记忆沉淀) | [`roles/ops.md`](roles/ops.md) | **跨语言环境、Worktree 与发布守护者**：遵循“原生命令优先 + 通用调 Skill 脚本 + 仅高频复合痛点按生态沉淀脚本”；负责 Worktree 生命周期、多语言依赖隔离、**切分专属子窗格透明运行守护服务**、环境快照与受控 Git 发布。 | **严禁在自身主窗格前台阻塞运行服务（必须切分子窗格运行）**；**严禁在软链上直接装包污染主目录**；严禁代跑代码审查或单元测试；严禁未授权提前 commit；常驻沉淀环境与构建经验（高水位时 `/compact`）。 |
@@ -210,8 +210,8 @@ flowchart TD
 ### 5.4 多 Agent 上下文主动统筹管理架构 (Proactive Multi-Agent Context Orchestration)
 为彻底根治「不知当前水位」、「刚发命令或任务做到一半撞上 ~90% 被动自动压缩导致失忆」、「提前清空误伤 `Reflector` 采蜜」以及「压缩后遗忘角色契约与命令规范」四大痛点，建立 **「双通道水位探针 + 动态智力阈值 + Arm/Fire 稳态边界点火 + 三域统筹矩阵 + 压缩后强制重载锁」** 完整体系：
 
-#### 1. 双通道水位探针 (`scripts/agent-context.sh`) 与「70% / 60% / 50% 黄金比例法则」
-通过 [`scripts/agent-context.sh`](scripts/agent-context.sh) 跨 Harness 实时获取各窗格的精确上下文消耗、当前模型、**实际自动压缩窗口 (`WIN`)** 与**思考等级 (`THINK`: `off/low/medium/high/xhigh`)**（优先读取 `herdr-agent-usage` 插件的 StatusLine 缓存/Metadata；兜底通过 `herdr agent list` 的 `agent_session.value` 绑定本地 `.jsonl` 会话文件执行 **256KB 有界尾部倒扫 `tail -c 262144`**，并结合窗格底部状态栏与配置文件自动识别模型与思考深度）。
+#### 1. 双通道水位探针 (`scripts/agent-context.py`) 与「70% / 60% / 50% 黄金比例法则」
+通过 [`scripts/agent-context.py`](scripts/agent-context.py) 跨 Harness 实时获取各窗格的精确上下文消耗、当前模型、**实际自动压缩窗口 (`WIN`)** 与**思考等级 (`THINK`: `off/low/medium/high/xhigh`)**（优先读取 `herdr-agent-usage` 插件的 StatusLine 缓存/Metadata；兜底通过 `herdr agent list` 的 `agent_session.value` 绑定本地 `.jsonl` 会话文件执行 **256KB 有界尾部倒扫**，结合窗格底部状态栏与配置文件自动识别实时模型与思考深度，并**每次巡检时自动将实时状态增量同步至 `.agents/session.json`**）。
 - **两个水位的直白定义**：
   - **`WIN`（自动压缩死线）**：Harness 触发强制自动压缩的实际会话上限（注意：部分 Harness 如 `agy` 虽底层模型支持 1M，但客户端固定在 **`262k` (`262,144`)** 触发自动压缩，故 `WIN` 必须以实际自动压缩死线为准）；
   - **`🟡 ARMED`（趁空闲压缩线）**：**不打断当前在途任务**；提醒 `Dispatcher` 趁任务刚结束处于 `idle` 空闲边界时顺手发起主动压缩；
@@ -226,10 +226,10 @@ flowchart TD
 
 #### 2. 侦测武装与稳态点火分离 (`Arm / Fire Separation` —— 两大最佳点火窗口)
 严禁在任务执行中途打断压缩，也严禁在 `Reflector` 复盘前盲目清理。实行 **「双通道侦测武装 (Arm) + 仅在 `idle`/`done` 稳态边界点火 (Fire)」**：
-- **双通道武装 (Arm)**：① **数值通道**：`agent-context.sh` 报 `🟡 ARMED` 或 `🔴 DANGER`；② **语义通道**：`pipeline.jsonl` 的 `PLAN` 事件标注了 `"ctx": "compact"` 或 `"ctx": "clear"`。
+- **双通道武装 (Arm)**：① **数值通道**：`agent-context.py` 报 `🟡 ARMED` 或 `🔴 DANGER`；② **语义通道**：`pipeline.jsonl` 的 `PLAN` 事件标注了 `"ctx": "compact"` 或 `"ctx": "clear"`。
 - **稳态点火窗口 A：派活前水位闸门 (`Pre-Dispatch Gate` —— 支持 `strict` / `relaxed` 双档松紧度)**：
   `Dispatcher` 按 `.agents/environment.json` 中 `context_monitor.probe_policy` 设定的策略执行派活前检查：
-  - **`"strict"`（严格逐步必检，适合 Tier B 开源/短窗模型、挂载了外部自动压缩插件或大颗粒度特性）**：每次唤醒下游角色前均执行 `agent-context.sh <role>`；
+  - **`"strict"`（严格逐步必检，适合 Tier B 开源/短窗模型、挂载了外部自动压缩插件或大颗粒度特性）**：每次唤醒下游角色前均执行 `agent-context.py <role>`；
   - **`"relaxed"`（宽松按需抽检，适合大窗口 Tier S/A 模型与常规小切片）**：利用结项全检建立底数，常规 `round == 1` 顺畅推进中途免检；仅当进入多轮返工（`round >= 2` / `REPLAN`）或某角色开局距 `ARMED` 不足 `35k` 且被二次唤醒前才执行单点抽检。
   一旦检出目标角色处于 `🔴 DANGER`（或处于 `🟡 ARMED` 且即将派发重度任务），**必须先下发 `compact_cmd` 并 `--wait` 完成后，再下发业务任务指令**，从根源消灭「刚发命令就自动压缩」与「任务做一半自动压缩」。
 - **稳态点火窗口 B：特性结项且 `Reflector` 采蜜完成后的空闲窗口 (`Post-Reflector Idle Window`)**：
@@ -240,8 +240,8 @@ flowchart TD
 
 | 治理域与覆盖角色 | 统筹发起人 | 何时 `/compact`（EESV 结构化提纯） vs 何时 `/clear`（清空并重塑） | 压缩后防失忆闭环 (`Reload Lock`) |
 | :--- | :--- | :--- | :--- |
-| **域 1：后厂与审查全员 (14 个)**<br>`tdd`, `coding`, `ops`, `e2e`, `debugger`, `explorer`, `security-redteam`, `reviewer-*`, `reflector` | **`Dispatcher`<br>集中统筹** | • **全员默认优先 `/compact`（含 `ops`、`e2e`）**：各角色在运行中均会积累宝贵的环境、路由与代码拓扑经验，绝不每完结一个特性就无脑清空；在「派活前闸门」或「采蜜后空闲期」发送带 **EESV 四要素锚点**（Ground Truth / Continuity Ledger / Open Loops / Delta）的 `compact_cmd`；<br>• **仅在 2 种场景下执行 `Clear & Re-Prime`（`/clear` + 立即重读角色书）**：① 跨完全无关业务大域（`PLAN.ctx == "clear"` 且 `Reflector` 已完成）；② 角色陷入死循环或上下文被错误尝试严重污染（`STALLED`）。 | 若 `Dispatcher` 刚刚对其执行了主动压缩，或 `agent-context.sh` 检测到 `+JUST_COMPACTED`（上一轮刚经历了自动压缩断崖：`curr < prev * 0.6`），`Dispatcher` 在下发下一条指令时**必须在开头强制附带「请先调用读取工具重读 `roles/<role>.md`」**！ |
-| **域 2：中枢调度官 (1 个)**<br>`dispatcher` 自身 | **`Dispatcher` 自检<br>+ 顶层 `AGENTS.md`** | `Dispatcher` 在特性结项或派活间隙运行 `agent-context.sh` 时同步检查自身水位；若达 `🟡 ARMED`，在特性间空闲期主动触发自压缩（或向人类汇报后压缩）。 | **顶层 `AGENTS.md` 布尔判据强制重载锁**：任何角色一旦发现上下文顶部存在自动压缩摘要（如 `<CONTEXT_SUMMARY>`），且**在该摘要之后的未压缩记录中未曾调用读取工具读过自身 `roles/<role>.md` 原文**，第 1 个动作必须无条件重读 `roles/<role>.md` 与 `tools/herdr.md`！ |
+| **域 1：后厂与审查全员 (14 个)**<br>`tdd`, `coding`, `ops`, `e2e`, `debugger`, `explorer`, `security-redteam`, `reviewer-*`, `reflector` | **`Dispatcher`<br>集中统筹** | • **全员默认优先 `/compact`（含 `ops`、`e2e`）**：各角色在运行中均会积累宝贵的环境、路由与代码拓扑经验，绝不每完结一个特性就无脑清空；在「派活前闸门」或「采蜜后空闲期」发送带 **EESV 四要素锚点**（Ground Truth / Continuity Ledger / Open Loops / Delta）的 `compact_cmd`；<br>• **仅在 2 种场景下执行 `Clear & Re-Prime`（`/clear` + 立即重读角色书）**：① 跨完全无关业务大域（`PLAN.ctx == "clear"` 且 `Reflector` 已完成）；② 角色陷入死循环或上下文被错误尝试严重污染（`STALLED`）。 | 若 `Dispatcher` 刚刚对其执行了主动压缩，或 `agent-context.py` 检测到 `+JUST_COMPACTED`（上一轮刚经历了自动压缩断崖：`curr < prev * 0.6`），`Dispatcher` 在下发下一条指令时**必须在开头强制附带「请先调用读取工具重读 `roles/<role>.md`」**！ |
+| **域 2：中枢调度官 (1 个)**<br>`dispatcher` 自身 | **`Dispatcher` 自检<br>+ 顶层 `AGENTS.md`** | `Dispatcher` 在特性结项或派活间隙运行 `agent-context.py` 时同步检查自身水位；若达 `🟡 ARMED`，在特性间空闲期主动触发自压缩（或向人类汇报后压缩）。 | **顶层 `AGENTS.md` 布尔判据强制重载锁**：任何角色一旦发现上下文顶部存在自动压缩摘要（如 `<CONTEXT_SUMMARY>`），且**在该摘要之后的未压缩记录中未曾调用读取工具读过自身 `roles/<role>.md` 原文**，第 1 个动作必须无条件重读 `roles/<role>.md` 与 `tools/herdr.md`！ |
 | **域 3：前店规划官 (1 个)**<br>`planner` (窗口 1) | **人类主导<br>+ `Planner` 提议** | **`Dispatcher` 严禁从后台触碰窗口 1 上下文**！实行阶段分治：<br>• **讨论未落盘中途高水位** ➔ 提议人类执行原地 `/compact`；<br>• **契约落盘后里程碑高水位** ➔ 向 `changes/KANBAN.md` 的 `📌 规划台交接备忘` 区写入 **EESV 四要素交接单**（① 已落盘契约路径 Ground Truth；② 人类偏好与否决废案 Continuity Ledger；③ 未决悬念 Open Loops；④ 本轮增量 Delta），经人类确认后执行 `/clear` + 重读 `roles/planner.md` 满血唤醒 **「Planner 二世」**。 | 「Planner 二世」启动首回合直接读取 `roles/planner.md`、`tools/herdr.md`、`GLOSSARY.md` 与 `KANBAN.md` 交接备忘，实现 100% 零噪音无缝继任。 |
 
 ---
@@ -308,8 +308,8 @@ flowchart TD
   "harness_profiles": {
     "claude": { "compact_cmd": "/compact 请保留：1.[Ground Truth]已验证的文件路径/命令与报错签名；2.[Continuity Ledger]当前生效的架构约束与职责边界；3.[Open Loops]未决待办项；4.[Delta]本轮改动。严禁伪造未读路径。", "clear_cmd": "/clear", "resume_flag": "--resume" },
     "codex": { "compact_cmd": "/compact", "clear_cmd": "/new", "resume_flag": "resume" },
-    "pi": { "compact_cmd": "/compact 请保留：1.[Ground Truth]已验证的文件路径/命令与报错签名；2.[Continuity Ledger]当前生效的架构约束与职责边界；3.[Open Loops]未决待办项；4.[Delta]本轮改动。严禁伪造未读路径。", "clear_cmd": "/new", "resume_flag": "--resume" },
-    "agy": { "compact_cmd": "/compact", "clear_cmd": "/clear", "resume_flag": "--resume" }
+    "pi": { "compact_cmd": "/compact 请保留：1.[Ground Truth]已验证的文件路径/命令与报错签名；2.[Continuity Ledger]当前生效的架构约束与职责边界；3.[Open Loops]未决待办项；4.[Delta]本轮改动。严禁伪造未读路径。", "clear_cmd": "/new", "resume_flag": "--session" },
+    "agy": { "compact_cmd": "/compact", "clear_cmd": "/clear", "resume_flag": "--conversation" }
   },
   "roles": {
     "planner": { "harness": "claude", "model": "<high-reasoning-model>", "thinking": "high", "cli_args": ["--model", "<high-reasoning-model>", "--effort", "high"] },
@@ -341,7 +341,7 @@ flowchart TD
 | **`toolchain`** | `object` | 初始化阶段一次性验证固化的构建（`build`）、单测（`test`）、类型检查（`typecheck`）、静态健康（`static_health`）与热推（`push_cmd`）命令，日常运行零探测直接调用。 |
 | **`version_anchors`** | `string[]` | 受控发版时 `ops` 需同步递增 SemVer 版本号的文件清单（如 `package.json`, `manifest.json`, 代码常量文件）。 |
 | **`domain_skills`** | `object` | `Bootstrap` 扫描或联网检索推荐安装的垂类领域与工具 Skill（如 `shadcn-ui`、`fallow-skills`、`chrome-extensions`），通过 `roles` 数组按需精准挂载给相关角色，避免无关角色消耗上下文。 |
-| **`context_monitor`** | `object` | 上下文水位监控配置：包含巡检松紧策略 **`probe_policy`**（`"strict"` 每次派活前必检 \| `"relaxed"` 结项全检+仅返工/临界时抽检）、是否安装了 `herdr-agent-usage` 与 `pi-proactive-compact` 插件，以及按「70%/60%/50% 黄金比例法则」（`tier: "S"\|"A"\|"B"` × `window_tokens`）计算的 `default_profile` 与 `role_overrides` 阈值，供 `scripts/agent-context.sh` 与 `Dispatcher` 直接读取。 |
+| **`context_monitor`** | `object` | 上下文水位监控配置：包含巡检松紧策略 **`probe_policy`**（`"strict"` 每次派活前必检 \| `"relaxed"` 结项全检+仅返工/临界时抽检）、是否安装了 `herdr-agent-usage` 与 `pi-proactive-compact` 插件，以及按「70%/60%/50% 黄金比例法则」（`tier: "S"\|"A"\|"B"` × `window_tokens`）计算的 `default_profile` 与 `role_overrides` 阈值，供 `scripts/agent-context.py` 与 `Dispatcher` 直接读取。 |
 | **`harness_profiles`** | `object` | `Bootstrap` 通过 `<harness> --help` 核实的各 CLI 压缩指令（`compact_cmd`，内置 EESV 四要素保真锚点）、清空指令（`clear_cmd`）与会话恢复参数（`resume_flag`）；中断与关闭窗格统一按 [`tools/herdr.md §[H-6]`](tools/herdr.md) 执行。 |
 | **`roles.<id>`** | `object` | 各角色绑定的 `harness`、逻辑 `model`、逻辑思考强度 `thinking` (`"none"`\|`"low"`\|`"medium"`\|`"high"`)，以及供 `herdr agent start` 直接展开透传的原生启动参数数组 **`cli_args`**。 |
 
@@ -354,11 +354,11 @@ flowchart TD
 | 编排场景 | 唯一权威指令配方章节 | 核心机制要点 |
 | :--- | :--- | :--- |
 | **切分窗格与创建标签页** | **[`tools/herdr.md §[H-1]`](tools/herdr.md)** | 统一携带 `--no-focus`，并通过 `jq -r` 提取 `.result.pane.pane_id` 或 `.result.root_pane.pane_id`。 |
-| **角色启动、快照导出与跨天复活** | **[`tools/herdr.md §[H-2]`](tools/herdr.md)** | 从 `.agents/environment.json` 展开 `cli_args` 透传；用 `herdr agent list \| jq ...` 导出 `.agents/session.json`。 |
+| **角色启动、快照导出与跨天复活** | **[`tools/herdr.md §[H-2]`](tools/herdr.md)** | 从 `.agents/environment.json` 展开 `cli_args` 透传；通过 `scripts/session-snapshot.py save / restore` 增量保存与一键恢复实时模型/思考深度/会话上下文。 |
 | **事件驱动派发、等待与读取** | **[`tools/herdr.md §[H-3]`](tools/herdr.md)** | **纯事件驱动等待**，默认自动匹配 `idle \| done \| blocked` 三种终态唤醒；使用 `--source recent-unwrapped` 读取输出。 |
-| **Worktree 平行工作区建场与回收** | **[`tools/herdr.md §[H-4]`](tools/herdr.md)** | 调 `worktree-up.sh` ➔ `herdr workspace create --label "ws-<id>"` ➔ 启动全局唯一角色名（如 `dispatcher-001`）。 |
+| **Worktree 平行工作区建场与回收** | **[`tools/herdr.md §[H-4]`](tools/herdr.md)** | 调 `worktree-up.sh` ➔ `herdr workspace create --label "ws-<id>"` ➔ 启动全局唯一角色名（如 `dispatcher-001`）；销毁时自动从 `session.json` 清理已下线角色。 |
 | **后台服务守护子窗格 (`.ops-pane`)** | **[`tools/herdr.md §[H-5]`](tools/herdr.md)** | 在 `ops` Tab 内切分子窗格并存入 `.ops-pane`，用 `pane run` 与 `pane wait-output` 驱动常驻开发服务。 |
-| **上下文探针、主动压缩与窗格回收** | **[`tools/herdr.md §[H-6]`](tools/herdr.md)** | 调 `scripts/agent-context.sh` 巡检水位、发送 EESV `compact_cmd`/`clear_cmd`、`send-keys ctrl+c` 中断重试，或通过 `herdr pane close` 关闭窗格。 |
+| **上下文探针、主动压缩与窗格回收** | **[`tools/herdr.md §[H-6]`](tools/herdr.md)** | 调 `scripts/agent-context.py` 巡检水位（并自动保鲜 `session.json`）、发送 EESV `compact_cmd`/`clear_cmd`、`send-keys ctrl+c` 中断重试，或通过 `herdr pane close` 关闭窗格。 |
 
 ### 7.1 `Master Dispatcher` 跨流水线事件监听与 FIFO 认知队列提取
 ```bash
@@ -370,31 +370,38 @@ tail -q -n 1 changes/*/pipeline.jsonl | jq -s 'map(select(.state == "WAITING_ACC
 ```
 
 ### 7.2 会话快照结构与字段字典 (`.agents/session.json`)
-`.agents/session.json` 记录当前活跃窗格的运行时拓扑与会话 ID（导出与恢复命令见 **[`tools/herdr.md §[H-2]`](tools/herdr.md)**），专供终端重启或跨天复工时秒级恢复常驻角色记忆：
+`.agents/session.json` 记录主工作区及所有并发子 Worktree 中活跃窗格的运行时拓扑、**从 `.jsonl` 实时提取的当前生效模型与思考深度**及会话恢复参数（由 `scripts/agent-context.py` 日常巡检时自动同步，也可通过 `scripts/session-snapshot.py save / restore / prune` 显式管理，详见 **[`tools/herdr.md §[H-2]`](tools/herdr.md)**）：
 
 ```json
 {
-  "updated_at": "2026-11-05T08:00:00Z",
-  "workspace_id": "w1",
+  "updated_at": "2026-11-09T12:00:00Z",
   "project": "my-project",
   "agents": {
     "planner": {
       "name": "planner",
+      "base_role": "planner",
+      "workspace_id": "w1",
       "pane_id": "w1:p2",
       "tab_id": "w1:t1",
+      "cwd": "/path/to/my-project",
       "harness": "claude",
-      "model": "<high-reasoning-model>",
+      "model": "<real-time-model>",
       "thinking": "high",
-      "conversation_id": "conv_01hxyz..."
+      "conversation_id": "conv_01hxyz...",
+      "resume_args": ["--model", "<real-time-model>", "--effort", "high", "--resume", "conv_01hxyz..."]
     },
-    "dispatcher": {
-      "name": "dispatcher",
-      "pane_id": "w1:p3",
-      "tab_id": "w1:t1",
-      "harness": "pi",
-      "model": "<fast-light-model>",
-      "thinking": "none",
-      "conversation_id": "session_98abc..."
+    "coding-001": {
+      "name": "coding-001",
+      "base_role": "coding",
+      "workspace_id": "w2",
+      "pane_id": "w2:p3",
+      "tab_id": "w2:t1",
+      "cwd": "/path/to/my-project/.worktrees/001-auth",
+      "harness": "codex",
+      "model": "<real-time-model>",
+      "thinking": "medium",
+      "conversation_id": "session_98abc...",
+      "resume_args": ["--model", "<real-time-model>", "-c", "model_reasoning_effort=\"medium\"", "resume", "session_98abc..."]
     }
   }
 }
@@ -402,10 +409,11 @@ tail -q -n 1 changes/*/pipeline.jsonl | jq -s 'map(select(.state == "WAITING_ACC
 
 | 字段路径 | 含义与运行机制说明 |
 | :--- | :--- |
-| **`workspace_id` / `project`** | 快照所属的 Herdr 工作区 ID（如 `w1`）与项目目录名。 |
-| **`agents.<role>.pane_id` / `tab_id`** | 角色当前驻留的稳定窗格与标签页句柄（Herdr 关闭其他窗格不会导致已分配 ID 重排）。 |
-| **`agents.<role>.harness` / `model` / `thinking`** | 从 `.agents/environment.json` 同步关联记录的实际运行底座、模型名与思考强度。 |
-| **`agents.<role>.conversation_id`** | Herdr 捕获的底层 Agent 会话 ID（`.agent_session.value`），配合 `harness_profiles.<harness>.resume_flag` 实现跨天原地恢复上下文。 |
+| **`agents.<name>.base_role`** | 将多 Worktree 下带后缀的实例名（如 `coding-001`、`reviewer-lead-001`）通过前缀匹配还原出的标准角色 ID（`coding`、`reviewer-lead`），用于关联 `.agents/environment.json` 配置与 `roles/<base_role>.md` 角色书。 |
+| **`agents.<name>.workspace_id` / `cwd`** | 该角色所属的 Herdr 工作区 ID（如 `w1` 主工作区、`w2` 子工作区）与工作目录绝对路径，支持多 Worktree 并发快照共存。 |
+| **`agents.<name>.pane_id` / `tab_id`** | 角色当前驻留的稳定窗格与标签页句柄。 |
+| **`agents.<name>.model` / `thinking`** | 从本地 `.jsonl` 会话尾部及状态栏**实时提取**的最后一次真实生效模型与思考深度（若运行途中通过 `/model` 等切换过模型或思考层级，自动捕获最新值）。 |
+| **`agents.<name>.conversation_id` / `resume_args`** | 底层会话 ID 及预拼装好的完整恢复参数数组；执行 `scripts/session-snapshot.py restore` 时直接透传给 `herdr agent start`，解决 Herdr 原生恢复丢失模型与思考深度的问题。 |
 
 ---
 

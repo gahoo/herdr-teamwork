@@ -24,8 +24,8 @@
 # 1. 验证处于 Herdr 托管窗格内，并查看支持的 Agent Kind 列表：
 test "${HERDR_ENV:-}" = 1 && herdr agent
 
-# 2. 探测宿主机已安装的 Agent CLI、上下文水位监控插件 (herdr-agent-usage) 与核心基建工具：
-for cmd in claude codex agy pi hermes herdr-agent-usage jq rg gitnexus fallow tsc cargo golangci-lint ruff mypy pytest; do
+# 2. 探测宿主机必装基座工具（python3 / jq / rg / git）与已安装的 Agent CLI、上下文水位监控插件 (herdr-agent-usage) 及静态分析工具：
+for cmd in python3 jq rg git claude codex agy pi hermes herdr-agent-usage gitnexus fallow tsc cargo golangci-lint ruff mypy pytest; do
   command -v "$cmd" >/dev/null 2>&1 && echo "[INSTALLED] $cmd" || echo "[MISSING] $cmd"
 done
 # 检查 herdr-agent-usage 缓存目录与 Pi 压缩扩展挂载情况（避免双插件冲突或采蜜抢跑）：
@@ -51,8 +51,8 @@ ls -d .agents/skills/* ~/.agents/skills/* ~/.claude/skills/* ~/.gemini/skills/* 
 | :--- | :--- | :--- | :--- | :--- |
 | **`claude`** | `["--model", "<m>", "--effort", "<high\|medium\|low>"]` | `"--resume"` | `"/compact 请保留：1.[Ground Truth]已验证的文件路径/命令与报错签名；2.[Continuity Ledger]当前生效的架构约束与职责边界；3.[Open Loops]未决待办项；4.[Delta]本轮改动。严禁伪造未读路径。"` | 清空：`/clear`<br>**停止/退出：统一按 [`tools/herdr.md §[H-6]`](../tools/herdr.md) 关闭或重建窗格，严禁盲猜 `/exit` 或 `/quit`** |
 | **`codex`** | `["--model", "<m>", "-c", "model_reasoning_effort=\"<high\|medium\|low>\""]` | `"resume"` | `"/compact"` | 清空：`/new` |
-| **`pi`** | `["--model", "<m>", "--thinking", "<high\|medium\|low\|off>"]` | `"--resume"` | `"/compact 请保留：1.[Ground Truth]已验证的文件路径/命令与报错签名；2.[Continuity Ledger]当前生效的架构约束与职责边界；3.[Open Loops]未决待办项；4.[Delta]本轮改动。严禁伪造未读路径。"` | 清空：`/new` |
-| **`agy`** / **`hermes`** | 按 `<cmd> --help` 实测填入 `cli_args` | 按 `--help` 实测填入 | `"/compact"` | 清空：`/clear`（或按 [`tools/herdr.md §[H-6]`](../tools/herdr.md) 重建窗格归零） |
+| **`pi`** | `["--model", "<m>", "--thinking", "<high\|medium\|low\|off>"]` | `"--session"` | `"/compact 请保留：1.[Ground Truth]已验证的文件路径/命令与报错签名；2.[Continuity Ledger]当前生效的架构约束与职责边界；3.[Open Loops]未决待办项；4.[Delta]本轮改动。严禁伪造未读路径。"` | 清空：`/new` |
+| **`agy`** | `["--model", "<m>", "--effort", "<high\|medium\|low>"]` | `"--conversation"` | `"/compact"` | 清空：`/clear`（或按 [`tools/herdr.md §[H-6]`](../tools/herdr.md) 重建窗格归零） |
 
 ### Step 2：四档算力选型建议与人类一轮式拍板 (`1-Round Human Alignment`)
 根据 Step 1 的探测结果，按以下原则草拟一份《项目协同配置方案表》，向人类发起**单轮确认**：
@@ -80,15 +80,16 @@ ls -d .agents/skills/* ~/.agents/skills/* ~/.claude/skills/* ~/.gemini/skills/* 
    - **默认并发模式 (`mode`)**：`standard`（单工作区原地串行） vs `worktree`（多分支独立工作区高并发）；
    - **默认结项上下文打理策略 (`default_ctx`，针对 `standard` 模式)**：`"compact"`（默认推荐：压缩保留项目架构记忆）、`"clear"`（跨无关域清空归零）或 `"keep"`（连续微切片保留）；
    - **上下文水位巡检策略 (`context_monitor.probe_policy` —— 请人类二选一拍板)**：
-     - **`"strict"`（严格逐步闸门模式）**：`Dispatcher` 在**每次唤醒任何下游角色前**均调用 `agent-context.sh <role>` 核验水位与 `+JUST_COMPACTED` 断崖 + 特性结项 `DONE` 全量盘点。**（当主力包含 Tier B 开源/本地模型、短窗口模型 `<=128k`、开启了 `pi-proactive-compact` 等外部自动压缩插件，或特性颗粒度较大时，优先推荐 `"strict"`）**；
+     - **`"strict"`（严格逐步闸门模式）**：`Dispatcher` 在**每次唤醒任何下游角色前**均调用 `agent-context.py <role>` 核验水位与 `+JUST_COMPACTED` 断崖 + 特性结项 `DONE` 全量盘点。**（当主力包含 Tier B 开源/本地模型、短窗口模型 `<=128k`、开启了 `pi-proactive-compact` 等外部自动压缩插件，或特性颗粒度较大时，优先推荐 `"strict"`）**；
      - **`"relaxed"`（宽松边界抽检模式）**：`Dispatcher` 仅在**特性结项 `DONE` 空闲期全量盘点 1 次**，常规一轮过（`round == 1`）中途免检；仅在发生多轮返工（`round >= 2` / `REPLAN`）或某角色开局距离 `ARMED` 不足 `35k` 且被二次唤醒前才执行单点抽检。**（当全队主力为 `200k~262k+` 大窗口 Tier S/A 旗舰模型且切片较小时，推荐 `"relaxed"` 以节省调度开销）**。
-5. **推荐安装缺失的高价值基建工具与上下文监控设施（先给理由，由人类拍板决定装不装）**：
-   - **代码图谱与静态健康工具**：若探测发现缺失 `gitnexus`、`jq`、`rg` 或当前语言核心静态分析器（如 TS/JS 缺 `fallow`、Rust 缺 `clippy`、Go 缺 `golangci-lint`、Python 缺 `ruff`），必须先说明**该工具在本项目中的具体作用与推荐理由**及 1 行安装命令，由人类拍板决定是否安装；将最终确认可用的验证命令固化进 `toolchain`，**后续日常运行直接读取配置执行，不再每次重复探测浪费 Token**；
-   - **强烈推荐安装 `herdr-agent-usage`（跨 Harness 实时水位与额度插件）**：若 Step 1 探测未安装 `herdr-agent-usage`，主动向人类推荐安装（说明理由：① 在 Herdr 侧边栏直观展示各窗格实时上下文进度条与 5h/7d 配额；② 为 `Claude/Agy` 提供零扫描开销的 `statusline` 实时水位缓存供 `scripts/agent-context.sh` 直读），并将安装状态记录进 `.agents/environment.json` 的 `context_monitor.herdr_agent_usage_installed`；
+5. **必装基座工具硬门禁 (`Hard Prerequisites`) 与推荐增强设施安装**：
+   - 🔴 **必装基座工具前置门禁 (`python3` / `jq` / `rg` / `git`)**：`scripts/agent-context.py`、`scripts/session-snapshot.py` 及 `tools/herdr.md` 中的窗格句柄提取强依赖 `python3`、`jq` 与 `rg` (ripgrep)。若 Step 1 探测发现这四项中有任何一项为 `[MISSING]`，**严禁带病进入后续建场**！必须第一时间给出对应系统的一键安装命令（如 macOS `brew install python3 jq ripgrep`），在人类确认或授权安装并验证 `[INSTALLED]` 后再继续；
+   - **代码图谱与静态健康工具**：若探测发现缺失 `gitnexus` 或当前语言核心静态分析器（如 TS/JS 缺 `fallow`、Rust 缺 `clippy`、Go 缺 `golangci-lint`、Python 缺 `ruff`），必须先说明**该工具在本项目中的具体作用与推荐理由**及 1 行安装命令，由人类拍板决定是否安装；将最终确认可用的验证命令固化进 `toolchain`，**后续日常运行直接读取配置执行，不再每次重复探测浪费 Token**；
+   - **强烈推荐安装 `herdr-agent-usage`（跨 Harness 实时水位与额度插件）**：若 Step 1 探测未安装 `herdr-agent-usage`，主动向人类推荐安装（说明理由：① 在 Herdr 侧边栏直观展示各窗格实时上下文进度条与 5h/7d 配额；② 为 `Claude/Agy` 提供零扫描开销的 `statusline` 实时水位缓存供 `scripts/agent-context.py` 直读），并将安装状态记录进 `.agents/environment.json` 的 `context_monitor.herdr_agent_usage_installed`；
    - **`pi` Agent 压缩插件策略说明（防抢跑误伤采蜜 & 防双插件冲突）**：若项目大量使用 `pi` Agent，向人类说明本套体系的配合准则：
      1. **严禁同时挂载 `pi-proactive-compact` 与 `pi-smart-compact`**（会引发 `session_before_compact` 事件竞态与双重压缩污染）；
-     2. **推荐由 `Dispatcher` 统一宏观统筹（无需依赖 `pi-proactive-compact` 自动抢跑）**：`scripts/agent-context.sh` 原生即可直接读取 `~/.pi/agent/sessions/` 下的精确 Token 水位；由 `Dispatcher` 在「派活前闸门」与「`Reflector` 采蜜完成后」统一发起压缩，可避免 `pi-proactive-compact` 在回合结束瞬间自动抢跑压缩而**误伤 `Reflector` 所需的原始报错现场**或造成尾步派活锁阻塞；
-     3. **若宿主全局已安装 `pi-proactive-compact` 且希望保留**：将 `context_monitor.pi_proactive_compact_installed` 记为 `true`；`Dispatcher` 仍通过 `agent-context.sh` 宏观监控全局，一旦捕捉到插件自动压缩产生的 `+JUST_COMPACTED` 断崖信号，立即在下一条派活指令中强制注入「重读 `roles/<role>.md`」指令以防失忆。
+     2. **推荐由 `Dispatcher` 统一宏观统筹（无需依赖 `pi-proactive-compact` 自动抢跑）**：`scripts/agent-context.py` 原生即可直接读取 `~/.pi/agent/sessions/` 下的精确 Token 水位；由 `Dispatcher` 在「派活前闸门」与「`Reflector` 采蜜完成后」统一发起压缩，可避免 `pi-proactive-compact` 在回合结束瞬间自动抢跑压缩而**误伤 `Reflector` 所需的原始报错现场**或造成尾步派活锁阻塞；
+     3. **若宿主全局已安装 `pi-proactive-compact` 且希望保留**：将 `context_monitor.pi_proactive_compact_installed` 记为 `true`；`Dispatcher` 仍通过 `agent-context.py` 宏观监控全局，一旦捕捉到插件自动压缩产生的 `+JUST_COMPACTED` 断崖信号，立即在下一条派活指令中强制注入「重读 `roles/<role>.md`」指令以防失忆。
 6. **推荐 AI 友好型领域方案与专业垂类/工具 Skill 选装及按角色挂载 (`domain_skills` —— 必须附推荐理由并由人类拍板）**：
    - **从 0 到 1 新项目方案建议**：若项目尚在技术选型阶段，主动给出对 AI Agent 最透明友好的白盒方案建议与理由（例如：现代 Web 前端推荐 `TypeScript + Tailwind CSS + shadcn/ui`——理由是组件源码直接落盘在项目内而非黑盒 `node_modules`，便于 Agent 直读直改与类型校验），供人类拍板；
    - **垂类领域与工具 Skill 推荐清单（严禁未经授权私自安装）**：结合项目核心框架/库与已启用工具（如 TS/JS 项目启用了 `fallow` 时推荐官方 `fallow-rs/fallow-skills`，前端推荐 `shadcn/ui`、React/Next.js、Chrome Extension MV3、Obsidian、Rust Tokio、FastAPI 等），汇总 Step 1 扫描到的本机既有 Skill 以及通过 `npx skills find <keyword>` / 联网搜索发现的外部最新高评价 Skill，向人类逐项呈报 **4 要素供拍板决定装不装**：
@@ -125,7 +126,7 @@ ls -d .agents/skills/* ~/.agents/skills/* ~/.claude/skills/* ~/.gemini/skills/* 
    - 向 `planner` 发送：「请阅读 `.agents/skills/herdr-teamwork/SKILL.md`、`roles/planner.md` 与 `tools/herdr.md`，作为窗口 1 总规划台就位，读取 `changes/KANBAN.md` 与 `GLOSSARY.md` 等候人类需求。」
    - 向 `dispatcher` 发送：「请阅读 `.agents/skills/herdr-teamwork/SKILL.md`、`roles/dispatcher.md` 与 `tools/herdr.md`，作为窗口 2 交付总控台就位。」
 4. **导出 `.agents/session.json` 快照（按 [`tools/herdr.md §[H-2]`](../tools/herdr.md)）**：
-   - 运行 `§[H-2]` 中的 `herdr agent list | jq ...` 配方，将当前活跃角色拓扑、模型与 `conversation_id` 落盘至 `.agents/session.json`（自动过滤临时 `bootstrap` 自身）。
+   - 运行 `python3 .agents/skills/herdr-teamwork/scripts/session-snapshot.py save`，将当前活跃角色拓扑、实时模型/思考深度与 `conversation_id` 落盘至 `.agents/session.json`（自动过滤临时 `bootstrap` 自身）。
 
 ### Step 5：功成身退 (`Self-Teardown`)
 1. 向人类输出简短的《建场完成汇报》（说明 `planner`、`dispatcher`、`ops` 窗格已就绪，`.agents/environment.json` 与 `.agents/session.json` 已落盘）；

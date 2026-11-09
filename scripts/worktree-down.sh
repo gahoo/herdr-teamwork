@@ -60,3 +60,6 @@ if [ "${DELETE_BRANCH}" = "--delete-branch" ] && [ -n "${BRANCH_NAME}" ] && [ "$
 fi
 
 echo "[worktree-down] Cleaned up ${WORKTREE_DIR}"
+
+python3 "$(dirname "$0")/session-snapshot.py" prune "${CHANGE_ID}" 2>/dev/null || true
+

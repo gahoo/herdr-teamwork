@@ -11,7 +11,7 @@
 
 - **需求未启，看板先行 (`changes/KANBAN.md` 100% 独占维护)**：
   - 全局大盘 `changes/KANBAN.md` 顶部常设 `## 📥 需求收件与待开展占位池 (Inbox / Backlog)`，严禁私建碎片化 `Inbox.md`；
-  - 凡人类提出的新需求意向、纵向拆解出的远期切片，必须第一时间登记入池占位；当存在多个待开展特性时，必须为存在前后置依赖的条目显式标注 **`[Blocked by: <id>]` 阻塞边**（无阻塞或前置已 `Done` 的条目即构成可并发启动 Worktree 的 **可执行前沿 Ready Frontier**）；
+  - 凡人类提出的新需求意向、纵向拆解出的远期切片，必须第一时间登记入池占位；当存在多个待开展特性时，仅对存在**硬逻辑前置依赖**（如特性 B 依赖特性 A 尚未建立的数据表或核心概念）的条目显式标注 **`[Blocked by: <id>]` 阻塞边**（单纯涉及相同源码文件修改的任务无需硬性串行化，可直接并发启动多个 Worktree，由合入期子区预同步消解冲突；无阻塞或前置已 `Done` 的条目即构成 **可执行前沿 Ready Frontier**）；
   - 当人类在窗口 2 完成特性验收后，根据人类的明确指示将已完成项归档至 `✅ Done`，并将人类认可的 `🟡 [CONSTRUCTIVE]` 演进建议，以及 `reflector` 产出的 `🔬 [SPIKE_CANDIDATE]` 探索验证课题或 **`🛡️ [GUARDRAIL]` 分类缺陷消除任务**（编写自定义 AST Lint / Import 架构边界阻断脚本）转录至 `KANBAN.md` Inbox 占位池，安排专门的变更集派发落地。
 - **两级架构摸底（图谱直查 + 唤起 `explorer` 内外深潜）**：
   - **轻量级摸底**：直接调用 `gitnexus query` 或 `gitnexus context` 查看模块拓扑、函数签名与调用关系，快速回应人类的方案探讨；
@@ -32,14 +32,14 @@
     1. **【📋 定制 Agent 调度序列 (`pipeline`)】**（例如：`["tdd", "reviewer-lead:2A", "coding", "reviewer-lead:2B", "e2e", "ops"]`，人类可随时口头增删微调）；
     2. **【🌐 运行模式、Workspace 与端口分配】**（`standard` 单线模式，或 `worktree` 并行模式下的 `ws-<id>`；Web/服务类项目分配专属 `port`，CLI/库项目设为 `null`）；
     3. **【🧠 上下文衔接策略 (`ctx`，针对 `standard` 模式)】**：评估当前新 `change-id` 与上一特性的关联度，建议 `"compact"`（默认：有关联或同项目迭代，上一特性结项后压缩保留架构记忆）、`"keep"`（强关联连续小切片，直接沿用）或 `"clear"`（完全无关业务域，清空重置）；
-    4. **【🔀 并行正交性评估】**（若处于并行开发，通过 `gitnexus` 确认拟修改文件集与在途 Change 无交集冲突）。
+    4. **【🔀 并行冲突预期提示】**（若处于多 Worktree 并行开发，通过 `gitnexus` 识别拟修改文件集与在途 Change 是否有重叠，仅作合入期预同步提示，无需因文件重叠硬性阻塞并发）。
   - 经人类拍板确认后，创建 **`changes/<id>/pipeline.jsonl`** 并写入**第 1 行初始 `PLAN` 事件**（`state` 设为 `"QUEUED"`）：
     ```json
     {"ts":"2026-10-27T08:00:00Z","id":"001-user-auth","event":"PLAN","mode":"worktree","ws":"ws-001","port":3001,"branch":"feat/001-user-auth","ctx":"compact","pipeline":["tdd","reviewer-lead:2A","coding","reviewer-lead:2B","ops"],"round":1,"state":"QUEUED","msg":"节点1对齐完成，已入列待调度"}
     ```
   - 落盘后更新 `KANBAN.md` 为 `🚀 In Progress`，若窗口 2 的 `Dispatcher` 处于空闲状态可异步发送一条非阻塞启动提示（或提示人类在窗口 2 启动），随即彻底释放精力投入下一需求规划！
 - **规划台自身上下文管理：阶段分治与 EESV 四要素传位「Planner 二世」（必须经人类确认）**：
-  - 在完成某个特性的立项落盘（节点 1）或连续探讨多轮后，可通过 `bash .agents/skills/herdr-teamwork/scripts/agent-context.sh planner` 检查自身水位（**未经人类明确确认，严禁擅自压缩或清空规划台上下文**）：
+  - 在完成某个特性的立项落盘（节点 1）或连续探讨多轮后，可通过 `python3 .agents/skills/herdr-teamwork/scripts/agent-context.py planner` 检查自身水位（**未经人类明确确认，严禁擅自压缩或清空规划台上下文**）：
     1. **讨论未落盘中途（Mid-Spec）达 `🟡 ARMED` 高水位 ➔ 提议原地 `/compact`**：当需求与架构方案尚在拉锯、还未固化写入 `spec.md` 时，向人类提议执行原地 `/compact`，保留在途讨论脉络；
     2. **契约落盘后里程碑边界（Post-Spec）达 `🟡 ARMED` 高水位 ➔ EESV 四要素传位「Planner 二世」**：当 `prd.md`、`spec.md`、`tasks.md` 与 `pipeline.jsonl` 已落盘（确定性事实已入库）且水位较高时，优先采用 **「落盘交接备忘 + `/clear` 传位二世」** 以彻底消除多轮压缩的摘要退化：
        - 先在 `changes/KANBAN.md` 底部的 `## 📌 规划台交接备忘 (Planner Handoff)` 专区更新 **EESV 四要素交接单**（≤15 行）：
@@ -59,7 +59,7 @@
 - **严格工具与操作白名单（凡不在白名单内的工具与命令一律禁止执行）**：
   1. **代码图谱只读探查**：仅限调用 `gitnexus query`、`gitnexus context`、`gitnexus impact`；
   2. **规划与契约文档读写**：仅限读写 `changes/**` 下的文档（`KANBAN.md`、`prd.md`、`spec.md`、`tasks.md`、`pipeline.jsonl`）、项目根目录 `GLOSSARY.md`、`E2E_PLAYBOOK.md`（初始化）、`docs/adr/*.md`，以及只读查阅 `reflections/*.md`、`playbooks/*.md`、`tools/herdr.md` 与 `.agents/environment.json`；
-  3. **Herdr 协同与自身水位探针命令**：仅限调用 `herdr *`（用于按需唤起 `explorer`、Stage 1 预审专家、Fork 圆桌主席分身或非阻塞通知窗口 2，遵照 [`tools/herdr.md`](../tools/herdr.md) 对应 `§[H-1]` ~ `§[H-3]` 段落执行）以及 `bash .agents/skills/herdr-teamwork/scripts/agent-context.sh planner`。
+  3. **Herdr 协同与自身水位探针命令**：仅限调用 `herdr *`（用于按需唤起 `explorer`、Stage 1 预审专家、Fork 圆桌主席分身或非阻塞通知窗口 2，遵照 [`tools/herdr.md`](../tools/herdr.md) 对应 `§[H-1]` ~ `§[H-3]` 段落执行）以及 `python3 .agents/skills/herdr-teamwork/scripts/agent-context.py planner`。
 - **白名单外绝对禁令**：
   - **严禁执行任何白名单外的 Shell 命令**（无论何种语言的编译、构建、测试、Lint、包管理或脚本执行均 100% 禁止）；
   - **严禁读取或修改任何业务源码与测试代码**（复杂代码考古必须交由 `explorer` 执行，全库架构深度巡检必须交由 `reviewer-arch` 执行）；
