@@ -1,11 +1,11 @@
-# Herdr Teamwork v2.9.0 ⚡
+# Herdr Teamwork v2.9.1 ⚡
 
 > **Multi-Agent Spec Implementation Framework Orchestrated via Herdr & Git Worktrees**
 >
 > 基于 **Herdr** 终端工作区管理工具构建的**“双控台分治、内外双驱、事件溯源、双层自演进”**多 Agent 协同工程规范。遵循 **OpenSpec 活文档标准**、**单流水线内同步等待 (`--wait`) + 跨流水线文件流监听 (`tail -f pipeline.jsonl`)**，通过 **`roles/`（常驻职责）+ `playbooks/`（按需战术剧本）+ `tools/`（标准指令配方卡）+ `scripts/`（自动化基建）** 四元架构，无缝支持跨语言单线开发与多 Worktree / Workspace 高并发并行交付。
 
 [![Skill](https://img.shields.io/badge/Agent_Skill-herdr--teamwork-blue?style=flat-square)](https://skills.sh)
-[![Version](https://img.shields.io/badge/Version-v2.9.0-orange?style=flat-square)](SKILL.md)
+[![Version](https://img.shields.io/badge/Version-v2.9.1-orange?style=flat-square)](SKILL.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
 ---
