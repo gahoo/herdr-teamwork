@@ -2,7 +2,10 @@
 
 > **定位**：本剧本专供新项目或存量项目首次启用 `herdr-teamwork`（或重新调整团队模型与工具链配置）时执行。
 > 由人类在初始 Herdr 终端窗格中唤醒一个**一次性临时引导实例（`Bootstrap Agent`）**读取本剧本：负责探测宿主机器可用 Harness/模型与工具集、与人类一轮对齐项目配置、生成 `.agents/environment.json` 与活文档骨架、拉起真正的 `Planner`（窗口 1）+ `Dispatcher`（窗口 2）+ `Ops` 常驻窗格并保存 `.agents/session.json`，最后**关闭自身临时窗格功成身退**，确保 `Planner` 从第 0 回合起即保持 100% 纯净上下文与严格沙箱。
-> **配套必读文档**：**[`tools/herdr.md`](../tools/herdr.md)** —— 窗格切分、角色启动、`session.json` 快照导出与自身窗格关闭统一遵照其中 `§[H-1]`、`§[H-2]`、`§[H-3]` 与 `§[H-6]` 段落执行。
+> **配套必读文档**：
+> - **[`tools/herdr.md`](../tools/herdr.md)** —— 窗格切分、角色启动、`session.json` 快照导出与自身窗格关闭统一遵照其中 `§[H-1]`、`§[H-2]`、`§[H-3]` 与 `§[H-6]` 段落执行。
+> - **[`protocols/model-tiers-and-env.md`](../protocols/model-tiers-and-env.md)** & **[`protocols/context-and-budget.md`](../protocols/context-and-budget.md)** —— 四档算力画像、上下文水位「70% / 60% / 50% 黄金比例法则」及 `.agents/environment.json` 字段字典。
+> - **[`templates/`](../templates/)** —— 标准配置模板（[`environment.example.json`](../templates/environment.example.json)、[`session.example.json`](../templates/session.example.json)）与全局活文档初始模板（[`KANBAN.template.md`](../templates/KANBAN.template.md)、[`GLOSSARY.template.md`](../templates/GLOSSARY.template.md)、[`E2E_PLAYBOOK.template.md`](../templates/E2E_PLAYBOOK.template.md)）。
 
 ---
 
@@ -103,16 +106,16 @@ ls -d .agents/skills/* ~/.agents/skills/* ~/.claude/skills/* ~/.gemini/skills/* 
 
 1. **仅安装人类明确拍板同意的外部工具与领域 Skills，写入 `.agents/environment.json`**：
    - 仅对人类在 Step 2 明确同意安装的项执行安装命令（如 `npx skills add <owner/skill>`；人类未勾选或拒绝的项严禁安装）；
-   - 严格按照 [`SKILL.md` §6](../SKILL.md) 的标准结构，将对齐后的完整配置（含 `mode`、`default_ctx`、`runtime_type`、`base_port`/`target_url`、`active_roles`、`toolchain`、`version_anchors`、`domain_skills`、`harness_profiles` 以及包含 `thinking` 与实测 `cli_args` 数组的 `roles` 映射）写入 `.agents/environment.json`。
+   - 严格参照 **[`templates/environment.example.json`](../templates/environment.example.json)** 模板与 **[`protocols/model-tiers-and-env.md`](../protocols/model-tiers-and-env.md)** 字段字典，将对齐后的完整配置（含 `mode`、`default_ctx`、`runtime_type`、`base_port`/`target_url`、`active_roles`、`toolchain`、`version_anchors`、`domain_skills`、`context_monitor`、`harness_profiles` 以及包含 `thinking` 与实测 `cli_args` 数组的 `roles` 映射）写入 `.agents/environment.json`。
 2. **加固 `.gitignore`**：
    检查项目 `.gitignore`，确保包含 `.worktrees/`、`.ops-pane`、`.ops.pid`（防止 Worktree 目录与后台守护子窗格句柄污染版本库）。
 3. **初始化代码图谱与存量静态基线**：
    - 执行 `npx gitnexus analyze` 建立 AST 代码知识图谱；
    - 若为存量项目且启用了支持基线豁免的静态分析器（如 `fallow`），运行 `fallow --save-regression-baseline .fallow-baseline.json` 建立存量基线（确保后续审查“存量不误伤，增量零退化”）。
-4. **创建核心活文档标准工件与顶层 `AGENTS.md` 防失忆重载锁（若尚不存在）**：
-   - **`changes/KANBAN.md`**：创建包含 `## 📥 需求收件与待开展占位池 (Inbox / Backlog)`、`## 🚀 进行中 (In Progress)`、`## ✅ 已完成 (Done)` 以及底部 **`## 📌 规划台交接备忘 (Planner Handoff)`**（供高水位时按 EESV 四要素传位「Planner 二世」）的全局看板；
-   - **`GLOSSARY.md`**：创建项目级统一领域语言词典（若为存量项目，扫描核心模块提取初始的 5~10 个业务领域概念填入；严禁混入类名/表名等实现细节）；
-   - **`E2E_PLAYBOOK.md`**：仅当 `active_roles` 包含 `e2e` 时创建 6 要素结构化导航记忆表头；
+4. **基于 [`templates/`](../templates/) 创建核心活文档标准工件与顶层 `AGENTS.md` 防失忆重载锁（若尚不存在）**：
+   - **`changes/KANBAN.md`**：基于 **[`templates/KANBAN.template.md`](../templates/KANBAN.template.md)** 创建包含 `## 📥 需求收件与待开展占位池 (Inbox / Backlog)`、`## 🚀 进行中 (In Progress)`、`## ✅ 已完成 (Done)` 以及底部 **`## 📌 规划台交接备忘 (Planner Handoff)`**（供高水位时按 EESV 四要素传位「Planner 二世」）的全局看板；
+   - **`GLOSSARY.md`**：基于 **[`templates/GLOSSARY.template.md`](../templates/GLOSSARY.template.md)** 创建项目级统一领域语言词典（若为存量项目，扫描核心模块提取初始的 5~10 个业务领域概念填入；严禁混入类名/表名等实现细节）；
+   - **`E2E_PLAYBOOK.md`**：仅当 `active_roles` 包含 `e2e` 时，基于 **[`templates/E2E_PLAYBOOK.template.md`](../templates/E2E_PLAYBOOK.template.md)** 创建 6 要素结构化导航记忆表头；
    - **`AGENTS.md`（及 `CLAUDE.md` 软链/同步）注入「上下文压缩自检与角色书强制重载铁律」**：在项目根目录的 `AGENTS.md` 中确保写入以下跨角色保底条款，使任何角色在经历被动自动压缩或主动压缩后 100% 自动恢复职责与命令规范记忆：
      > **【上下文压缩自检与强制重载协议 (Post-Compaction Mandatory Reload)】**：每当你收到新指令或恢复执行时，先检查自身上下文窗口顶部是否存在压缩摘要（如 `<CONTEXT_SUMMARY>` / `Summary of previous conversation`）。若存在压缩摘要，且**在该摘要之后的未压缩对话记录中尚未重新读取过你所属的角色契约 `.agents/skills/herdr-teamwork/roles/<your-role>.md`**，说明你刚经历了上下文压缩！你**必须将「调用文件读取工具完整重读 `roles/<your-role>.md` 与 `tools/herdr.md`（若职责涉及执行 herdr 命令）以及当前 `changes/<id>/pipeline.jsonl` 尾部」作为你的第 1 个动作**，严禁凭压缩摘要的模糊印象盲猜命令参数或越界操作！
 

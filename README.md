@@ -1,11 +1,11 @@
-# Herdr Teamwork v2.10.0 ⚡
+# Herdr Teamwork v2.11.0 ⚡
 
 > **Multi-Agent Spec Implementation Framework Orchestrated via Herdr & Git Worktrees**
 >
-> 基于 **Herdr** 终端工作区管理工具构建的**“双控台分治、内外双驱、事件溯源、双层自演进”**多 Agent 协同工程规范。遵循 **OpenSpec 活文档标准**、**单流水线内同步等待 (`--wait`) + 跨流水线文件流监听 (`tail -f pipeline.jsonl`)**，通过 **`roles/`（常驻职责）+ `playbooks/`（按需战术剧本）+ `tools/`（标准指令配方卡）+ `scripts/`（自动化基建）** 四元架构，无缝支持跨语言单线开发与多 Worktree / Workspace 高并发并行交付。
+> 基于 **Herdr** 终端工作区管理工具构建的**“双控台分治、内外双驱、事件溯源、双层自演进”**多 Agent 协同工程规范。遵循 **OpenSpec 活文档标准**、**单流水线内同步等待 (`--wait`) + 跨流水线文件流监听 (`tail -f pipeline.jsonl`)**，通过 **`roles/`（常驻职责）+ `protocols/`（跨角色协同协议）+ `playbooks/`（按需战术剧本）+ `templates/`（标准配置与活文档骨架）+ `tools/`（标准指令配方卡）+ `scripts/`（自动化基建）** 六元正交架构，无缝支持跨语言单线开发与多 Worktree / Workspace 高并发并行交付。
 
 [![Skill](https://img.shields.io/badge/Agent_Skill-herdr--teamwork-blue?style=flat-square)](https://skills.sh)
-[![Version](https://img.shields.io/badge/Version-v2.10.0-orange?style=flat-square)](SKILL.md)
+[![Version](https://img.shields.io/badge/Version-v2.11.0-orange?style=flat-square)](SKILL.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
 ---
@@ -25,7 +25,7 @@ npx skills add gahoo/herdr-teamwork
 
 ---
 
-## 🏛️ 核心架构亮点 (v2.10.0 Architecture Highlights)
+## 🏛️ 核心架构亮点 (v2.11.0 Architecture Highlights)
 
 1. **双主控台分治 + 严格工具白名单（规划与交付物理绝缘，90% 问题就地闭环）**：
    - **窗口 1：`Planner`（总规划台）**：常驻主工作区左窗格，受严格只读图谱与契约工具白名单约束。负责与人类探讨需求、维护统一领域语言 `GLOSSARY.md` 与 `changes/KANBAN.md`、唤起 `Explorer` 深潜摸底、按需直询 `Arch / Security` 专家进行 Stage 1 预审，落盘 `prd.md`、`spec.md`、`tasks.md` 并写入 `pipeline.jsonl` 首行 `PLAN` 事件，上下文 100% 纯净。
@@ -67,18 +67,24 @@ project-root/
 │       └── explore.md               # 复杂源码可行性预研简报 (按需产出)
 ├── reflections/                     # 项目级经验教训与待探索课题库（Reflector 独占维护）
 ├── .agents/                         # Agent 运行时支撑基建
-│   ├── environment.json             # 宿主机器 Harness 画像与 16 角色配置
-│   ├── session.json                 # Herdr 会话状态快照
-│   └── skills/herdr-teamwork/       # 本技能规范库 (roles/ + playbooks/ + tools/ + scripts/ + .reflections/)
+│   ├── environment.json             # 宿主机器 Harness 画像与 16 角色配置 (模板见 templates/environment.example.json)
+│   ├── session.json                 # Herdr 会话状态快照 (模板见 templates/session.example.json)
+│   └── skills/herdr-teamwork/       # 本技能规范库 (roles/ + protocols/ + playbooks/ + templates/ + tools/ + scripts/ + .reflections/)
 └── .worktrees/                      # Worktree 并行执行隔离区 (Ops 建场管理，软链共享 changes / .agents / 依赖)
 ```
 
 ---
 
-## 📖 规范全览：16 正交角色 × 11 战术剧本 × 1 指令卡 × 4 基建脚本
+## 📖 规范全览：16 正交角色 × 4 协同协议 × 11 战术剧本 × 10 标准模板 × 1 指令卡 × 4 基建脚本
 
-### 1. 总纲、标准指令配方卡与自动化脚本
-- **核心总纲**：[`SKILL.md`](SKILL.md) —— 完整工程规范、双控台交互协议、`pipeline.jsonl` 事件流标准、两阶段审查、上下文生命周期与配置字典。
+### 1. 总纲、跨角色协议、标准模板、指令配方卡与自动化脚本
+- **核心总纲**：[`SKILL.md`](SKILL.md) —— 全局核心宪章、目录拓扑、单文件唯一写者铁律、16 角色红线总表、两阶段审查纲要与全局路由索引。
+- **跨角色协同协议 (`protocols/`)**：
+  - [`protocols/pipeline-and-events.md`](protocols/pipeline-and-events.md) —— 动态可调流水线预设模板、`changes/<id>/pipeline.jsonl` 事件流规范与状态机、下游故障自愈三步法与跨流水线监听指令。
+  - [`protocols/review-and-quality.md`](protocols/review-and-quality.md) —— 两阶段审查全链路（Stage 1 预审与圆桌辩论 / Stage 2A 测试快检 / Stage 2B 三拍点将闭环）、《垂直专家具象触发特征矩阵》、5 级证据阶梯、`Proof of Defense` 防线行号举证与红黄三级定性。
+  - [`protocols/context-and-budget.md`](protocols/context-and-budget.md) —— 双通道上下文水位探针、「70% / 60% / 50% 黄金比例法则」三维阈值表、Arm/Fire 稳态边界点火窗口、三域统筹权责矩阵与防失忆重载锁。
+  - [`protocols/model-tiers-and-env.md`](protocols/model-tiers-and-env.md) —— 四档算力画像表、`.agents/environment.json` 与 `.agents/session.json` 字段字典说明。
+- **标准配置与活文档骨架模板 (`templates/`)**：涵盖运行配置模板（[`environment.example.json`](templates/environment.example.json)、[`session.example.json`](templates/session.example.json)）、全局活文档模板（[`KANBAN.template.md`](templates/KANBAN.template.md)、[`GLOSSARY.template.md`](templates/GLOSSARY.template.md)、[`E2E_PLAYBOOK.template.md`](templates/E2E_PLAYBOOK.template.md)）与变更集契约/报告模板（[`prd.template.md`](templates/prd.template.md)、[`spec.template.md`](templates/spec.template.md)、[`tasks.template.md`](templates/tasks.template.md)、[`review.template.md`](templates/review.template.md)、[`debug.template.md`](templates/debug.template.md)）。
 - **标准指令配方卡 (`tools/`)**：[`tools/herdr.md`](tools/herdr.md) —— 涵盖窗格切分 (`§[H-1]`)、角色启动与会话恢复 (`§[H-2]`)、零轮询纯事件等待 (`§[H-3]`)、Worktree 平行工作区 (`§[H-4]`)、`.ops-pane` 守护子窗格 (`§[H-5]`) 与上下文探针/主动压缩/中断回收 (`§[H-6]`) 的唯一权威 CLI 配方。
 - **内置脚本 (`scripts/`)**：[`scripts/worktree-up.sh`](scripts/worktree-up.sh)（跨语言 Worktree 物理建场与依赖软链挂载）、[`scripts/worktree-down.sh`](scripts/worktree-down.sh)（守护进程清理、安全解链、工作区销毁与快照自动清理）、[`scripts/agent-context.py`](scripts/agent-context.py)（跨 Harness 双通道上下文水位探针与压缩断崖检测）、[`scripts/session-snapshot.py`](scripts/session-snapshot.py)（实时模型/思考深度会话快照增量保存与一键恢复）。
 

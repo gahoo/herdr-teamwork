@@ -16,7 +16,7 @@
   2. **控制台 (`list_console_messages`) 是否有未捕获的红色 JS Error？**
   3. **网络面板 (`list_network_requests`) 是否有 500 / 502 / 404 关键接口崩溃？**
   4. **主线程帧预算 (`Frame Budget / Long Tasks`)**：在关键高频交互下（可按需配合 `performance_start_trace` / `performance_stop_trace`），是否存在阻塞主线程 **`> 16ms`（低于 60fps）** 的严重长任务（Long Tasks / 布局抖动 Layout Thrashing）？
-- **增量回写 `E2E_PLAYBOOK.md`（6 要素结构化导航与源码映射记忆）**：当新功能走查通过后，将本次验证通畅的功能按以下 **6 要素结构化字段** 创建或增量更新至项目根目录的 `E2E_PLAYBOOK.md`（使后续回归走查与 `debugger` 面对模糊截图/报错时能秒级定位源码与 DOM）：
+- **增量回写 `E2E_PLAYBOOK.md`（6 要素结构化导航与源码映射记忆，模板见 [`templates/E2E_PLAYBOOK.template.md`](../templates/E2E_PLAYBOOK.template.md)）**：当新功能走查通过后，参照 [`templates/E2E_PLAYBOOK.template.md`](../templates/E2E_PLAYBOOK.template.md) 将本次验证通畅的功能按以下 **6 要素结构化字段** 创建或增量更新至项目根目录的 `E2E_PLAYBOOK.md`（使后续回归走查与 `debugger` 面对模糊截图/报错时能秒级定位源码与 DOM）：
   1. **`feature_id`**：功能唯一标识与简述（如 `billing-invoice-export`）；
   2. **`entry_point`**：对应的**前端/视图源码入口文件路径**（如 `src/billing/InvoicePanel.tsx`）；
   3. **`user_route`**：访问 URL 或从首页到达该界面的最短前置点击序列；

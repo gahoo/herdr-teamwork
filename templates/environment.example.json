@@ -1,0 +1,71 @@
+{
+  "updated_at": "2026-11-05T00:00:00Z",
+  "mode": "standard",
+  "default_ctx": "compact",
+  "runtime_type": "daemon_port",
+  "base_port": 3000,
+  "target_url": null,
+  "detected_harnesses": ["claude", "codex", "agy", "pi"],
+  "active_roles": [
+    "planner", "explorer", "dispatcher", "tdd", "coding", "ops",
+    "debugger", "e2e", "reviewer-lead", "reviewer-quality",
+    "reviewer-arch", "reviewer-perf", "reviewer-security", "reviewer-ux", "reflector"
+  ],
+  "toolchain": {
+    "build": "npm run build",
+    "test": "npx vitest run",
+    "typecheck": "npx tsc --noEmit",
+    "static_health": "fallow --fail-on-regression --regression-baseline .fallow-baseline.json --summary",
+    "push_cmd": null
+  },
+  "version_anchors": ["package.json"],
+  "domain_skills": {
+    "shadcn-ui": {
+      "path": ".agents/skills/shadcn-ui/SKILL.md",
+      "roles": ["planner", "coding", "reviewer-ux"]
+    },
+    "fallow-skills": {
+      "path": ".agents/skills/fallow-skills/SKILL.md",
+      "roles": ["reviewer-quality", "reviewer-arch", "explorer"]
+    }
+  },
+  "context_monitor": {
+    "probe_policy": "strict",
+    "herdr_agent_usage_installed": true,
+    "pi_proactive_compact_installed": false,
+    "default_profile": {
+      "tier": "A",
+      "window_tokens": 262144,
+      "armed_tokens": 157000,
+      "danger_tokens": 188000
+    },
+    "role_overrides": {
+      "planner": { "tier": "S", "window_tokens": 262144, "armed_tokens": 183000, "danger_tokens": 209000 },
+      "dispatcher": { "tier": "B", "window_tokens": 163840, "armed_tokens": 81000, "danger_tokens": 101000 }
+    }
+  },
+  "harness_profiles": {
+    "claude": { "compact_cmd": "/compact 请保留：1.[Ground Truth]已验证的文件路径/命令与报错签名；2.[Continuity Ledger]当前生效的架构约束与职责边界；3.[Open Loops]未决待办项；4.[Delta]本轮改动。严禁伪造未读路径。", "clear_cmd": "/clear", "resume_flag": "--resume" },
+    "codex": { "compact_cmd": "/compact", "clear_cmd": "/new", "resume_flag": "resume" },
+    "pi": { "compact_cmd": "/compact 请保留：1.[Ground Truth]已验证的文件路径/命令与报错签名；2.[Continuity Ledger]当前生效的架构约束与职责边界；3.[Open Loops]未决待办项；4.[Delta]本轮改动。严禁伪造未读路径。", "clear_cmd": "/new", "resume_flag": "--session" },
+    "agy": { "compact_cmd": "/compact", "clear_cmd": "/clear", "resume_flag": "--conversation" }
+  },
+  "roles": {
+    "planner": { "harness": "claude", "model": "<high-reasoning-model>", "thinking": "high", "cli_args": ["--model", "<high-reasoning-model>", "--effort", "high"] },
+    "reflector": { "harness": "claude", "model": "<high-reasoning-model>", "thinking": "high", "cli_args": ["--model", "<high-reasoning-model>", "--effort", "high"] },
+    "explorer": { "harness": "claude", "model": "<high-reasoning-model>", "thinking": "high", "cli_args": ["--model", "<high-reasoning-model>", "--effort", "high"] },
+    "dispatcher": { "harness": "pi", "model": "<fast-light-model>", "thinking": "none", "cli_args": ["--model", "<fast-light-model>", "--thinking", "off"] },
+    "tdd": { "harness": "codex", "model": "<coding-model>", "thinking": "medium", "cli_args": ["--model", "<coding-model>", "-c", "model_reasoning_effort=\"medium\""] },
+    "coding": { "harness": "codex", "model": "<coding-model>", "thinking": "medium", "cli_args": ["--model", "<coding-model>", "-c", "model_reasoning_effort=\"medium\""] },
+    "ops": { "harness": "pi", "model": "<fast-light-model>", "thinking": "none", "cli_args": ["--model", "<fast-light-model>", "--thinking", "off"] },
+    "debugger": { "harness": "claude", "model": "<high-reasoning-model>", "thinking": "high", "cli_args": ["--model", "<high-reasoning-model>", "--effort", "high"] },
+    "security-redteam": { "harness": "claude", "model": "<high-reasoning-model>", "thinking": "high", "cli_args": ["--model", "<high-reasoning-model>", "--effort", "high"] },
+    "e2e": { "harness": "agy", "model": "<browser-model>", "thinking": "low", "cli_args": ["--model", "<browser-model>"] },
+    "reviewer-lead": { "harness": "claude", "model": "<high-reasoning-model>", "thinking": "high", "cli_args": ["--model", "<high-reasoning-model>", "--effort", "high"] },
+    "reviewer-quality": { "harness": "pi", "model": "<fast-light-model>", "thinking": "none", "cli_args": ["--model", "<fast-light-model>", "--thinking", "off"] },
+    "reviewer-arch": { "harness": "claude", "model": "<high-reasoning-model>", "thinking": "high", "cli_args": ["--model", "<high-reasoning-model>", "--effort", "high"] },
+    "reviewer-perf": { "harness": "claude", "model": "<high-reasoning-model>", "thinking": "high", "cli_args": ["--model", "<high-reasoning-model>", "--effort", "high"] },
+    "reviewer-security": { "harness": "claude", "model": "<high-reasoning-model>", "thinking": "high", "cli_args": ["--model", "<high-reasoning-model>", "--effort", "high"] },
+    "reviewer-ux": { "harness": "codex", "model": "<coding-model>", "thinking": "medium", "cli_args": ["--model", "<coding-model>", "-c", "model_reasoning_effort=\"medium\""] }
+  }
+}

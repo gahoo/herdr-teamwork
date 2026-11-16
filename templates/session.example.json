@@ -1,0 +1,32 @@
+{
+  "updated_at": "2026-11-09T12:00:00Z",
+  "project": "my-project",
+  "agents": {
+    "planner": {
+      "name": "planner",
+      "base_role": "planner",
+      "workspace_id": "w1",
+      "pane_id": "w1:p2",
+      "tab_id": "w1:t1",
+      "cwd": "/path/to/my-project",
+      "harness": "claude",
+      "model": "<real-time-model>",
+      "thinking": "high",
+      "conversation_id": "conv_01hxyz...",
+      "resume_args": ["--model", "<real-time-model>", "--effort", "high", "--resume", "conv_01hxyz..."]
+    },
+    "coding-001": {
+      "name": "coding-001",
+      "base_role": "coding",
+      "workspace_id": "w2",
+      "pane_id": "w2:p3",
+      "tab_id": "w2:t1",
+      "cwd": "/path/to/my-project/.worktrees/001-auth",
+      "harness": "codex",
+      "model": "<real-time-model>",
+      "thinking": "medium",
+      "conversation_id": "session_98abc...",
+      "resume_args": ["--model", "<real-time-model>", "-c", "model_reasoning_effort=\"medium\"", "resume", "session_98abc..."]
+    }
+  }
+}
