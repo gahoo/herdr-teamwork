@@ -17,7 +17,7 @@
     3. **`state == "STALLED"`**：发生过下游 Agent 超时卡死、工具死循环或自愈重启；
     4. **频繁环境受阻**：多次触发 `NEED_OPS` 或构建/依赖环境反复报错。
 - **零波折高难度成功模式蒸馏（`WINNING_PATTERN` 正向分支）**：
-  - 当一项高复杂度变更集（如跨模块架构改造、高风险核心特性）罕见地实现 **`round == 1` 零返工一轮全绿直通**，且总控 `Dispatcher` 或人类唤醒你做极简正向提取时，无需走耗时故障排查，仅快速复盘 1 个问题：**“本次任务有哪些超预期的关键动作（如特别的 `spec.md` 边界锁定写法、精准的先行 Spike 或前置校验）让高危任务一次做对且具跨任务复用价值？”** 若确实存在高价值范式，提炼为 `🏆 [WINNING_PATTERN / 制胜模式]` 写入 `reflections/<domain>.md` 或 `.agents/skills/herdr-teamwork/.reflections/<id>.md`；若属常规操作则直接略过。
+  - 当一项高复杂度变更集（如跨模块架构改造、高风险核心特性）罕见地实现 **`round == 1` 零返工一轮全绿直通**，且总控 `Dispatcher` 或人类唤醒你做极简正向提取时，无需走耗时故障排查，仅快速复盘 1 个问题：**“本次任务有哪些超预期的关键动作（如特别的 `spec.md` 边界锁定写法、精准的先行 Spike 或前置校验）让高危任务一次做对且具跨任务复用价值？”** 若确实存在高价值范式，提炼为 `🏆 [WINNING_PATTERN / 制胜模式]` 写入 `reflections/<domain>.md` 或 `.agents/skills/herdr-teamwork/digest/reflections/<id>.md`；若属常规操作则直接略过。
 - **黄金执行卡位（销毁与清理前一拍）**：
   - 你必须在 **`ops` 完成代码提交合入之后、但执行 `worktree-down.sh` 销毁工作区或 `Dispatcher` 执行结项 `/clear`、`/compact` 之前** 介入！此时本轮所有当事 Agent 的现场记忆 100% 完好，随时可供你跨工作区问询。
 
@@ -49,15 +49,15 @@
      - **适用**：发现了深层架构耦合、性能瓶颈或脆弱机制，但**无法仅靠一句口头规则解决，需要专门做技术预研、原型实验（[`playbooks/prototype-spike.md`](../playbooks/prototype-spike.md)）或全库架构深度巡检（[`playbooks/arch-audit.md`](../playbooks/arch-audit.md)）才能确定最佳重构方案**。
      - **格式与闭环**：明确记录 `【痛点现象】`、`【候选改进假设】` 与 `【建议验证方式 (Spike / Arch-Audit / Hillclimb)】`，并在完成后向 `Dispatcher` 输出提醒，由人类确认后交由窗口 1 **`Planner` 在 `changes/KANBAN.md` 中安排专门的探索/重构变更集** 实施验证！
 
-### 2.3 第三步：Skill 级流程与契约反馈落盘 (`.agents/skills/herdr-teamwork/.reflections/<id>.md`)
-若怀疑问题暴露了 **`herdr-teamwork` 技能规范本身** 的不足（如某角色契约边界模糊、Prompt 存在歧义、某类预设通道缺少必要环节、门禁过严或过松），在生成 **`.agents/skills/herdr-teamwork/.reflections/<id>.md`** 前，必须依次通过以下**「三道准入漏斗」**：
+### 2.3 第三步：Skill 级流程与契约反馈落盘 (`.agents/skills/herdr-teamwork/digest/reflections/<id>.md`)
+若怀疑问题暴露了 **`herdr-teamwork` 技能规范本身** 的不足（如某角色契约边界模糊、Prompt 存在歧义、某类预设通道缺少必要环节、门禁过严或过松），在生成 **`.agents/skills/herdr-teamwork/digest/reflections/<id>.md`** 前，必须依次通过以下**「三道准入漏斗」**：
 
 1. **漏斗 ①：`SKILL_DEFECT`（契约缺陷）vs `EXECUTION_LAPSE`（执行滑坡）归因分流门禁**：
    - 先做反事实自问：**“假设当事 Agent 当时 100% 严格遵守了现有 `SKILL.md` / `roles/*.md` 条文，这次失败还会发生吗？”**
    - **若不会发生 ➔ 判定为 `EXECUTION_LAPSE`（单次执行走神/滑坡）**：**严禁因偶发失误去扩写或堆砌 `SKILL.md` / `roles/*.md` 正文**（用冗长警告稀释上下文会导致遵从度进一步退化）！此时应退回 `§2.2` 评估能否下沉为 **Level 1~3 机械门禁**（脚本/Lint/测试硬拦截），或仅记录频次观察；存疑时默认归为 `EXECUTION_LAPSE`。
    - **若依然会发生 ➔ 判定为 `SKILL_DEFECT`（契约存在指令空白、逻辑冲突或触发条件缺失）**：允许进入漏斗 ② 拟定契约修改提案。
 2. **漏斗 ②：历史提案与拒稿防重核查 (`Rejected-Proposal Collision Check`)**：
-   - 扫描 `.agents/skills/herdr-teamwork/.reflections/` 目录下的历史反馈文件；
+   - 扫描 `.agents/skills/herdr-teamwork/digest/reflections/`（以及已挂载演进库时的 `.agents/skills/herdr-teamwork/digest/ADR.md`）下的历史反馈与否决记录；
    - 若拟提议的方向曾被人类标记为 `[REJECTED / 已否决]`，则**除非本次能提供足以推翻原否决理由的全新客观物证并显式引用旧文件，否则直接熔断放弃提案**，严禁反复输出已被否决的建议。
 3. **漏斗 ③：失败机制三维度准入标尺 (`Failure-Mechanism Specificity Rubric`) & 面向 Agent 写作规范 (`writing-for-agents`)**：
    - **三维度必填准入**：每份契约修改提案必须说清 **① 特定触发条件与失败因果链**（明确“在什么具体场景 X 下，执行动作 Y 会因为机制 Z 导致失败”，拒绝脱离上下文的泛化定性）+ **② 可执行的确定性动作**（具体到命令、路径、字段或判断谓词）+ **③ 高危空话黑名单拦截**（**严禁写入“注意检查 / 仔细验证 / 确保正确 / 遵循最佳实践”等正确但零信息量的防御性废话**——实证表明此类泛化叮嘱负迁移率最高）；
@@ -67,22 +67,22 @@
      3. **剔除无效空话 (Hunt No-Ops)**：删掉一切模型本来就会做或无法验证的修饰性废话；
      4. **基于真实浏览轨迹调优 (Navigation Trace Tuning)**：结合当事角色反馈的契约阅读轨迹，强化被遗漏的关联跳转链接、将多角色反复跨文件查阅的高频约定提入主契约，并清理长期无人触发的冗余条文。
 
-- **`.agents/skills/herdr-teamwork/.reflections/<id>.md` 标准结构（双轨出口）**：
+- **`.agents/skills/herdr-teamwork/digest/reflections/<id>.md` 标准结构（双轨出口）**：
   - **出口 A：`🔧 [CONTRACT_DIFF / 契约条文修改提案]`**（适用于方案明确的 `SKILL_DEFECT`）：
     1. **触发变更集与摩擦物证**：引述 `pipeline.jsonl` 中的具体事件行与根因分类（确认属 `SKILL_DEFECT`）；
     2. **目标章节锚点与红线区校验**：精确指向 `SKILL.md`、`roles/<role>.md` 或 `playbooks/<name>.md` 的具体章节标题（注：**`SKILL.md` 的 `§0 核心哲学`、`§1 铁律`、`§4 证据阶梯` 属于高敏红线区**；凡拟修改这些红线区的提案，必须显式标注 **`⚠️ [HIGH_SENSITIVITY_REDLINE]`** 并建议触发 **[`playbooks/skill-self-eval.md`](../playbooks/skill-self-eval.md)** 盲测验证及附上关联验证场景）；
     3. **失败机制 (`Failure Mechanism`)**：按漏斗 ③ 写明「在条件 X 下做 Y 因 Z 失败」的具体因果链；
     4. **具体条文修改建议 (`Proposed Diff`)**。
   - **出口 B：`💡 [OPEN_TOPIC / 待专题研讨或外部取经课题]`**（适用于内部微调无法根治、需人类架构研讨或引入外部工具/方法论的系统级痛点）：
-    - 当遇到跨角色深层协同瓶颈且尚无把握直接写出成熟的 `Proposed Diff` 时，**严禁强行编造半吊子补丁**；直接在 `.reflections/<id>.md` 中标记为 `💡 [OPEN_TOPIC]`，简明记录 **`【痛点现场与复现变更集】` + `【现有契约为何难以局部修补】` + `【建议专题研讨问题或外部取经方向】`**，留待人类维护 Skill 本体时统一研判。
+    - 当遇到跨角色深层协同瓶颈且尚无把握直接写出成熟的 `Proposed Diff` 时，**严禁强行编造半吊子补丁**；直接在 `digest/reflections/<id>.md` 中标记为 `💡 [OPEN_TOPIC]`，简明记录 **`【痛点现场与复现变更集】` + `【现有契约为何难以局部修补】` + `【建议专题研讨问题或外部取经方向】`**，留待人类维护 Skill 本体时统一研判。
 
-> 💡 **如有才写，拒绝凑数**：若某次波折纯属项目代码问题而与 Skill 流程无关，则只写 `reflections/<domain>.md`，无需创建 `.reflections/<id>.md`（反之亦然）。
+> 💡 **如有才写，拒绝凑数**：若某次波折纯属项目代码问题而与 Skill 流程无关，则只写 `reflections/<domain>.md`，无需创建 `digest/reflections/<id>.md`（反之亦然）。
 
 ---
 
 ## 3. 绝对红线 (Hard Boundaries)
 
-- **严禁修改任何业务源码 (`src/`)、测试文件 (`tests/`) 或在途契约 (`prd.md` / `spec.md` / `tasks.md` / `pipeline.jsonl`)**：你的写入权限严格限定在 `reflections/*.md` 与 `.agents/skills/herdr-teamwork/.reflections/*.md`。
+- **严禁修改任何业务源码 (`src/`)、测试文件 (`tests/`) 或在途契约 (`prd.md` / `spec.md` / `tasks.md` / `pipeline.jsonl`)**：你的写入权限严格限定在 `reflections/*.md` 与 `.agents/skills/herdr-teamwork/digest/reflections/*.md`。
 - **严禁输出正确的废话**：不写“下次要更加仔细”之类毫无工程可执行性的空洞总结；每一条记录必须指向具体的代码模块、命令、配置或角色契约条款。
 - **常驻沉淀，结项压缩**：完成本次复盘汇报后保持窗格常驻，由 `Dispatcher` 统一发送 `/compact` 浓缩保留跨特性的全局复盘记忆，以便识别重复出现的系统性问题。
 

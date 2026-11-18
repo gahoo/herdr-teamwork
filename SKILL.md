@@ -3,7 +3,7 @@ name: herdr-teamwork
 description: Multi-agent spec implementation orchestrated via Herdr terminal panes, workspaces, and optional Git Worktrees (Planner, Explorer, Dispatcher, TDD, Coding, Reviewer Ensemble, Ops, Debugger, RedTeam, E2E, Reflector). Use when initiating multi-agent spec implementation, parallel feature development, or complex engineering workflows.
 ---
 
-# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.11.0)
+# Herdr Multi-Agent Teamwork (多 Agent 协同工程规范 v2.11.1)
 
 本技能通过 Herdr 终端工作区管理工具构建**“双控台分治（窗口 1 规划 / 窗口 2 交付）、内外双驱（内部 `--wait` 同步 + 跨任务 `tail -f` 监听）、事件溯源（`pipeline.jsonl`）”**的多 Agent 物理隔离与协作体系。
 遵循 **OpenSpec 活文档标准**，实现规划与交付彻底物理绝缘、宏微观契约正交、职责绝对边界化与证伪式分形审查。
@@ -43,7 +43,7 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 │       ├── templates/               # 【What】10 个标准 JSON 配置与活文档填空骨架模板
 │       ├── tools/                   # 【CLI】Herdr 编排与窗格控制唯一权威指令配方卡 (tools/herdr.md §[H-1]~§[H-6])
 │       ├── scripts/                 # 【Tools】跨项目通用 Worktree 建场/销毁、水位探针与会话快照脚本 (worktree-up.sh / worktree-down.sh / agent-context.py / session-snapshot.py)
-│       └── .reflections/            # Skill 级流程与契约改进反馈 (<id>.md，供 herdr-teamwork 消化吸收)
+│       └── digest/reflections/      # Skill 级流程与契约改进反馈 (<id>.md，供 herdr-teamwork 消化吸收)
 └── .worktrees/                      # 【并行执行隔离区】(worktree 模式下由 Ops 建场管理，纳入 .gitignore)
     └── <id>/                        # 绑定独立 Herdr Workspace (ws-<id>) + 独立分支 + 按需端口
         ├── changes -> ../../changes             # 🔗 软链接共享主工作区 changes/，契约与事件流 0 延迟互通
@@ -74,7 +74,7 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 | **`changes/<id>/security-poc.md`** | **`Red Team Lead`** | **攻防演练产物**：高危特性触发，隔离沙箱动态渗透。 | 含 STRIDE 威胁类型、CVSS 定级、复现步骤、可直接转化的最小化 PoC 脚本与加固建议。 |
 | **`changes/<id>/explore.md`** | **`Explorer`** | **深度代码考古简报**：复杂历史代码摸底时按需产出。 | 浓缩现有模块拓扑、技术债约束与演进可行性评估，保护 `Planner` 上下文不被海量源码污染。 |
 | **`reflections/<domain>.md`** | **`Reflector`** | **项目级经验与探索课题库**：结项时由 `pipeline.jsonl` 异常信号触发。 | 按领域归并去重：区分 🎯 `DETERMINISTIC_LESSON`（确定性避坑指南）与 🔬 `SPIKE_CANDIDATE`（交 `Planner` 立项专项 `changes` 实验验证）。 |
-| **`.agents/skills/herdr-teamwork/.reflections/<id>.md`** | **`Reflector`** | **Skill 级演进反馈**：记录角色边界模糊、调度卡点或契约缺陷。 | 按 `<id>.md` 独立成文，定位 `SKILL.md` / `roles/*.md` 具体章节并给出修改建议，供本技能库消化吸收。 |
+| **`.agents/skills/herdr-teamwork/digest/reflections/<id>.md`** | **`Reflector`** | **Skill 级演进反馈**：记录角色边界模糊、调度卡点或契约缺陷。 | 按 `<id>.md` 独立成文，定位 `SKILL.md` / `roles/*.md` 具体章节并给出修改建议，供本技能库消化吸收。 |
 
 ### 2.1 全局文档与汇报「反 AI 腔」准则 (`unslop` 中文版 5 条铁律)
 全体角色在撰写任何面向人类或跨角色阅读的文档（`prd.md`、`spec.md`、`review.md`、`debug.md`、`explore.md`、`roundtable.md` 及回场简报）时，严格执行以下去水分铁律：
@@ -107,7 +107,7 @@ project-root/                        # 【主工作区 (Workspace: main)】：�
 | **分形<br>审查层** | **`reviewer-perf`**<br>(项目记忆沉淀) | [`roles/reviewer-perf.md`](roles/reviewer-perf.md) | **性能与并发专家**：审查无效重渲染、闭包内存泄漏、N+1 查询、全表扫描与缓存并发安全。 | 必须给出具体瓶颈行号与复杂度推导；只读权限；`standard` 模式常驻并在 Feature 结项后 `/compact` 沉淀性能基线记忆。 |
 | **分形<br>审查层** | **`reviewer-security`**<br>(项目记忆沉淀) | [`roles/reviewer-security.md`](roles/reviewer-security.md) | **蓝队安全合规专家**：承接前店安全预审与后厂安全终审；审查注入防御、RBAC/ABAC 越权、供应链 CVE，复核红队 PoC 闭环。 | 对高危漏洞拥有一票否决权；必须附带防御行号举证；只读权限；`standard` 模式常驻并在 Feature 结项后 `/compact` 沉淀安全防线记忆。 |
 | **分形<br>审查层** | **`reviewer-ux`**<br>(项目记忆沉淀) | [`roles/reviewer-ux.md`](roles/reviewer-ux.md) | **交互与无障碍专家**：审查快捷键冲突、输入法容错、焦点闭环 (Focus Trap)、ARIA 无障碍属性与界面文案。 | 只读权限；`standard` 模式常驻并在 Feature 结项后 `/compact` 沉淀交互规范记忆。 |
-| **反思<br>演进层** | **`reflector`**<br>(全局唯一常驻) | [`roles/reflector.md`](roles/reflector.md) | **流程反思与持续演进官（主区全局单实例）**：当 `pipeline.jsonl` 含波折信号时，在销毁 Worktree/清理上下文前介入，按需跨窗格问询当事 Agent，落盘项目级 `reflections/<domain>.md` 与 Skill 级 `.reflections/<id>.md`。 | **无异常信号不空转**；严禁改源码或在途契约；完成复盘后执行 `/compact` 沉淀跨特性系统性认知。 |
+| **反思<br>演进层** | **`reflector`**<br>(全局唯一常驻) | [`roles/reflector.md`](roles/reflector.md) | **流程反思与持续演进官（主区全局单实例）**：当 `pipeline.jsonl` 含波折信号时，在销毁 Worktree/清理上下文前介入，按需跨窗格问询当事 Agent，落盘项目级 `reflections/<domain>.md` 与 Skill 级 `digest/reflections/<id>.md`。 | **无异常信号不空转**；严禁改源码或在途契约；完成复盘后执行 `/compact` 沉淀跨特性系统性认知。 |
 
 ---
 
