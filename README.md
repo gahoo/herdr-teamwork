@@ -1,11 +1,11 @@
-# Herdr Teamwork v2.11.1 ⚡
+# Herdr Teamwork v2.11.2 ⚡
 
 > **Multi-Agent Spec Implementation Framework Orchestrated via Herdr & Git Worktrees**
 >
 > 基于 **Herdr** 终端工作区管理工具构建的**“双控台分治、内外双驱、事件溯源、双层自演进”**多 Agent 协同工程规范。遵循 **OpenSpec 活文档标准**、**单流水线内同步等待 (`--wait`) + 跨流水线文件流监听 (`tail -f pipeline.jsonl`)**，通过 **`roles/`（常驻职责）+ `protocols/`（跨角色协同协议）+ `playbooks/`（按需战术剧本）+ `templates/`（标准配置与活文档骨架）+ `tools/`（标准指令配方卡）+ `scripts/`（自动化基建）** 六元正交架构，无缝支持跨语言单线开发与多 Worktree / Workspace 高并发并行交付。
 
 [![Skill](https://img.shields.io/badge/Agent_Skill-herdr--teamwork-blue?style=flat-square)](https://skills.sh)
-[![Version](https://img.shields.io/badge/Version-v2.11.1-orange?style=flat-square)](SKILL.md)
+[![Version](https://img.shields.io/badge/Version-v2.11.2-orange?style=flat-square)](SKILL.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
 ---
@@ -107,7 +107,7 @@ project-root/
 | **分形审查层** | [`roles/reviewer-perf.md`](roles/reviewer-perf.md) | **性能与并发专家**：审查渲染/内存泄漏、N+1 查询、并发竞争，并依据 `Explain the Number` 核验性能跑分真实性。 |
 | **分形审查层** | [`roles/reviewer-security.md`](roles/reviewer-security.md) | **蓝队安全合规专家**：审查注入防御、RBAC/ABAC 越权、供应链 CVE 与红队 PoC 闭环，握有一票否决权。 |
 | **分形审查层** | [`roles/reviewer-ux.md`](roles/reviewer-ux.md) | **交互与无障碍专家**：审查热键冲突、输入法容错、Focus Trap 焦点闭环、ARIA 无障碍与视觉一致性。 |
-| **反思演进层** | [`roles/reflector.md`](roles/reflector.md) | **全局流程反思官**：由异常信号触发，按四级防错强化阶梯沉淀项目级 `reflections/<domain>.md` 与 Skill 级 `digest/reflections/<id>.md`。 |
+| **反思演进层** | [`roles/reflector.md`](roles/reflector.md) | **全局流程反思官**：由异常信号触发，按四级防错强化阶梯沉淀项目级 `reflections/<domain>.md` 与 Skill 级 `digest/reflections/<project>·<id>.md`。 |
 
 ### 3. 11 个按需触发战术剧本 (`playbooks/` —— How)
 
